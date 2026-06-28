@@ -223,7 +223,9 @@ URL parsing must:
 - Limit response size using `MAX_RESPONSE_SIZE_MB`.
 - Use `httpx` for fetch.
 - Use `trafilatura` as the primary HTML-to-text extractor.
-- Set `parse_status = needs_manual_input` when extracted text is too short, irrelevant, blocked, login-gated, or JavaScript-only.
+- Define a concrete low-content threshold where clean text has fewer than 150 characters, or use the helper function `is_unreliable_extraction(text)`.
+- Set `parse_status = "needs_manual_input"` when extracted text falls below the low-content threshold, or is blocked, login-gated, or JavaScript-only.
+- Set `parse_status = "success"` when text extraction successfully passes the threshold checks.
 - Return this warning when URL extraction is unreliable:
 
 ```text
@@ -234,7 +236,7 @@ Please paste the job description text manually.
 
 Low-content or unreliable URL extraction must not ask the LLM to hallucinate a job.
 
-If `trafilatura` returns text that is too short, irrelevant, blocked, login-gated, or JavaScript-only, return this state:
+If `trafilatura` returns text that falls below the threshold, return this state:
 
 ```python
 {
@@ -254,7 +256,7 @@ If `trafilatura` returns text that is too short, irrelevant, blocked, login-gate
         "requirements": None,
         "skills": [],
         "source_url": state.get("source_url"),
-        "source_platform": "manual_url",
+        "source_platform": map_input_source_to_source_platform(state["input_source"]),
         "jd_status": "unclear",
         "should_score_similarity": False,
         "extraction_notes": "URL content was too short or unreliable for extraction",
@@ -395,6 +397,7 @@ Expected test coverage:
 - Low-content URL path does not call the LLM.
 - Low-content URL path returns `jd_status = unclear`, `should_score_similarity = false`, and all score fields as `None`.
 - Low-content URL path preserves `batch_id`, `role_profile_id`, and `input_source`.
+- Low-content URL path returns the exact stable `user_warning` text.
 - `input_source` maps to the expected `source_platform`.
 - Invalid URL scheme rejects non-http/non-https URLs.
 - Timeout or oversized response returns `parse_status = failed` or `needs_manual_input` without crashing the graph.
@@ -411,9 +414,9 @@ Manual verification:
 
 Plan 3 consumes:
 
-- `JobAgentState` with extraction and scoring placeholder fields.
+- `JobAgentState` with extraction, scoring placeholder fields, and `user_warning`.
 - `JobPostExtract` validated output shape.
-- `clean_text`, `raw_content_hash`, `parse_status`, `extracted_job`, `jd_status`, `should_score_similarity`, and observability fields.
+- `clean_text`, `raw_content_hash`, `parse_status`, `extracted_job`, `jd_status`, `should_score_similarity`, `user_warning`, and observability fields.
 - The guarantee that all failed extractions return `jd_status = unclear` and preserve foreign key context.
 
 Plan 3 must be able to persist both successful extraction states and low-content/manual-input states. Plan 2 guarantees that these states always include `batch_id`, `role_profile_id`, `input_source`, `parse_status`, `jd_status`, `should_score_similarity`, and nullable score placeholders.
@@ -424,6 +427,8 @@ Plan 3 must:
 - Score only `full_jd` and `partial_jd`.
 - Save every parsed job to SQLite first as `pending_review` unless dedup rules skip or mark a duplicate.
 - Add deduplication, scoring, persistence, and Qdrant sync without changing Plan 2 schemas.
+- Map `JobAgentState.user_warning` into Plan 3 `JobProcessingResult.warnings` when propagating warning messages to later stages.
+- Persist controlled unclear fallback records using Phase 3 storage utilities (Phase 4 invokes the Phase 3 pipeline).
 
 Hard rules for later phases:
 
@@ -431,3 +436,4 @@ Hard rules for later phases:
 - Do not let any node drop `batch_id`, `role_profile_id`, or `input_source`.
 - Do not introduce Playwright/browser rendering in the MVP parser.
 - Do not let one bad job crash an entire batch.
+- Terminal success states of the extraction graph must hand off `extracted_job` as a `JobPostExtract.model_dump()` dictionary so Phase 3 services can ingest it directly.

@@ -30,7 +30,7 @@ After this phase, the project meets the final MVP definition from `Master_Plan.m
 - [ ] Plan 4 ingestion endpoints return the standard ingestion response with `batch_id`, counts, jobs, and warnings.
 - [ ] Plan 4 supports `GET /api/jobs?status=tracked` for saved/applied/interview/rejected/offer jobs.
 - [ ] Plan 4 CORS allows `http://localhost:5173`.
-- [ ] `python scripts/seed_demo.py --reset` can preload demo jobs.
+- [ ] `python scripts/seed_demo.py --reset` can preload demo jobs from the `backend/` directory.
 - [ ] Backend can run locally on port `8000`.
 
 ## 4. Scope
@@ -82,7 +82,6 @@ frontend/
 `-- job-agent-ui/
     |-- package.json
     |-- index.html
-    |-- .env.example
     |-- vite.config.ts
     |-- tsconfig.json
     `-- src/
@@ -141,15 +140,8 @@ Backend base URL:
 http://localhost:8000
 ```
 
-Create `frontend/job-agent-ui/.env.example`:
-
-```env
-VITE_API_BASE_URL=http://localhost:8000
-```
-
-Only expose `VITE_*` frontend-safe values. Do not expose OpenAI, Tavily, Qdrant, or database settings.
-
-Use a frontend env variable such as `VITE_API_BASE_URL` if needed, but never expose backend API keys.
+Do not create any `.env` or `.env.example` files under the frontend directory. This enforces the single-root `.env` architecture.
+The frontend API client base URL must default in code to `http://localhost:8000`. If custom configuration is required for production, it must be loaded via a centralized root configuration mechanism, not via a frontend-specific environment file. Only expose frontend-safe configurations if necessary, and never expose backend API keys.
 
 ### Pages and Navigation
 
@@ -250,7 +242,6 @@ export interface Job {
   jd_status: JdStatus | null;
   extraction_status: ExtractionStatus | null;
   error_reason: string | null;
-  user_warning: string | null;
   should_score_similarity: boolean;
   embedding_similarity: number | null;
   skill_overlap_score: number | null;
@@ -309,7 +300,7 @@ loadMockJobs
 the UI must:
 
 ```text
-1. Store `response.batch_id` as `activeBatchId`.
+1. Store `response.batch_id` as `activeBatchId` in component state AND save it to localStorage (keyed by active role profile ID).
 2. Show response warnings.
 3. Refresh review queue.
 4. Refresh tracked dashboard.
@@ -317,6 +308,7 @@ the UI must:
 ```
 
 If there is no active batch, the metrics panel should show an empty state instead of calling the summary endpoint.
+When the user switches role profiles, the UI must reload the corresponding `activeBatchId` from localStorage for that profile, or reset the batch metrics view if no batch history exists. This ensures metrics do not disappear or leak across profiles on refresh.
 
 ### Role Profile UI
 
@@ -352,16 +344,10 @@ The page may require JavaScript rendering, login, or cookie acceptance.
 Please paste the job description text manually.
 ```
 
-Display warnings from both:
+Display warnings and stored extraction errors from:
 
 ```text
 IngestionResponse.warnings
-Job.user_warning
-```
-
-Display extraction errors from:
-
-```text
 Job.error_reason
 ```
 
@@ -444,22 +430,13 @@ rejected
 offer
 ```
 
-`StatusSelect` must only offer valid manual statuses:
+`StatusSelect` must be current-status aware and filter dropdown options to only display valid manual transition paths allowed by the backend:
+- If current status is `saved`: show options `applied` and `rejected`.
+- If current status is `applied`: show options `interview` and `rejected`.
+- If current status is `interview`: show options `rejected` and `offer`.
+- If current status is `rejected` or `offer` (terminal states): disable the dropdown or hide status controls.
 
-```text
-applied
-interview
-rejected
-offer
-```
-
-It must not offer:
-
-```text
-pending_review
-saved
-ignored
-```
+The dropdown must never offer `pending_review`, `saved`, or `ignored` options.
 
 Approve uses the approve endpoint, reject from review uses the reject endpoint, and manual tracking uses `PATCH /api/jobs/{id}/status`.
 
@@ -545,12 +522,14 @@ Required states:
 - Avoid decorative cards inside cards.
 - Ensure text fits on mobile and desktop.
 - Ensure score and status labels do not overlap.
+- Use a compact, work-focused dashboard visual system with CSS variables for background, surface, border, accent, and muted text colors.
+- Use restrained hover/focus states that do not resize fixed-format UI elements or cause layout shift.
+- Use local/system font fallbacks by default; do not require external font loading for the demo to work offline.
 
 ## 8. Implementation Steps
 
 - [ ] Scaffold `frontend/job-agent-ui` with Vite React TypeScript.
 - [ ] Install `react-router-dom`, `axios`, and `lucide-react`.
-- [ ] Add `.env.example` with `VITE_API_BASE_URL`.
 - [ ] Add `src/types/api.ts` matching Plan 4 response contracts.
 - [ ] Add complete nullable TypeScript API types.
 - [ ] Add `src/api/client.ts` with all backend client functions.
@@ -559,7 +538,7 @@ Required states:
 - [ ] Build role profile creation and selection UI.
 - [ ] Build ingestion panel for search, URL, raw text, and mock load.
 - [ ] Use standard ingestion response for search, URL parse, text parse, and mock load.
-- [ ] Show ingestion warnings and per-job warnings.
+- [ ] Show ingestion warnings and per-job extraction errors.
 - [ ] Build review queue and job cards.
 - [ ] Add approve and reject actions.
 - [ ] Build tracked jobs dashboard.
@@ -594,11 +573,30 @@ cd frontend/job-agent-ui
 npm install
 ```
 
-Install test dependencies if the Vite template does not include them:
+Install test dependencies and configure the Vite test runner:
 
 ```powershell
 npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
 ```
+
+Configure `vite.config.ts` to support testing settings. Add a `test` block to `defineConfig`:
+
+```ts
+/// <reference types="vitest" />
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+  },
+});
+```
+
+Ensure a mock API adapter/server (e.g., MSW or custom axios mocks) is set up in `src/test/setup.ts` to test client API functions against network errors gracefully.
 
 ```powershell
 npm run build

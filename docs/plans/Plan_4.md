@@ -151,7 +151,6 @@ Job response fields must include all fields needed by Plan 5:
   "jd_status": "full_jd",
   "extraction_status": "success",
   "error_reason": null,
-  "user_warning": null,
   "should_score_similarity": true,
   "embedding_similarity": 0.85,
   "skill_overlap_score": 0.9,
@@ -173,6 +172,7 @@ Job response fields must include all fields needed by Plan 5:
 ```
 
 For nullable score fields, return `null`; do not omit them.
+Ingestion endpoints must return transient warning messages through the standard `warnings` array. Persisted job responses should expose stored fields from `job_posts`, including `error_reason`, without adding non-Master columns.
 
 ### API Schema Ownership
 
@@ -474,6 +474,7 @@ Request:
 ```
 
 - Update SQLite status through Plan 3 service methods.
+- The `PATCH /api/jobs/{id}/status` endpoint must call Plan 3 service methods so `job_posts.status` is updated and the `applications` row is created or updated when changing status to a tracked state (`applied`, `interview`, `rejected`, or `offer`).
 - Use Plan 3 status sync behavior:
   - approve -> update Qdrant payload status to saved
   - review reject -> delete Qdrant point
@@ -558,10 +559,10 @@ Responsibilities:
 - Print demo summary.
 
 `--reset` must delete only demo/mock-owned data.
-
-Use `source_platform = "mock"` and/or a demo batch/profile marker to identify demo rows.
+Do not use any non-existent columns (like `is_demo` or similar) to filter mock data. Filter SQLite `job_posts` and Qdrant vectors where `source_platform = 'mock'`.
 Do not wipe manually entered or Tavily-created jobs.
 Qdrant reset must delete only matching demo vectors.
+Delete the demo role profile only if it matches the deterministic demo profile name and has no remaining non-mock jobs referencing it.
 
 Expected output:
 
@@ -573,6 +574,8 @@ Scorable jobs: 10
 Need-review/social jobs: 2
 Local Qdrant vectors upserted: 10
 ```
+
+
 
 ## 8. Implementation Steps
 
@@ -700,9 +703,13 @@ Plan 5 must:
 - Show review queue, saved jobs, score breakdown, and metrics from the backend.
 - Use approve/reject/status endpoints rather than mutating local state only.
 - Keep API keys on the backend.
+- Save the returned `activeBatchId` in localStorage/sessionStorage so that the metrics aggregation does not reset when page reloads or tabs toggle.
+- Synchronize `activeBatchId` lifecycle with profile changes: reset it or fetch the latest batch when profiles switch.
+- Add focused frontend build, typecheck, and interaction verification steps without changing backend API contracts.
 
 Hard rules for later phases:
 
 - Frontend must not duplicate scoring formulas.
 - Frontend must not call OpenAI, Tavily, or Qdrant directly.
 - Frontend must treat backend API responses as the source of truth.
+- Verify that no frontend `.env`, `frontend/.env.example`, or `frontend/job-agent-ui/.env.example` exists. Only load settings via root configuration scripts if required.

@@ -64,7 +64,7 @@ This phase connects the Plan 2 extraction result to the Plan 1 SQLite schema and
 - Do not implement Tavily search.
 - Do not implement `seed_demo.py` or mock JSON data.
 - Do not implement React UI.
-- Do not change database schema from Plan 1.
+- Do not change database schema from Plan 1. Verify models.py already contains required Master Plan fields and indexes. If anything is missing, fail Phase 3 verification and create an explicit Phase 1 revision or migration task. Do not alter schema in Phase 3.
 - Do not add vector similarity deduplication.
 - Do not score `contact_for_jd`, `no_jd`, or `unclear` jobs.
 - Do not store raw HTML or messy full JD text as `embedding_text`.
@@ -315,15 +315,18 @@ Rules:
 - Build job text with `build_embedding_text(job)`.
 - Validate `len(vector) == settings.EMBEDDING_DIMENSION`.
 - If embedding generation fails, persist the job as `pending_review` with all score fields as `None` and `error_reason` set.
+- Map the incoming `JobAgentState.user_warning` (if present) to the returned `JobProcessingResult.warnings`.
 
 Semantic similarity:
+
+Use local cosine similarity calculation as the primary path to score role and job embedding pairs.
 
 ```python
 def calculate_embedding_similarity(role_vector: list[float], job_vector: list[float]) -> float:
     """Return cosine similarity clamped to [0, 1]."""
 ```
 
-`embedding_similarity` must be normalized to `[0, 1]` before use in the final score.
+`embedding_similarity` must be normalized and clamped to `[0, 1]` before use in the final score. Do not rely on Qdrant query scores for the final score, only for candidate retrieval.
 
 ### Processing Pipeline Order
 
@@ -539,6 +542,9 @@ If Qdrant upsert, delete, payload update, or payload-index creation fails:
 
 Qdrant delete and payload update helpers must be idempotent.
 Deleting a missing point should not fail the workflow.
+The `QdrantService` must dynamically verify if the `job_posts` collection exists during backend startup, and initialize it with the configured vector dimension and cosine metric if missing.
+
+During SQLite insertions, catch any `IntegrityError` caused by raw_content_hash unique collisions. When caught, roll back the transaction, fetch the existing job post ID, and return it as `skipped_exact_duplicate` without making Qdrant upsert calls.
 
 ### Qdrant Status Sync
 
@@ -559,13 +565,10 @@ delete job -> delete Qdrant point
 Only review rejection (`pending_review -> ignored`) deletes the Qdrant point.
 Manual tracked status `rejected` keeps the point and updates payload status to `rejected`.
 
-For MVP reject behavior, always delete ignored vectors:
-
-```python
-async def reject_job(job_id: str) -> None:
-    await job_repo.update_status(job_id, "ignored")
-    await qdrant_service.delete_point_if_exists(collection_name="job_posts", point_id=job_id)
-```
+**Service Layer Application Tracking Rule:**
+- The `job_processing_service.update_job_status(job_id, status)` method is the single backend owner for status mutations.
+- When `status` changes to any tracked state (`applied`, `interview`, `rejected`, or `offer`), this method MUST create or update the corresponding record in the `applications` table.
+- API route handlers (in Plan 4) are strictly forbidden from implementing route-local business logic for `applications` record creation or Qdrant status updates; they must call the service methods directly to avoid drift.
 
 ### Query Isolation
 
@@ -709,20 +712,24 @@ Plan 4 consumes:
 
 - Deterministic scoring functions.
 - Deduplication service and duplicate action policy.
-- Persistence helpers for extraction results.
-- Qdrant collection, upsert, delete, payload update, and filter helpers.
+- Persistence helpers for extraction results and warning propagation through `JobProcessingResult.warnings`.
+- Qdrant collection auto-initialization, upsert, delete, payload update, and filter helpers.
 - Status mutation service behavior that keeps SQLite and Qdrant synchronized.
+- Propagated warning strings in `JobProcessingResult.warnings`.
 
 Plan 4 must:
 
-- Expose these services through FastAPI routes.
 - Call `job_processing_service.py` instead of reimplementing scoring, deduplication, embedding, persistence, or Qdrant sync inside route handlers.
 - Add Tavily search and route-level input validation.
 - Add `seed_demo.py` and mock data that reuse the same persistence and Qdrant services.
 - Keep SQLite as the source of truth for job status.
+- Ensure the API routes explicitly map `JobProcessingResult.warnings` to warning fields in API response DTOs.
+- Rely on `job_processing_service.update_job_status(...)` to create or update the corresponding `applications` row when manual job status changes to `applied`, `interview`, `rejected`, or `offer` occur.
 
 Hard rules for later phases:
 
 - API routes must reuse Plan 3 services and must not duplicate scoring or dedup logic.
 - Demo seeding must use the same score and Qdrant sync behavior as real parsing.
 - Later phases must not re-open duplicates of saved, applied, interview, rejected, or offer jobs into `pending_review`.
+- Qdrant collection checks and creations must occur dynamically during `QdrantService` constructor initialization.
+- The `seed_demo.py` CLI script must follow the Master Plan command: `python scripts/seed_demo.py --reset` from the `backend/` directory.

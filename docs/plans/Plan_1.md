@@ -99,6 +99,7 @@ Job_Agent/
 ### Environment Settings
 
 Use one root `.env` file. The backend configuration must load from the repository root, not from `backend/.env`.
+Phase 1 creates `.env.example` only. A local root `.env` must be copied manually from `.env.example` and must remain gitignored.
 
 Required settings:
 
@@ -377,6 +378,7 @@ The Qdrant collection, payload indexes, upsert, delete, and query filtering are 
 - [ ] Confirm no `search_runs` table or extra MVP-irrelevant table is introduced.
 - [ ] Create `backend/app/main.py` with FastAPI app initialization and database startup initialization.
 - [ ] Add `backend/data/.gitkeep` and `backend/app/db/migrations/.gitkeep`.
+- [ ] Create `backend/Dockerfile` for backend containerization.
 - [ ] Confirm no frontend, extraction, scoring, or Qdrant service behavior is implemented in this phase.
 
 ## 9. Verification & Testing Plan
@@ -521,3 +523,5 @@ Hard rules for later phases:
 - Do not add `matching_text` to `role_profiles`.
 - Do not change status values without a migration plan.
 - Do not create new database tables unless a later approved plan explicitly requires them.
+- Manual status transitions to `applied`, `interview`, `rejected`, and `offer` must update `job_posts.status` and create/update a corresponding record in the `applications` table.
+- Plan 3 may verify database models but must not alter schemas. Any model updates require explicit Phase 1 revision or migration tasks.
