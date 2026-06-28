@@ -2,45 +2,53 @@
 
 ## 1. Executive Summary
 
-The 4 phase plans are largely ready, but should receive targeted edits before implementation.
+The four phase plans are close to implementation-ready, but they need revision before execution. They are well aligned with the MVP stack and largely respect the intended phase boundaries. The biggest issue is not missing architecture; it is preventing later phases from mutating earlier decisions.
 
-- Overall readiness score: 90 / 100
-- Biggest strengths: strong phase separation, correct MVP stack, explicit exclusion of PostgreSQL/GraphRAG/Neo4j/Jina/auth/auto-apply, good SQLite/Qdrant detail, strong fallback and test planning.
-- Biggest risks: Phase 4 review/dashboard queries omit explicit `role_profile_id` filtering, batch summary counters are under-specified for skipped duplicates, Phase 3 leaves small room for schema ownership drift, and Phase 2 handoff wording ambiguously says Phase 3/4 decide persistence.
-- Recommendation: Approved with minor edits. Apply the fixes below before assigning implementation agents.
+- Overall readiness score: 87 / 100
+- Biggest strengths:
+  - Strong alignment with SQLite, Qdrant Local, FastAPI, React/Vite, LangGraph, and Pydantic structured output.
+  - Phase boundaries are mostly explicit and practical.
+  - Deduplication, scoring, Qdrant sync, and UI visibility are specified in implementation-level detail.
+  - Verification checklists are unusually strong for a solo-developer MVP.
+- Biggest risks:
+  - Plan_3 still contains a schema-edit escape hatch that conflicts with Plan_1 ownership.
+  - Plan_4 has an internal contradiction on `applications` writes.
+  - Plan_4 demo seed counts conflict with the Master Plan example output.
+  - Demo reset scoping references an `is_demo` flag that does not exist in the schema.
+  - Warning propagation from Phase 2 to Phase 4 is present conceptually but not fully wired as a handoff contract.
+- Recommendation: revise the plans first, then start implementation. The revisions are targeted; no major rewrite is required.
 
 ## 2. Source of Truth Check
 
-`Master_Plan.md` defines a local-first MVP:
+`Master_Plan.md` defines a local, demo-friendly MVP:
 
-- Frontend: React + TypeScript + Vite
-- Backend: FastAPI
-- Agent flow: LangChain + LangGraph + Pydantic structured output
-- Database: SQLite via `sqlite+aiosqlite`
-- Vector DB: Qdrant Local via Docker Compose
-- URL extraction: `httpx` + `trafilatura`
-- Search: Tavily or similar public API
-- Config: single root `.env`
-- No PostgreSQL, Qdrant Cloud, GraphRAG, Neo4j, Jina Reranker, auto-apply, authenticated social crawler, auth/multi-user system, Celery/Redis, or extra frontend/backend env files.
+- React + TypeScript + Vite frontend.
+- FastAPI backend.
+- LangChain/LangGraph agent flow.
+- Pydantic structured extraction.
+- SQLite local database through `sqlite+aiosqlite`.
+- Qdrant Local through Docker Compose.
+- `httpx` + `trafilatura` for URL extraction.
+- Tavily or similar public search API.
+- Single root `.env`.
+- No GraphRAG, Neo4j, Jina Reranker, auto-apply, authenticated social crawler, PostgreSQL, Celery/Redis, multi-user auth, or extra env files.
 
-Architecture decision check:
-
-| Required Decision | Status | Notes |
+| Required Decision | Plan Status | Notes |
 |---|---|---|
 | SQLite, not PostgreSQL | Pass | All plans explicitly reject PostgreSQL. |
-| Qdrant Local, not Qdrant Cloud | Pass | Docker Compose local Qdrant only. |
-| FastAPI backend | Pass | Phase 4 owns routes. |
-| React + TypeScript + Vite frontend | Pass | Phase 4 owns frontend. |
-| LangChain/LangGraph | Pass | Phase 2 extraction graph, Phase 3 extension. |
-| Pydantic structured output | Pass | Phase 2 is specific. |
-| `httpx` + `trafilatura` | Pass | Phase 2 owns URL extraction. |
-| No GraphRAG | Pass | Explicitly excluded. |
-| No Neo4j | Pass | Explicitly excluded. |
-| No Jina Reranker | Pass | Explicitly excluded. |
-| No auto-apply | Pass | Explicitly excluded. |
-| No LinkedIn/Facebook authenticated crawler | Pass | Explicitly excluded. |
-| No auth/multi-user | Pass | Explicitly excluded. |
-| Single root `.env` | Pass | Strongly enforced. |
+| Qdrant Local, not Qdrant Cloud | Pass | Docker Compose local Qdrant is preserved. |
+| FastAPI backend | Pass | Phase 4 owns routes and app integration. |
+| React + TypeScript + Vite frontend | Pass | Phase 4 owns Vite app. |
+| LangChain/LangGraph for agent flow | Pass | Phase 2 and 3 use LangGraph boundaries. |
+| Pydantic structured output | Pass | Phase 2 specifies structured output/parser plus validation. |
+| `httpx` + `trafilatura` URL extraction | Pass | Phase 2 owns it and bans custom parser/browser rendering. |
+| No GraphRAG | Pass | Repeatedly excluded. |
+| No Neo4j | Pass | Repeatedly excluded. |
+| No Jina Reranker in MVP | Pass | Repeatedly excluded. |
+| No auto-apply | Pass | Repeatedly excluded. |
+| No LinkedIn/Facebook authenticated crawler | Pass | Repeatedly excluded. |
+| No authentication/multi-user system | Pass | Repeatedly excluded. |
+| Single root `.env` | Pass with minor risk | Phase 4 must avoid Vite `.env` drift. |
 
 ## 3. Individual Plan Scores
 
@@ -48,439 +56,379 @@ Architecture decision check:
 
 | Criterion | Score / 10 | Notes |
 |---|---:|---|
-| Alignment with `Master_Plan.md` | 10 | Strong match to SQLite, Qdrant Local, root `.env`, schema. |
-| Correct phase scope | 10 | Correctly avoids APIs, extraction, scoring, Qdrant vectors, UI. |
-| Completeness | 10 | Includes tables, indexes, constraints, config, scripts, verification. |
-| Technical specificity | 10 | Very specific SQLAlchemy, PRAGMA, path, and verification details. |
-| Dependency handoff quality | 9 | Good handoff; minor risk from installing all later deps in Phase 1. |
-| Consistency with other plans | 10 | Supports Phase 2/3/4 cleanly. |
-| Implementation readiness | 10 | Directly executable. |
-| MVP simplicity | 9 | Slightly heavy constraints/checks, but acceptable. |
-| Risk control and error handling | 9 | Good schema verification; no runtime app behavior yet. |
-| Testability | 9 | Strong verify script plan, but no pytest smoke test required. |
-
-Overall score: 96 / 100
-
-Strengths:
-
-- Correctly owns only foundation work.
-- Strong PostgreSQL prevention.
-- Correct partial unique index for `raw_content_hash`.
-- Correct root `.env` handling.
-- Correct `job_posts.batch_id` instead of `search_runs`.
-
-Problems:
-
-- Later-phase dependencies are installed in Phase 1. The plan explains this as bootstrap-only, so it is acceptable but should stay dependency-only.
-- Phase 1 is the schema owner, but Phase 3 later says it may patch models if Phase 1 missed fields. That weakens ownership.
-
-Missing details:
-
-- Add an explicit Phase 1 acceptance item that later phases must not silently mutate Phase 1 schema; schema misses should be fixed by revising Phase 1 output or a documented migration.
-
-Conflicts with `Master_Plan.md`:
-
-- None material.
-
-Conflicts with other phase plans:
-
-- Minor conflict with Plan 3 allowing model/schema fixes in Phase 3.
-
-Specific fixes required:
-
-- Add a note that Phase 1 is the canonical schema source for MVP tables/indexes and later phases should verify, not silently redesign, schema.
-
-### 3.2 Plan_2.md Review
-
-| Criterion | Score / 10 | Notes |
-|---|---:|---|
-| Alignment with `Master_Plan.md` | 9 | Strong extraction alignment. |
-| Correct phase scope | 9 | Avoids scoring/Qdrant/API/UI; one handoff phrase is ambiguous. |
-| Completeness | 9 | Covers URL/manual text, schema, retry, fallback, observability. |
-| Technical specificity | 9 | Strong service, graph, and test details. |
-| Dependency handoff quality | 9 | Good Phase 1 inputs and Phase 3 outputs. |
-| Consistency with other plans | 9 | Mostly clean; persistence ownership wording needs tightening. |
-| Implementation readiness | 9 | Executable with tests and clear contracts. |
-| MVP simplicity | 9 | Avoids Playwright/custom parser. |
-| Risk control and error handling | 10 | Strong fallback and no-batch-crash behavior. |
-| Testability | 10 | Excellent mocked LLM and extraction test plan. |
+| Alignment with `Master_Plan.md` | 9 | Correct stack, schema, env, Docker, and SQLite rules. |
+| Correct phase scope | 10 | Strongly limited to foundation. |
+| Completeness | 9 | Covers tables, indexes, constraints, PRAGMAs, config, and verification. |
+| Technical specificity | 10 | Very implementation-ready. |
+| Dependency handoff quality | 9 | Good handoff to Phase 2 and Phase 3. |
+| Consistency with other plans | 9 | Mostly consistent; application-row handoff needs alignment with Plan_4. |
+| Implementation readiness | 9 | Clear scripts and checks. |
+| MVP simplicity | 8 | Full dependency install in Phase 1 is convenient but slightly heavy. |
+| Risk control and error handling | 9 | Strong database drift and PostgreSQL checks. |
+| Testability | 10 | Schema verification is concrete. |
 
 Overall score: 92 / 100
 
 Strengths:
 
-- Correctly owns `httpx` + `trafilatura`.
-- Correctly handles `needs_manual_input`.
-- Strong `JobAgentState` preservation.
-- Correct retry-once repair flow.
-- Correctly keeps score fields null and Qdrant out of scope.
+- Correctly owns the schema and avoids PostgreSQL.
+- Includes `raw_content_hash`, `dedup_key`, `duplicate_of_job_id`, score columns, token/cost fields, and all required indexes.
+- Correctly uses root `.env`, `sqlite+aiosqlite`, UUID strings, and Qdrant-only Docker Compose.
+- Strong verification script requirements.
 
 Problems:
 
-- Handoff says “Phase 3/4 decide the persistence implementation details.” That can let Phase 4 reimplement storage. Master boundaries say Phase 3 owns persistence rules/services and Phase 4 only calls them.
-- Fallback state includes `error_reason`, but the frontend warning contract depends on a stable user-facing warning. This should be explicitly mapped.
+- The handoff note says Phase 4 must define whether status updates also write `applications` rows, but Plan_4 later both defers and requires those writes.
+- Installing all future dependencies in Phase 1 is acceptable, but implementation agents may still over-infer scope despite the warning.
 
 Missing details:
 
-- Add an explicit test that Phase 2 never writes SQLite job records.
-- Add explicit fallback defaults for token/cost/time fields when extraction fails before LLM usage.
+- Add a final note that Phase 1 creates `.env.example` only; local `.env` may be copied manually and must not be committed.
+- Tighten the `applications` handoff after Plan_4 is corrected.
 
 Conflicts with `Master_Plan.md`:
 
-- No direct architecture conflict.
+- None blocking.
 
 Conflicts with other phase plans:
 
-- Minor ambiguity with Plan 3/4 persistence ownership.
+- Plan_3 step 9 allows adding missing Master Plan fields in Phase 3, while Plan_1 says schema changes must trigger Phase 1 revision or an explicit migration.
+- Plan_4 has contradictory `applications` behavior, which makes Plan_1's handoff unresolved.
 
 Specific fixes required:
 
-- Tighten handoff language so Phase 3 owns final SQLite persistence and Phase 4 owns only route orchestration.
+- Clarify that schema changes after Phase 1 require an explicit migration/revision task.
+- Replace the open-ended `applications` handoff with the final policy chosen in Plan_4.
+
+### 3.2 Plan_2.md Review
+
+| Criterion | Score / 10 | Notes |
+|---|---:|---|
+| Alignment with `Master_Plan.md` | 9 | Correct extraction stack, retry, schema, and fallback behavior. |
+| Correct phase scope | 9 | Avoids scoring, dedup, Qdrant, routes, and UI. |
+| Completeness | 9 | Covers URL/manual text, schema, prompts, graph, fallback, and tests. |
+| Technical specificity | 9 | Strong enough for direct implementation. |
+| Dependency handoff quality | 8 | Needs explicit `user_warning` propagation to Phase 3/4. |
+| Consistency with other plans | 9 | Mostly clean. |
+| Implementation readiness | 9 | Tests are concrete and mock LLM/network correctly. |
+| MVP simplicity | 8 | Good, though graph internals are fairly detailed for Phase 2. |
+| Risk control and error handling | 9 | Strong fallback and no-crash behavior. |
+| Testability | 10 | Excellent test matrix. |
+
+Overall score: 89 / 100
+
+Strengths:
+
+- Correctly uses `httpx` + `trafilatura`.
+- Correctly rejects browser rendering, BeautifulSoup, scoring, dedup, Qdrant, APIs, and UI.
+- Preserves `batch_id`, `role_profile_id`, `input_source`, metadata, status fields, token/cost fields, and fallback state.
+- Correctly generates `raw_content_hash` from normalized clean text.
+
+Problems:
+
+- `user_warning` is added to `JobAgentState`, but the Phase 3 handoff list omits it.
+- Acceptance criteria say "Phase 3/4 must persist" fallback records, while later text correctly says Phase 3 owns persistence and Phase 4 only invokes it.
+- `extracted_job` handoff should specify whether Phase 3 receives a `JobPostExtract` instance or `model_dump()` dict.
+
+Missing details:
+
+- Explicit contract mapping `user_warning` -> Phase 3 `StoredJobResult.warning` -> Phase 4 API `warning`.
+- Serialization rule for `JobPostExtract`.
+
+Conflicts with `Master_Plan.md`:
+
+- None blocking.
+
+Conflicts with other phase plans:
+
+- Minor ownership wording conflict with Plan_3/Plan_4 around who persists fallback records.
+
+Specific fixes required:
+
+- Add `user_warning` to Phase 3 handoff.
+- Replace "Phase 3/4 must persist" with "Phase 3 persists; Phase 4 invokes Phase 3 through the pipeline."
+- Define `extracted_job = JobPostExtract.model_dump()` at the graph boundary unless Phase 3 explicitly accepts the Pydantic object.
 
 ### 3.3 Plan_3.md Review
 
 | Criterion | Score / 10 | Notes |
 |---|---:|---|
-| Alignment with `Master_Plan.md` | 9 | Strong scoring/dedup/Qdrant alignment. |
-| Correct phase scope | 9 | Correctly owns scoring/storage/Qdrant sync services. |
-| Completeness | 9 | Very detailed, but batch summary contract needs expansion. |
-| Technical specificity | 9 | Strong scoring, dedup, Qdrant payload/index rules. |
-| Dependency handoff quality | 8 | Good from Phase 2, but Phase 4 summary handoff is incomplete. |
-| Consistency with other plans | 8 | Some overlap risk with Phase 1 schema and Phase 4 pipeline. |
-| Implementation readiness | 9 | Implementation-ready with fake embeddings/Qdrant tests. |
-| MVP simplicity | 8 | Mostly simple; vector update/manual correction rules may be extra. |
-| Risk control and error handling | 9 | Good Qdrant failure and transaction handling. |
-| Testability | 10 | Excellent unit-test plan. |
-
-Overall score: 88 / 100
-
-Strengths:
-
-- Correct scoring formula and JD confidence multiplier.
-- Correctly avoids vector deduplication.
-- Correctly handles duplicate statuses.
-- Correct Qdrant UUID point ID rule.
-- Correct approve/reject/update/delete sync service ownership.
-
-Problems:
-
-- Says Phase 3 may update `models.py` if Phase 1 missed fields. That can blur Phase 1 schema ownership.
-- Batch summary contract omits some fields Phase 4 expects: `failed_extractions`, token totals, cost totals, and average extraction time.
-- Semantic similarity wording allows local cosine or Qdrant equivalent. That is acceptable technically, but should be clearer so Qdrant does not become optional for MVP vector behavior.
-- “Non-scorable becomes scorable after manual correction” is likely future behavior unless Phase 4 implements job editing.
-
-Missing details:
-
-- Add a precise `BatchSummaryCounters` contract shared with Phase 4.
-- Add saved-dashboard Qdrant filter helper or explicitly state SQL dashboard queries remain primary and Qdrant filters are only for vector search.
-
-Conflicts with `Master_Plan.md`:
-
-- No major conflict.
-- Minor risk: Master describes Qdrant similarity; Plan 3 permits local cosine. This should be clarified as equivalent scoring math while still using Qdrant for vector storage/search.
-
-Conflicts with other phase plans:
-
-- Minor conflict with Plan 1 schema ownership.
-- Potential overlap with Phase 4 if `job_pipeline_service.py` reimplements storage instead of calling Phase 3.
-
-Specific fixes required:
-
-- Make Phase 3 verify schema and fail clearly if Phase 1 is wrong, instead of silently changing schema.
-- Expand the batch summary handoff.
-
-### 3.4 Plan_4.md Review
-
-| Criterion | Score / 10 | Notes |
-|---|---:|---|
-| Alignment with `Master_Plan.md` | 9 | Strong integration/UI alignment. |
-| Correct phase scope | 9 | Correctly owns API/UI/demo; must avoid service rewrites. |
-| Completeness | 9 | Very complete, but route filtering and summary semantics need fixes. |
-| Technical specificity | 8 | Good DTO/UI detail; query params need more precision. |
-| Dependency handoff quality | 8 | Good reuse language, but summary contract and loader path need tightening. |
-| Consistency with other plans | 8 | Mostly good; batch counters and pipeline ownership need care. |
-| Implementation readiness | 8 | Needs small edits before execution. |
-| MVP simplicity | 8 | Generally practical; offline vectors are useful but must stay isolated. |
-| Risk control and error handling | 9 | Good warnings, partial failures, sync warnings. |
-| Testability | 9 | Strong backend/frontend/E2E coverage. |
+| Alignment with `Master_Plan.md` | 9 | Correct scoring, dedup, Qdrant, status sync, and SQLite source of truth. |
+| Correct phase scope | 8 | Mostly correct, but schema-edit language and manual correction capability need tightening. |
+| Completeness | 9 | Very complete for scoring/storage/sync. |
+| Technical specificity | 9 | Detailed enough for implementation. |
+| Dependency handoff quality | 9 | Strong Phase 2 and Phase 4 contracts. |
+| Consistency with other plans | 8 | Conflicts with Plan_1 schema ownership. |
+| Implementation readiness | 8 | Good, but must remove schema mutation ambiguity. |
+| MVP simplicity | 7 | Some service-capable edit/vector recomputation behavior risks overengineering. |
+| Risk control and error handling | 9 | Good Qdrant failure and dedup handling. |
+| Testability | 9 | Strong unit/fake-client test plan. |
 
 Overall score: 85 / 100
 
 Strengths:
 
-- Correctly owns FastAPI, React, demo seed, route orchestration, and UI.
-- Strong single-root `.env` protection.
-- Good warning/duplicate/sync-warning UI behavior.
-- Correctly says Phase 4 must reuse Phase 2/3 services.
-- Strong demo flow.
+- Correctly owns skill normalization, dynamic role query text, clean embedding text, scoring, dedup, persistence, and Qdrant sync.
+- Correctly rejects Qdrant/vector deduplication.
+- Correctly specifies Qdrant UUID point IDs, payload indexes, filters, approve payload update, and reject vector delete.
+- Good transaction behavior: do not upsert Qdrant if SQLite save fails; keep SQLite source of truth if Qdrant fails.
 
 Problems:
 
-- Review and dashboard query rules omit `role_profile_id = ?`, even though Master Plan requires role-profile isolation.
-- `GET /api/jobs/review` and `GET /api/jobs` do not explicitly require `role_profile_id`.
-- `GET /api/batches/{batch_id}/summary` includes skipped exact duplicates even though skipped rows are not reconstructable without a persisted summary or in-memory current-run summary.
-- Shared demo loader is required, but no clear file such as `backend/app/services/demo_loader.py` is listed.
-- Demo data scorable-count semantics are ambiguous: “unrelated jobs” should show low scores, but expected output says only 8 scorable jobs.
+- Implementation step 9 says "add only missing Master Plan fields", which contradicts Plan_1's schema ownership and should not happen silently in Phase 3.
+- Manual correction/vector recomputation support is larger than needed for the MVP and may encourage edit APIs/UI.
+- `user_warning` from Phase 2 is not explicitly consumed in storage result/API handoff.
+- The semantic similarity section allows local cosine or Qdrant-equivalent scoring; this is acceptable, but the production contract should be stated as one primary path.
 
 Missing details:
 
-- Active/selected role profile propagation in frontend dashboard/review pages.
-- Exact summary behavior after process restart.
-- Allowed status transitions should be explicit enough to avoid `saved -> ignored` surprises unless intentionally allowed.
+- Explicit IntegrityError handling for the partial unique `raw_content_hash` index during concurrent or repeated inserts.
+- Explicit mapping of Phase 2 `user_warning` to storage/API warning.
 
 Conflicts with `Master_Plan.md`:
 
-- Query conflict: Master dashboard/review SQL filters by `role_profile_id`; Plan 4 query rules omit it.
-- Summary conflict: Master avoids extra batch/analytics tables, but Plan 4’s GET summary implies counters that cannot all be reconstructed.
+- None blocking if schema edits are removed.
 
 Conflicts with other phase plans:
 
-- Potential overlap if `job_pipeline_service.py` duplicates Phase 3 storage/scoring/dedup/Qdrant sync.
-- Batch summary contract does not fully match Plan 3.
+- Conflicts with Plan_1 by allowing Phase 3 to add missing schema fields.
 
 Specific fixes required:
 
-- Add required `role_profile_id` filters and request/query DTOs.
-- Add shared demo loader file and contract.
-- Resolve batch summary reconstructability.
+- Remove schema-edit permission from Phase 3.
+- Add warning propagation from Phase 2 state to `StoredJobResult.warning`.
+- Mark manual content correction/vector recomputation as non-MVP optional internal support, or delete it.
+- Choose one production embedding similarity contract and keep Qdrant usage clearly separate from deduplication.
+
+### 3.4 Plan_4.md Review
+
+| Criterion | Score / 10 | Notes |
+|---|---:|---|
+| Alignment with `Master_Plan.md` | 8 | Mostly aligned, but demo seed counts conflict with Master example output. |
+| Correct phase scope | 8 | Correct owner of API/UI/demo, but scope is large. |
+| Completeness | 9 | Covers endpoints, DTOs, UI, seed, demo, metrics, tests. |
+| Technical specificity | 9 | Very detailed. |
+| Dependency handoff quality | 8 | Good reuse language; warning and batch metrics need tightening. |
+| Consistency with other plans | 7 | Internal application-policy contradiction and demo reset issue. |
+| Implementation readiness | 8 | Ready after targeted fixes. |
+| MVP simplicity | 7 | UI/test/demo scope is large for solo implementation. |
+| Risk control and error handling | 8 | Good warnings and partial success handling; reset scoping risk remains. |
+| Testability | 9 | Strong backend/frontend/e2e test list. |
+
+Overall score: 81 / 100
+
+Strengths:
+
+- Correctly owns seed demo, mock data, FastAPI endpoints, Tavily integration, React UI, score breakdown, metrics, manual inputs, and demo readiness.
+- Strong rule that Phase 4 calls Phase 2/3 services instead of reimplementing them.
+- Good DTO coverage and UI visibility for duplicate and Qdrant sync warnings.
+- Correctly keeps demo jobs as `pending_review`.
+
+Problems:
+
+- `applications` policy is contradictory: first says writes may be deferred, then says they MUST be implemented.
+- Demo seed summary says 10 scorable jobs and 10 Qdrant vectors, while `Master_Plan.md` example output says 8 scorable jobs, 2 need-review/social jobs, 2 unrelated jobs, and 8 vectors.
+- Reset scoping says use `source_platform='mock'` or `is_demo`; `is_demo` is not in the Phase 1 schema.
+- Role profile reset scoping is underspecified because `role_profiles` has no `source_platform` or `is_demo`.
+- Metrics UI depends on `batch_id`, but the plan does not clearly define active/latest batch selection after reload or across multiple batches.
+
+Missing details:
+
+- Exact safe demo reset strategy for role profiles without adding schema.
+- Exact warning propagation source from Phase 2/3 to API response.
+- Whether `/api/jobs/search` is synchronous request-scoped processing or a true background job. Avoid wording that invites Celery/Redis.
+
+Conflicts with `Master_Plan.md`:
+
+- Demo seed expected output conflicts with the Master Plan example unless the Master Plan is revised.
+
+Conflicts with other phase plans:
+
+- Application-row policy conflicts internally and with Plan_1's unresolved handoff.
+- `is_demo` reset option conflicts with Phase 1 schema.
+
+Specific fixes required:
+
+- Resolve application writes as one rule.
+- Align demo seed counts with Master Plan or revise Master Plan first.
+- Remove `is_demo` unless Phase 1 schema is revised.
+- Add active/latest batch behavior for the MetricsPanel.
 
 ## 4. Cross-Phase Consistency Review
 
-### Phase 1 → Phase 2
+### Phase 1 -> Phase 2
 
-| Handoff Item | Status | Notes |
-|---|---|---|
-| Config system | Pass | Root `.env` and typed settings provided. |
-| Database session | Pass | `session.py` provided, though Phase 2 should not persist jobs. |
-| Project structure | Pass | `agents`, `services`, `core`, `db` folders exist. |
-| Dependency setup | Pass | Includes LangChain, LangGraph, httpx, trafilatura. |
-| `.env` | Pass | Single root `.env`. |
-| Local database path | Pass | `backend/data/job_matching.db`. |
+Phase 1 provides what Phase 2 needs:
 
-Assessment: Good handoff.
+- config system: yes
+- database session: yes
+- project structure: yes
+- dependency setup: yes, including extraction/LangGraph dependencies
+- `.env`: yes, single root `.env`
+- local database path: yes, `backend/data/job_matching.db`
 
-### Phase 2 → Phase 3
+Gap: none blocking. Plan_2 may add test dependencies; that is acceptable.
 
-| Handoff Item | Status | Notes |
-|---|---|---|
-| Extracted job object | Pass | `JobPostExtract` / `extracted_job`. |
-| `jd_status` | Pass | Explicit. |
-| `should_score_similarity` | Pass | Explicit. |
-| Source metadata | Pass | `source_url`, `source_platform`, `input_source`. |
-| `raw_content_hash` | Pass | Strong contract. |
-| Extraction status | Pass | `success/retried/failed`. |
-| Error reason | Pass | Explicit. |
-| Token/cost fields | Mostly pass | Present, but fallback defaults should be explicit. |
-| LangGraph state preservation | Pass | Strong required-key tests. |
+### Phase 2 -> Phase 3
 
-Assessment: Good, with minor persistence-ownership wording fix.
+Phase 2 provides most Phase 3 inputs:
 
-### Phase 3 → Phase 4
+- extracted job object: yes, but serialization should be clarified
+- `jd_status`: yes
+- `should_score_similarity`: yes
+- source metadata: yes
+- `raw_content_hash`: yes
+- extraction status: yes
+- error reason: yes
+- token/cost fields: yes
+- LangGraph state preservation: yes
 
-| Handoff Item | Status | Notes |
-|---|---|---|
-| Stored jobs | Pass | `job_storage_service.py`. |
-| Score fields | Pass | Stored score breakdown fields. |
-| Status fields | Pass | `pending_review/saved/...`. |
-| Qdrant sync behavior | Pass | Service functions. |
-| Approve/reject behavior | Pass | Phase 3 services, Phase 4 routes. |
-| Batch/job summary data | Needs fix | Missing full shared contract for skipped duplicates and metrics. |
-| Dashboard-ready query behavior | Needs fix | Plan 4 must include `role_profile_id` filter. |
+Gaps:
 
-Assessment: Mostly good, but Phase 4 needs query and summary contract edits.
+- Add `user_warning` to the formal handoff.
+- Clarify that `extracted_job` is a Pydantic object or a `model_dump()` dict.
+- Correct ownership wording so Phase 3 persists fallback records and Phase 4 only invokes that service.
+
+### Phase 3 -> Phase 4
+
+Phase 3 provides most Phase 4 needs:
+
+- stored jobs: yes
+- score fields: yes
+- status fields: yes
+- Qdrant sync behavior: yes
+- approve/reject behavior: yes
+- batch/job summary data: mostly yes
+- dashboard-ready query behavior: yes through Master and Plan_4
+
+Gaps:
+
+- `StoredJobResult.warning` should explicitly carry Phase 2 `user_warning`.
+- Batch summary durability is mostly handled, but Plan_4 must define how the frontend selects the relevant batch.
+- Application-row policy must be resolved before routes are implemented.
 
 ## 5. Duplicated Work Review
 
 | Duplicate Area | Found In | Problem | Recommended Owner Phase |
 |---|---|---|---|
-| Config updates | Plans 1, 2, 3, 4 | Later phases may mutate config casually. | Phase 1 owns base config; later phases add only missing typed fields. |
-| DB schema/model fixes | Plans 1 and 3 | Phase 3 should not silently repair Phase 1 schema. | Phase 1 owns schema; Phase 3 verifies. |
-| LangGraph files | Plans 2 and 3 | Phase 3 extends graph; could overwrite Phase 2 extraction graph. | Phase 2 owns extraction graph; Phase 3 appends processing nodes. |
-| Raw content hash | Plans 2 and 3 | Recompute rules could diverge. | Phase 2 owns hash generation; Phase 3 consumes/recomputes only reliable missing hash. |
-| Storage/pipeline orchestration | Plans 3 and 4 | Phase 4 could duplicate scoring/dedup/storage logic. | Phase 3 owns storage/scoring; Phase 4 owns route orchestration. |
-| Qdrant sync | Plans 3 and 4 | Routes might implement sync directly. | Phase 3 owns sync services; Phase 4 calls them. |
-| Batch summary counters | Plans 3 and 4 | Counter reconstructability is unclear. | Phase 3 owns immediate counters; Phase 4 exposes/aggregates. |
-| Demo seed and mock-load | Plan 4 script/API | Duplicate seed logic possible. | Phase 4 owns one shared demo loader used by both. |
+| Database schema changes | Plan_1, Plan_3 | Plan_3 says it can add missing Master Plan fields, conflicting with Plan_1 schema ownership. | Phase 1 only, or explicit migration task. |
+| `raw_content_hash` generation | Plan_2, Plan_3 | Phase 3 may recompute only when reliable text exists; avoid duplicate hash policy. | Phase 2 generates; Phase 3 consumes or narrowly repairs missing reliable hashes. |
+| Warning text for failed URL extraction | Plan_2, Plan_4 | Both contain the same warning; without a handoff, Phase 4 may hardcode a divergent copy. | Phase 2 owns stable warning; Phase 4 displays it. |
+| Batch summary counters | Plan_3, Plan_4 | Shared responsibility is fine, but DTO/source of truth must stay consistent. | Phase 3 prepares immediate counters; Phase 4 exposes/reconstructs. |
+| Applications status policy | Plan_1, Plan_4 | Plan_1 defers the policy; Plan_4 contradicts itself. | Phase 4 route/service integration. |
+| Qdrant sync functions vs routes | Plan_3, Plan_4 | Not a bad duplicate if boundaries hold; route handlers must not reimplement sync. | Phase 3 service functions; Phase 4 routes call them. |
+| Manual input flow | Plan_2, Plan_4 | Acceptable split, but keep service/UI boundary clear. | Phase 2 extraction service; Phase 4 API/UI. |
 
 ## 6. Missing Work Review
 
+Most mandatory Master Plan items are present: SQLite indexes and constraints, partial unique index, `raw_content_hash`, `dedup_key`, `duplicate_of_job_id`, Qdrant payload indexes, UUID point ID rule, reject-vector-delete, approve-payload-update, JD status rules, `contact_for_jd`, `needs_manual_input`, metrics fields, seed data, review query, saved dashboard query, and frontend failed-URL warning.
+
+The remaining items are missing or underspecified:
+
 | Missing Item | Required By Master Plan Section | Impact | Recommended Phase |
 |---|---|---|---|
-| Explicit `role_profile_id` filter for review/dashboard API queries | Section 25 | Cross-profile job leakage and wrong dashboard results. | Phase 4 |
-| Request/query DTOs for `GET /api/jobs/review` and `GET /api/jobs` with `role_profile_id` | Section 25 / 27 | Frontend cannot reliably select active profile. | Phase 4 |
-| Durable semantics for `skipped_exact_duplicate` in `GET /api/batches/{batch_id}/summary` | Sections 16, 17, 27 | API may report fake or unreconstructable counts. | Phase 4 with Phase 3 handoff |
-| Shared demo loader file path/contract | Section 6 / 35 | Seed script and mock-load may diverge. | Phase 4 |
-| Explicit fallback token/cost/time defaults | Sections 5.1, 16, 19 | Metrics may be null/inconsistent after failed extraction. | Phase 2 |
-| Clear demo category `jd_status` / scorable mapping | Section 6 | Demo may fail to show both low-score and non-scorable examples. | Phase 4 |
-| Status transition policy for manual updates | Section 20 | User actions could bypass intended HITL flow. | Phase 4 |
-
-Items checked and present:
-
-| Required Item | Status |
-|---|---|
-| SQLite indexes and constraints | Present in Plan 1 |
-| Partial unique indexes | Present in Plan 1 |
-| `raw_content_hash` | Present in Plans 1/2/3 |
-| `dedup_key` | Present in Plans 1/3 |
-| `duplicate_of_job_id` | Present in Plans 1/3/4 |
-| Qdrant payload indexes | Present in Plan 3 |
-| Qdrant UUID point ID rule | Present in Plans 1/3 |
-| Reject deletes vector | Present in Plans 3/4 |
-| Approve updates Qdrant payload | Present in Plans 3/4 |
-| JD status rules | Present in Plans 2/3 |
-| `contact_for_jd` handling | Present in Plans 2/3/4 |
-| `needs_manual_input` handling | Present in Plans 2/4 |
-| Metrics fields | Present across Plans 1/2/4 |
-| Seed demo data | Present in Plan 4 |
-| Frontend warning for failed URL extraction | Present in Plan 4 |
+| Formal `user_warning` propagation from Phase 2 state through Phase 3 storage result to Phase 4 API response | Sections 8, 15, 27 | Frontend may lose or reinvent the required failed-URL warning. | Phase 2/3/4 handoff |
+| Safe demo role profile reset strategy without adding `is_demo` | Sections 6, 35 | Reset may either leave duplicate demo profiles or delete non-demo data. | Phase 4 |
+| Active/latest `batch_id` selection for metrics UI | Sections 16, 27 | MetricsPanel may not know which batch summary to request after reload. | Phase 4 |
+| Single resolved application-row write policy | Sections 24, 37 | Manual status tracking may be inconsistent across API and UI. | Phase 4 |
+| Reconciliation of demo scorable/vector counts | Section 6 | Seed script output may not match Master Plan demo expectations. | Phase 4, or Master Plan revision |
+| Exact batch summary SQL aggregation rules | Sections 16, 25, 27 | Metrics can drift between immediate response and reconstructed API summary. | Phase 4 |
 
 ## 7. Conflict Review
 
 | Conflict | Location | Why It Is a Problem | Fix |
 |---|---|---|---|
-| Review/dashboard queries omit `role_profile_id` | Plan 4, API query rules | Violates Master SQL and can leak jobs across profiles. | Add `role_profile_id = ?` and require query param. |
-| Phase 3 may patch models if Phase 1 missed fields | Plan 3 target structure/steps | Blurs schema ownership and hides Phase 1 failures. | Change to verify/fail; fix Phase 1 schema before Phase 3. |
-| Persistence wording says Phase 3/4 decide details | Plan 2 handoff | Could allow Phase 4 to implement persistence logic. | State Phase 3 owns persistence; Phase 4 calls service. |
-| Batch summary includes unreconstructable skipped duplicates | Plan 4 summary endpoint | No `search_runs` table; skipped rows are not stored. | Define immediate response vs persisted summary behavior. |
-| Local cosine vs Qdrant similarity wording | Plan 3 scoring | Could make Qdrant appear optional for vector behavior. | Clarify scoring math and Qdrant storage/search responsibilities. |
-| Demo scorable count ambiguity | Plan 4 demo data/output | Unrelated jobs cannot both be “low scored” and excluded from scorable count unless defined. | Add category table with expected `jd_status` and `should_score_similarity`. |
-| Manual status values include `ignored` broadly | Plan 4 StatusSelect/API rules | May bypass intended `pending_review -> ignored` path. | Add allowed transition table or explicitly allow with Qdrant delete. |
-| Shared loader required but no file listed | Plan 4 seed/mock-load | Script/API seed paths may diverge. | Add `backend/app/services/demo_loader.py`. |
+| Phase 3 may add schema fields | Plan_3 Implementation Step 9 vs Plan_1 Handoff/Acceptance | Allows schema drift after Phase 1. | Replace with fail-fast verification and explicit Phase 1 revision/migration. |
+| Application writes may be deferred and also MUST be implemented | Plan_4 Error Handling/Application policy | Internal contradiction blocks implementation agents. | Delete one rule; recommended: keep MUST write application rows for applied/interview/rejected/offer. |
+| Demo seed says 10 scorable jobs, Master example says 8 | Plan_4 Seed Demo vs Master Section 6 | Seed output and Qdrant vector count will not match source of truth. | Align Plan_4 with Master, or revise Master first. |
+| Reset can use `is_demo` but schema lacks it | Plan_4 Seed Demo | Encourages unplanned schema change or unsafe reset. | Remove `is_demo`; reset by `source_platform='mock'` jobs and safe demo profile matching. |
+| Phase 2 says Phase 3/4 must persist fallback records | Plan_2 Acceptance vs Plan_3/4 ownership | Blurs persistence ownership. | Say Phase 3 persists; Phase 4 invokes the Phase 3 pipeline. |
+| Role profile reset by `source_platform` is impossible | Plan_4 Seed Demo | `role_profiles` has no `source_platform`. | Define deterministic demo profile deletion only when no non-mock jobs reference it, or do not delete profile. |
+| "Start background public web search" wording vs no Celery/Redis | Master endpoint wording and Plan_4 search | Could trigger queue infrastructure drift. | Clarify request-scoped async processing for MVP; no persistent queue. |
+| Manual correction/vector recomputation support vs no edit UI/routes | Plan_3 Qdrant Vector Update Rules | Service capability can leak into extra UI/API work. | Mark as non-MVP internal only or remove. |
 
 ## 8. Architecture Drift Review
 
 | Drift Risk | Severity | Why It Matters | Prevention |
 |---|---|---|---|
-| Phase 4 reimplements Phase 3 scoring/storage/dedup/Qdrant sync | High | Duplicates core architecture and creates inconsistent behavior. | Route handlers must call Phase 3 public services only. |
-| Missing `role_profile_id` filters | High | Breaks query isolation and demo correctness. | Require `role_profile_id` for review/dashboard endpoints. |
-| Adding batch summary table to solve skipped duplicates | Medium | Master says no `search_runs` or deep analytics tables. | Use immediate response/in-memory current-run summary or nullable/reconstructable fields. |
-| Phase 3 silently mutates Phase 1 schema | Medium | Creates phase ownership drift. | Treat schema mismatch as Phase 1 revision. |
-| Deterministic demo vectors leaking into normal flows | Medium | Demo-only shortcut could corrupt real scoring. | Explicit `--offline-demo-vectors` only; tests prevent normal use. |
-| Qdrant/vector deduplication reintroduced | High | Master explicitly removed vector dedup. | Keep dedup tests proving Qdrant is not called during dedup. |
-| Playwright/custom parser added for URL extraction | Medium | Increases crawler complexity. | Keep `httpx` + `trafilatura`; manual paste fallback. |
-| Frontend `.env` introduced | Medium | Violates single root `.env` and risks secret exposure. | Use hardcoded safe `src/config.ts` or generated safe public config only. |
-| Auth/multi-user added early | High | Overcomplicates solo MVP. | Keep single local profile workflow. |
-| Jina Reranker/GraphRAG/Neo4j added | High | Expands beyond MVP architecture. | Keep explicit banned dependency checks. |
-| PostgreSQL assumptions reappear | Critical | Directly violates stack decision. | Keep dependency and SQL syntax checks. |
-| Auto-apply/cover letters added | High | Risky and out of scope. | Keep UI/API scope restricted to review/status tracking. |
+| Schema mutation after Phase 1 | High | Breaks phase ownership and can create hidden migration debt. | Phase 3 verifies only; schema fixes require explicit revision/migration. |
+| Demo reset using absent `is_demo` | High | Can cause schema drift or accidental data deletion. | Remove `is_demo`; use existing fields and safe deletion rules. |
+| Application policy contradiction | Medium | Status tracking may be partly implemented. | Keep one explicit rule and tests. |
+| Deterministic mock vectors leaking into normal flows | Medium | Demo-only shortcuts could corrupt scoring behavior. | Keep explicit demo-only flag and tests that normal flows cannot use it. |
+| Background search wording leading to Celery/Redis | Medium | Adds out-of-scope infrastructure. | State in-process/request-scoped MVP behavior. |
+| Manual correction/vector recomputation growing into edit UI | Medium | Adds scope not required for portfolio MVP. | Remove or mark optional internal support only. |
+| Batch metrics leading to `search_runs` table | Medium | Master explicitly avoids new batch summary tables. | Reconstruct from `job_posts`; skipped duplicates are immediate-only/null later. |
+| Frontend `.env` drift | Medium | Violates single root `.env` and risks secret exposure. | Keep `src/config.ts`; add tests/grep for frontend `.env*`. |
+| Qdrant/vector dedup returning | Low | Plans strongly reject it, but it is a tempting shortcut. | Keep tests proving dedup uses only hash and key. |
+| Overbuilt React UI | Low | Solo MVP may slow down. | Keep UI operational and compact; avoid nonessential polish. |
 
 ## 9. Specific Rewrite Instructions
 
 ### Plan_1.md Fixes
 
 ```text
-1. Add to Section 14 Acceptance Criteria:
-   "Later phases must treat this schema as the canonical MVP schema. If required Master Plan columns, constraints, or indexes are missing, the implementation must revise/fix Phase 1 output rather than silently redesign schema in Phase 3."
-
-2. Add to Section 16 Handoff Notes:
-   "Phase 3 may verify models and indexes, but should not introduce new schema decisions unless this Phase 1 plan is explicitly revised."
-
-3. Keep the later-phase dependencies note, but add:
-   "Implementation agents must not infer ownership of extraction, LangGraph, Qdrant vector, search, or API code from dependency presence."
+1. Replace the final handoff bullet "Phase 4 must define whether manual application status updates only update job_posts.status or also create/update rows in applications" with the final policy selected in Plan_4.
+2. Add: "If Plan_4 keeps application-row writes, Phase 4 must update job_posts.status as source of truth and create/update applications rows for applied, interview, rejected, and offer transitions."
+3. Add: "Phase 1 creates .env.example only. A local root .env may be copied manually and must remain gitignored."
+4. Keep the existing rule that Plan_3 may verify models.py/session.py but must not alter schema without an explicit migration/revision task.
 ```
 
 ### Plan_2.md Fixes
 
 ```text
-1. Replace:
-   "Phase 3/4 decide the persistence implementation details"
-   with:
-   "Phase 3 owns final SQLite persistence, scoring, deduplication, and Qdrant sync services. Phase 4 only invokes those services through API orchestration."
-
-2. Add to the fallback requirements:
-   "Fallback states must set input_tokens=0, output_tokens=0, estimated_cost_usd=0.0 when no LLM call occurred, and must set extraction_time_ms when measurable."
-
-3. Add a test case:
-   "Phase 2 graph execution does not insert or update job_posts rows."
-
-4. Add an optional terminal field or mapping note:
-   "The stable manual-input warning text must be available to Phase 4 either through error_reason or a user_warning field; Phase 4 must not invent a different warning."
+1. Add user_warning to the Phase 3 handoff field list.
+2. Add a handoff rule: Phase 3 must map JobAgentState.user_warning to StoredJobResult.warning when present.
+3. Replace "Phase 3/4 must persist controlled unclear fallback records" with "Phase 3 persists controlled unclear fallback records; Phase 4 invokes Phase 3 through the pipeline."
+4. Add a serialization rule: terminal success states hand off extracted_job as JobPostExtract.model_dump() unless Phase 3 explicitly accepts a JobPostExtract object.
+5. Add a test assertion that needs_manual_input terminal states include the exact stable user_warning text.
 ```
 
 ### Plan_3.md Fixes
 
 ```text
-1. Replace:
-   "Only adjust models.py or session.py if Phase 1 implementation missed required Master Plan columns..."
-   with:
-   "Verify models.py/session.py against Master Plan. If required schema is missing, fail Phase 3 verification and send the fix back to Phase 1 unless an explicit migration task is approved."
-
-2. Add a shared BatchSummaryCounters contract with:
-   inserted, scorable, non_scorable, skipped_exact_duplicate, duplicate_ignored,
-   qdrant_upserted, qdrant_failed, failed_extractions,
-   total_input_tokens, total_output_tokens, total_tokens,
-   estimated_cost_usd, average_extraction_time_ms.
-
-3. Clarify semantic similarity:
-   "Production scoring must produce the normalized embedding_similarity used by the Master formula and must still upsert scorable jobs to Qdrant. Unit tests may use local cosine with fake embeddings. Qdrant/vector search must not be used for deduplication."
-
-4. Mark manual scorable/non-scorable transitions as service support only:
-   "Do not build job-edit UI or routes in Phase 3; expose only service behavior if later phases call it."
-
-5. Add a test:
-   "Batch summary counters include failed extraction and token/cost aggregation from persisted job fields."
+1. Replace Implementation Step 9 with: "Verify models.py already contains required Master Plan fields and indexes. If anything is missing, fail Phase 3 verification and create an explicit Phase 1 revision or migration task. Do not alter schema in Phase 3."
+2. Add user_warning to consumed Phase 2 state fields and StoredJobResult.warning mapping.
+3. Add IntegrityError handling for raw_content_hash unique-index collisions: rollback, fetch existing job, return skipped_exact_duplicate, and do not upsert Qdrant.
+4. Clarify the production embedding_similarity path: use local cosine over role/job embeddings for pair scoring, while Qdrant stores/searches vectors; or explicitly use Qdrant score. Do not leave both as equally primary.
+5. Delete or mark manual job-content correction and scorable/non-scorable transitions as optional internal non-MVP service support with no Phase 3/4 routes or UI.
+6. Add a storage test that parse_status=needs_manual_input carries warning/error fields into the stored/API handoff contract.
 ```
 
 ### Plan_4.md Fixes
 
 ```text
-1. Change API query rules for review queue to:
-   "WHERE role_profile_id = :role_profile_id AND status = 'pending_review' AND duplicate_of_job_id IS NULL
-    ORDER BY final_score IS NULL, final_score DESC, discovered_at DESC."
-
-2. Change API query rules for dashboard to:
-   "WHERE role_profile_id = :role_profile_id AND status = 'saved' AND duplicate_of_job_id IS NULL
-    ORDER BY final_score IS NULL, final_score DESC."
-
-3. Add request/query requirement:
-   "GET /api/jobs/review and GET /api/jobs require role_profile_id as a query parameter."
-   Example: GET /api/jobs/review?role_profile_id=<uuid>.
-
-4. Add frontend requirement:
-   "DashboardPage and ReviewQueuePage must require/select an active role profile and pass role_profile_id to API calls."
-
-5. Add:
-   "backend/app/services/demo_loader.py"
-   to the Phase 4-owned file list, and state that both seed_demo.py and /api/jobs/mock-load call it.
-
-6. Replace BatchSummaryResponse skipped duplicate semantics with:
-   "skipped_exact_duplicate is authoritative in immediate pipeline responses. GET /api/batches/{batch_id}/summary may return reconstructed persisted metrics and must document skipped_exact_duplicate as unavailable/null unless preserved in current process memory. Do not add a batch summary table unless Master_Plan changes."
-
-7. Add demo data table with columns:
-   category, count, jd_status, should_score_similarity, expected score behavior.
-   Resolve whether the 2 unrelated jobs are scored low or non-scorable. Keep the expected output consistent with that choice.
-
-8. Add status transition rules:
-   "pending_review may transition to saved or ignored. saved may transition to applied/interview/rejected/offer. If ignored is allowed from saved/tracked states, it must call Phase 3 sync and delete/update Qdrant according to policy."
-
-9. Add backend tests:
-   "Review queue and dashboard endpoints filter by role_profile_id."
-   "GET batch summary does not invent skipped_exact_duplicate after restart."
+1. Delete the lines saying application-row writes may be deferred if the later MUST rule remains.
+2. Keep one policy: /api/jobs/{id}/status updates job_posts.status and MUST create/update applications rows for applied, interview, rejected, and offer.
+3. Replace the seed expected output with the Master Plan output: Inserted jobs 12, Scorable jobs 8, Need-review/social jobs 2, Unrelated jobs 2, Local Qdrant vectors upserted 8. If unrelated jobs should be scorable low-score examples, revise Master_Plan.md first.
+4. Delete "or is_demo flag" from demo reset scoping unless Phase 1 schema is revised.
+5. Add safe reset behavior: delete job_posts where source_platform='mock'; delete Qdrant points filtered by source_platform='mock'; delete the demo role profile only if it matches the deterministic demo profile and has no remaining non-mock jobs.
+6. Add active batch behavior: after parse/search/mock-load, store the returned batch_id in frontend state/localStorage; MetricsPanel uses that batch_id, with a backend latest-batch-for-role fallback if implemented.
+7. Add a rule that API warnings must come from Phase 2/3 user_warning/warning fields when present.
+8. Clarify /api/jobs/search is request-scoped async MVP processing, not a persistent background queue.
+9. Add verification that no frontend .env, frontend/.env.example, or frontend/job-agent-ui/.env.example exists.
 ```
 
 ## 10. Recommended Final Phase Boundary
 
 | Phase | Owns | Must Not Own |
 | ----- | ---- | ------------ |
-| Phase 1 Foundation | Project structure, venv setup, root `.env`, Qdrant Docker Compose, SQLAlchemy SQLite setup, DB file, core tables, indexes, constraints, backend config foundation | Extraction, LangGraph behavior, scoring, dedup behavior, Qdrant vectors, APIs, React UI |
-| Phase 2 AI Extraction & LangGraph | URL/manual text extraction, Pydantic extraction schema, structured output, validation, retry once, `JobAgentState`, extraction graph, `mark_unclear`, extraction observability | Scoring, dedup policy, SQLite final persistence, Qdrant upsert/search/delete, FastAPI routes, React UI, demo seeding |
-| Phase 3 Scoring & Storage Sync | Skill normalization, role/job embedding text, scoring formula, JD multiplier, dedup policy, SQLite persistence service, Qdrant collection/payload/upsert/delete, SQLite-Qdrant sync services, batch counter contract | FastAPI routes, React UI, auth, auto-apply, cover letters, GraphRAG, Neo4j, Jina Reranker, Tavily endpoint UI |
-| Phase 4 Integration & UI | `seed_demo.py`, mock data, shared demo loader, FastAPI routes, Tavily endpoint orchestration, job pipeline orchestration, React UI, dashboard, review queue, role profiles, demo mode, warnings, metrics, E2E demo | Changing extraction architecture, scoring formula, dedup policy, Qdrant sync rules, schema decisions, second `.env`, auth, auto-apply, future AI features |
+| Phase 1 | Project structure, backend config, root `.env.example`, Qdrant Docker Compose, SQLite async setup, core tables, indexes, constraints, schema verification | Extraction, LangGraph behavior, scoring, dedup behavior, Qdrant vectors, APIs, React UI, seed data |
+| Phase 2 | URL/manual text preparation, `httpx` + `trafilatura`, `JobPostExtract`, structured output, retry/repair, `JobAgentState`, extraction graph, `mark_unclear`, observability, warning state | SQLite final persistence, scoring, dedup, Qdrant sync, FastAPI routes, React UI, seed/demo loading |
+| Phase 3 | Skill normalization, role/job embedding text, embeddings, scoring formula, JD multiplier, dedup policy, SQLite persistence services, Qdrant collection/payload/upsert/delete/update, status sync services, batch counters | React UI, final dashboard endpoints, route handlers, authentication, auto-apply, cover letters, GraphRAG, Neo4j, Jina, Celery/Redis, schema redesign |
+| Phase 4 | `seed_demo.py`, mock data, shared demo loader, Tavily integration, FastAPI routes, pipeline orchestration, React/Vite UI, dashboard, review queue, role profiles, demo mode, metrics, manual URL/text flows, e2e demo | Changing extraction architecture, changing scoring/dedup/Qdrant policy, changing schema without approved migration, adding auth, adding extra env files, adding future-phase AI features |
 
 ## 11. Final Verdict
 
-Approved with minor edits.
+Needs revision before implementation.
 
-The plans are strong and aligned with `Master_Plan.md`. They are specific enough for implementation agents, and the phase boundaries are mostly correct. The required edits are targeted: add role-profile query isolation, tighten persistence ownership, fix summary-counter semantics, prevent schema ownership drift, and clarify demo scorable counts.
-
-Implementation should start after those edits are applied.
+The plans are strong and practical, but implementation should not start until the schema ownership conflict, Plan_4 application-policy contradiction, demo seed count mismatch, demo reset scoping, and warning handoff are fixed. These are targeted edits, not a major rewrite.
 
 ## 12. Final Score Summary
 
 | Plan      | Score / 100 | Verdict |
 | --------- | ----------: | ------- |
-| Plan_1.md | 96 | Approved with minor edits |
-| Plan_2.md | 92 | Approved with minor edits |
-| Plan_3.md | 88 | Approved with minor edits |
-| Plan_4.md | 85 | Needs targeted edits before implementation |
-| Overall   | 90 | Approved with minor edits |
+| Plan_1.md | 92 | Approved with minor edits |
+| Plan_2.md | 89 | Approved with minor edits |
+| Plan_3.md | 85 | Needs revision |
+| Plan_4.md | 81 | Needs revision |
+| Overall   | 87 | Needs revision before implementation |

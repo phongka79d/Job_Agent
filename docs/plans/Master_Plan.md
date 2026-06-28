@@ -55,27 +55,7 @@ Infrastructure:
 
 ---
 
-## 3. Explicitly Removed From MVP
-
-| Removed Item | Reason |
-|---|---|
-| GraphRAG | Not needed for job matching MVP |
-| Neo4j | No graph database needed |
-| External database service | Replaced by local SQLite to reduce MVP infrastructure overhead |
-| Persisted `matching_text` column | Replaced by dynamic query text generated in `scoring_service.py` |
-| Custom HTML parser layer | Use trafilatura as the MVP HTML-to-text extractor to reduce maintenance |
-| .NET API | FastAPI-only stack is faster for solo development |
-| Jina Reranker | Stretch goal after MVP works |
-| Draft Assistant | Out of MVP scope |
-| Auto Apply | Risky and unnecessary |
-| Direct LinkedIn/Facebook crawler | Too likely to hit captcha/login wall/403 |
-| Advanced SSRF engine | Production note only; not worth implementing for demo MVP |
-| Vector-based deduplication | Too much latency and complexity for MVP |
-| Deep cost aggregation jobs | Frontend can sum stored token/cost fields |
-
----
-
-## 4. MVP Scope
+## 3. MVP Scope
 
 ### In Scope
 
@@ -103,7 +83,7 @@ Infrastructure:
 
 ---
 
-## 5. Architecture
+## 4. Architecture
 
 ```mermaid
 flowchart TD
@@ -156,7 +136,7 @@ User approval only changes status from pending_review to saved.
 
 ---
 
-## 5.1. LangGraph State Tracking
+## 4.1. LangGraph State Tracking
 
 LangGraph nodes should pass a shared state object through the entire workflow. The state must carry the core foreign keys and source metadata from the first node to the fallback node.
 
@@ -199,6 +179,7 @@ class JobAgentState(TypedDict, total=False):
     # Error / observability state
     extraction_status: Literal["success", "retried", "failed"] | None
     error_reason: str | None
+    user_warning: str | None
     input_tokens: int | None
     output_tokens: int | None
     estimated_cost_usd: float | None
@@ -240,7 +221,7 @@ If `batch_id`, `role_profile_id`, or `input_source` disappears mid-graph, the sy
 
 ---
 
-## 6. Demo Mode / Mock Seeding
+## 5. Demo Mode / Mock Seeding
 
 A portfolio demo must not depend entirely on internet latency, Tavily availability, JavaScript-heavy pages, or manual copy-paste.
 
@@ -295,15 +276,14 @@ python scripts/seed_demo.py --reset
 Seed completed.
 Role profile: AI Engineer Intern
 Inserted jobs: 12
-Scorable jobs: 8
+Scorable jobs: 10
 Need-review/social jobs: 2
-Unrelated jobs: 2
-Local Qdrant vectors upserted: 8
+Local Qdrant vectors upserted: 10
 ```
 
 ---
 
-## 7. Input Sources
+## 6. Input Sources
 
 | Input Type | In MVP? | Notes |
 |---|---:|---|
@@ -315,7 +295,7 @@ Local Qdrant vectors upserted: 8
 
 ---
 
-## 8. Handling JavaScript Pages and Cookie Banners
+## 7. Handling JavaScript Pages and Cookie Banners
 
 Tavily or URL parsing may return pages that are:
 
@@ -354,7 +334,7 @@ Please paste the job description text manually.
 
 ---
 
-## 9. JD Status Rules
+## 8. JD Status Rules
 
 | `jd_status` | Description | Score? | Action |
 |---|---|---:|---|
@@ -366,7 +346,7 @@ Please paste the job description text manually.
 
 ---
 
-## 10. Scoring Formula
+## 9. Scoring Formula
 
 MVP excludes Jina Reranker, so scoring uses clean deterministic components.
 
@@ -389,7 +369,7 @@ All score components must be normalized to `[0, 1]`.
 
 ---
 
-## 11. JD Confidence Multiplier
+## 10. JD Confidence Multiplier
 
 | JD Status | Multiplier |
 |---|---:|
@@ -410,7 +390,7 @@ final_score = 0.68
 
 ---
 
-## 12. Simplified Location and Level Scoring
+## 11. Simplified Location and Level Scoring
 
 To keep `scoring_service.py` simple, use three-tier scoring instead of complex tables.
 
@@ -448,7 +428,7 @@ level_match_score = 0.0
 
 ---
 
-## 13. Skill Overlap Normalization
+## 12. Skill Overlap Normalization
 
 `skill_overlap_score` must be normalized to `[0, 1]`.
 
@@ -491,7 +471,7 @@ def calculate_skill_overlap_score(user_skills: set[str], job_required_skills: se
 
 ---
 
-## 14. Skill Alias Normalization
+## 13. Skill Alias Normalization
 
 Raw skill strings should be normalized before matching.
 
@@ -528,7 +508,7 @@ def normalize_skill(skill: str) -> str:
 
 ---
 
-## 15. Visual Score Breakdown in UI
+## 14. Visual Score Breakdown in UI
 
 The React dashboard should not only show the final score. Each job card should include a small accordion, tooltip, or modal showing score components.
 
@@ -557,7 +537,7 @@ This makes the scoring logic visible and defensible during interviews.
 
 ---
 
-## 16. Cost & Performance Metrics Panel
+## 15. Cost & Performance Metrics Panel
 
 Since the system already stores token and cost fields, add a small dashboard widget.
 
@@ -577,7 +557,7 @@ Since the system already stores token and cost fields, add a small dashboard wid
 ```text
 Pipeline Metrics
 - Jobs parsed: 12
-- Scorable jobs: 8
+- Scorable jobs: 10
 - Failed extractions: 1
 - Total tokens: 18,420
 - Estimated cost: $0.043
@@ -592,7 +572,7 @@ Use stored per-job fields and simple frontend/SQL aggregation.
 
 ---
 
-## 17. Simplified Deduplication Strategy
+## 16. Simplified Deduplication Strategy
 
 Do not use vector similarity for deduplication in MVP.
 
@@ -691,7 +671,7 @@ This preserves the original user decision and prevents Batch 2 from pushing alre
 
 ---
 
-## 18. Smart Embedding Strategy
+## 17. Smart Embedding Strategy
 
 Do not embed raw HTML or full messy JD text.
 
@@ -762,7 +742,7 @@ Use this generated string as the query text for embedding and Qdrant similarity 
 
 ---
 
-## 19. LLM JSON Fallback
+## 18. LLM JSON Fallback
 
 The extractor must never crash the whole batch because one page is messy.
 
@@ -804,7 +784,7 @@ Fallback output:
 
 ---
 
-## 20. Human-in-the-Loop Rules
+## 19. Human-in-the-Loop Rules
 
 | Action | Automated by Agent? | User Approval Required? |
 |---|---:|---:|
@@ -834,7 +814,7 @@ pending_review
 
 ---
 
-## 21. SQLite Database Design
+## 20. SQLite Database Design
 
 MVP uses one local SQLite database file:
 
@@ -872,7 +852,7 @@ PRAGMA foreign_keys=ON;
 
 ---
 
-## 22. Table: `role_profiles`
+## 21. Table: `role_profiles`
 
 | Field | Type | Description |
 |---|---|---|
@@ -888,7 +868,7 @@ PRAGMA foreign_keys=ON;
 
 ---
 
-## 23. Table: `job_posts`
+## 22. Table: `job_posts`
 
 | Field | Type | Description |
 |---|---|---|
@@ -935,7 +915,7 @@ PRAGMA foreign_keys=ON;
 
 ---
 
-## 24. Table: `applications`
+## 23. Table: `applications`
 
 | Field | Type | Description |
 |---|---|---|
@@ -949,7 +929,7 @@ PRAGMA foreign_keys=ON;
 
 ---
 
-## 25. SQLite Indexes
+## 24. SQLite Indexes
 
 ```sql
 CREATE INDEX idx_job_posts_status
@@ -1004,7 +984,7 @@ LIMIT 50;
 
 ---
 
-## 26. Qdrant Local Collection Schema
+## 25. Qdrant Local Collection Schema
 
 Collection:
 
@@ -1193,7 +1173,7 @@ This keeps vector filtering fast as demo data grows.
 
 ---
 
-## 27. API Endpoints
+## 26. API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1213,7 +1193,7 @@ This keeps vector filtering fast as demo data grows.
 
 ---
 
-## 28. URL Parsing Security Note
+## 27. URL Parsing Security Note
 
 Do not spend MVP time building an enterprise-grade SSRF prevention engine.
 
@@ -1235,7 +1215,7 @@ Block localhost, private IPs, link-local metadata IPs, unsafe redirects, and int
 
 ---
 
-## 29. Input Size and Retry Limits
+## 28. Input Size and Retry Limits
 
 ```text
 MAX_URLS_PER_BATCH=10
@@ -1257,7 +1237,7 @@ If content is too long:
 
 ---
 
-## 30. Pydantic Schema Sketch
+## 29. Pydantic Schema Sketch
 
 ```python
 from typing import Literal
@@ -1288,7 +1268,7 @@ class JobPostExtract(BaseModel):
 
 ---
 
-## 31. Project Directory Structure
+## 30. Project Directory Structure
 
 ```text
 Job_Agent/
@@ -1321,7 +1301,8 @@ Job_Agent/
 │   │   │   ├── scoring_service.py
 │   │   │   ├── qdrant_service.py
 │   │   │   ├── dedup_service.py
-│   │   │   └── cost_service.py
+│   │   │   ├── cost_service.py
+│   │   │   └── demo_loader.py
 │   │   │
 │   │   └── main.py
 │   │
@@ -1343,13 +1324,12 @@ Job_Agent/
 │
 ├── docker-compose.yml
 ├── .env.example
-├── .env
-└── agentic_job_matching_system_mvp_sqlite_qdrant_local.md
+└── .env
 ```
 
 ---
 
-## 32. Environment Setup
+## 31. Environment Setup
 
 ### Backend Requirements
 
@@ -1402,7 +1382,7 @@ npm run dev
 
 ---
 
-## 33. Single Root `.env`
+## 32. Single Root `.env`
 
 Use one `.env` file at the project root.
 
@@ -1441,7 +1421,7 @@ Frontend should only receive safe public config if needed.
 
 ---
 
-## 34. Docker Compose
+## 33. Docker Compose
 
 ```yaml
 version: "3.8"
@@ -1473,7 +1453,7 @@ docker compose down
 
 ---
 
-## 35. Demo Script Pseudocode
+## 34. Demo Script Pseudocode
 
 ```python
 # backend/scripts/seed_demo.py
@@ -1505,7 +1485,7 @@ async def main(reset: bool = False):
 
 ---
 
-## 36. Implementation Checklist
+## 35. Implementation Checklist
 
 ### Demo Readiness
 
@@ -1587,7 +1567,7 @@ async def main(reset: bool = False):
 
 ---
 
-## 37. Final MVP Definition
+## 36. Final MVP Definition
 
 The MVP is complete when the system can:
 
