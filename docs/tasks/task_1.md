@@ -850,7 +850,7 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 ### Batches
 
-- [ ] Batch01 - Repository Foundation and Local Infrastructure
+- [x] Batch01 - Repository Foundation and Local Infrastructure
 - [ ] Batch02 - Backend Configuration and Shared Contracts
 - [ ] Batch03 - SQLite Models, Indexes, and Session
 - [ ] Batch04 - App Bootstrap and Verification
@@ -859,11 +859,11 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 #### Batch01
 
-- [ ] (01A): Create backend package skeleton and placeholder files
-- [ ] (01B): Add backend runtime and test dependency files
-- [ ] (01C): Add root environment example and repository ignore rules
-- [ ] (01D): Add local Qdrant Docker Compose infrastructure
-- [ ] (01E): Add minimal backend Dockerfile
+- [x] (01A): Create backend package skeleton and placeholder files
+- [x] (01B): Add backend runtime and test dependency files
+- [x] (01C): Add root environment example and repository ignore rules
+- [x] (01D): Add local Qdrant Docker Compose infrastructure
+- [x] (01E): Add minimal backend Dockerfile
 
 #### Batch02
 
