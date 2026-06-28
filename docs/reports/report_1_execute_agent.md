@@ -565,3 +565,321 @@ complete
 - next task ID: Batch02 - (02A)
 - can proceed: yes
 - handoff notes: The README.md repair is completed, resolving the blocking issue in the Batch01 audit. The audit can now be run again, and then proceed with Batch02.
+
+---
+
+# Task Execution Report - (02A)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch02 - Backend Configuration and Shared Contracts
+
+## Task
+(02A) - Implement root .env backend settings loader
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Environment Settings`
+- `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02A)
+- Task title: Implement root .env backend settings loader
+
+## Completed Work
+- Status: complete.
+- Created `backend/app/core/config.py` using Pydantic Settings (Pydantic v2).
+- Configured settings loading specifically from the repository root `.env` (going up 4 levels from the configuration file location).
+- Added all 18 variables from the environment specifications in Plan 1 with appropriate types for ports, limits, dimensions, timeout, response size, and URLs.
+- Protected secret variables (`QDRANT_API_KEY`, `OPENAI_API_KEY`, and `TAVILY_API_KEY`) using `SecretStr` to prevent accidental logging or printing of raw secrets.
+- Exposed a backend-only `settings` instance for imports by other backend modules.
+- Successfully verified that settings can be imported from the `backend` directory and resolving `settings.DATABASE_URL` matches the Plan 1 default or local root `.env` value.
+
+## Files Created or Modified
+- `backend/app/core/config.py` (Created)
+
+## Tests or Validations Run
+- command/check: `python -c "from app.core.config import settings; print(settings.DATABASE_URL)"`
+  - status: passed
+  - evidence or reason: Successfully resolved to `sqlite+aiosqlite:///./data/job_matching.db` when loading default, and matched custom settings when modifying the root `.env`.
+
+## Acceptance Check
+- Task acceptance condition: `from app.core.config import settings` succeeds and `settings.DATABASE_URL` resolves to the Plan 1 default or local root `.env` value.
+- Status: satisfied
+- Evidence: Settings loader successfully imported and resolves `settings.DATABASE_URL` matching the target SQLite configuration.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2 for review as this is an orchestrated execution.
+
+## Key Implementation Decisions
+- Used `Path(__file__).resolve().parent.parent.parent.parent` to locate the root directory programmatically, ensuring settings are loaded from the workspace root directory even if run from different working directories (e.g. from within the `backend` directory).
+- Wrapped API keys in `SecretStr` as a robust security practice to avoid exposing sensitive secrets.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (02B)
+- can proceed: yes
+- handoff notes: The settings loader is fully verified. The next task (02B) can proceed to implement basic backend logging setup, which will import `settings` to configure logging without exposing secret values.
+
+---
+
+# Task Execution Report - (02B)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch02 - Backend Configuration and Shared Contracts
+
+## Task
+(02B) - Implement basic backend logging setup
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 4. Scope`
+- `docs/plans/Plan_1.md` > `## 8. Implementation Steps`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02B)
+- Task title: Implement basic backend logging setup
+
+## Completed Work
+- Status: complete.
+- Created `backend/app/core/logging.py` featuring a custom `JSONFormatter` (for production structured logging) and standard clean string formatter (for local development logs).
+- Designed a `SecretMaskingFilter` logging filter to mask raw settings and API keys/secrets dynamically fetched from `app.core.config.settings` as well as generic API key formats (like `sk-...` and `tvly-...`).
+- Integrated `setup_logging` function to initialize the root logger handlers, apply formatting, and propagate the masking filter to other common components like `uvicorn` and `sqlalchemy`.
+- Verified importability and correctness under virtual environment.
+
+## Files Created or Modified
+- `backend/app/core/logging.py`
+
+## Tests or Validations Run
+- command/check: `python -c "from app.core.logging import setup_logging; setup_logging(); print('logging ok')"`
+  - status: Passed
+  - evidence or reason: Executed successfully and printed "logging ok".
+- command/check: Python logging verification with mock secrets masking
+  - status: Passed
+  - evidence or reason: Masking verified successfully for both generic `sk-proj-...` patterns and values loaded dynamically from environment (masked to `sk-********` and `********`).
+
+## Acceptance Check
+- Task acceptance condition: Logging setup can be imported without side effects and does not expose secret values.
+- Status: satisfied
+- Evidence: Logging module imports with zero side effects. Standard console logs and custom debug messages masked all potential sensitive keys.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2 for review as this is an orchestrated execution.
+
+## Key Implementation Decisions
+- Opted to support both standard console log formatting in development (`Settings.ENV == "development"`) for local readability and a structured `JSONFormatter` in production.
+- Dynamically fetched sensitive strings (`OPENAI_API_KEY`, `TAVILY_API_KEY`, `QDRANT_API_KEY`) from the loaded config settings to sanitize actual API key values without hardcoding anything.
+- Avoided third-party packages (e.g. structlog, loguru) and relied strictly on Python's built-in `logging` module to keep dependencies minimal.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (02C)
+- can proceed: yes
+- handoff notes: Basic backend logging is ready. Sibling task (02C) can proceed to implement shared status and source constants.
+
+---
+
+# Task Execution Report - (02C)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch02 - Backend Configuration and Shared Contracts
+
+## Task
+(02C) - Add shared status and source constants
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Shared Status and Source Constants`
+- `docs/plans/Master_Plan.md` > `## 22. Table: job_posts`
+- `docs/plans/Master_Plan.md` > `## 23. Table: applications`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02C)
+- Task title: Add shared status and source constants
+
+## Completed Work
+- Status: complete.
+- Created `backend/app/core/constants.py` containing exact status/source constants specified in Plan 1: `JOB_STATUSES`, `TRACKED_JOB_STATUSES`, `APPLICATION_STATUSES`, `JD_STATUSES`, `PARSE_STATUSES`, `EXTRACTION_STATUSES`, `SOURCE_PLATFORMS`, and `INPUT_SOURCES`.
+- Defined constants as immutable tuples to enforce consistency.
+- Kept the file strictly free from database schema definitions, imports from models, or external dependencies.
+- Verified that the constants are importable from `backend` using Python.
+
+## Files Created or Modified
+- `backend/app/core/constants.py` (Created)
+
+## Tests or Validations Run
+- command/check: `python -c "from app.core import constants; print(constants.JOB_STATUSES)"`
+  - status: passed
+  - evidence or reason: Executed successfully and printed standard job statuses matching exactly the values in Plan 1.
+
+## Acceptance Check
+- Task acceptance condition: Constants expose only the Plan-approved values and can be imported by other backend modules.
+- Status: satisfied
+- Evidence: Verifying import of `app.core.constants` from `backend` succeeded and all expected tuples are correctly defined.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2 for review as this is an orchestrated execution.
+
+## Key Implementation Decisions
+- Used immutable Python `tuples` for all constants to avoid accidental modification at runtime.
+- Strictly followed the list of statuses and sources specified in Plan 1 without any deviation or extra values.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (02D)
+- can proceed: yes
+- handoff notes: Shared constants are defined and verified. The next task (02D) is to add a contract test to lock these values in with a pytest script.
+
+---
+
+# Task Execution Report - (02D)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch02 - Backend Configuration and Shared Contracts
+
+## Task
+(02D) - Add constants contract test
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Shared Status and Source Constants`
+- `docs/plans/Plan_1.md` > `## 8. Implementation Steps`
+- `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02D)
+- Task title: Add constants contract test
+
+## Completed Work
+- Status: complete.
+- Created `backend/tests/test_constants_contract.py` containing pytest assertions to verify the validity of shared constants.
+- Asserted that all required constant groups exist within the `constants` module.
+- Asserted that each constant group contains exactly the Plan 1 approved values.
+- Asserted that tracked statuses are a subset of job statuses, and application statuses are a subset of tracked job statuses.
+- Maintained the test completely independent from database initialization.
+
+## Files Created or Modified
+- `backend/tests/test_constants_contract.py` (Created)
+
+## Tests or Validations Run
+- command/check: `.\.venv\Scripts\pytest tests/test_constants_contract.py`
+- status: Passed
+- evidence or reason: 4 tests passed successfully in 0.03 seconds.
+
+## Acceptance Check
+- Task acceptance condition: `pytest tests/test_constants_contract.py` passes after installing `requirements-dev.txt`.
+- Status: satisfied
+- Evidence: Pytest ran successfully and all 4 tests passed, confirming the constants structure matches the contract exactly.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2/A3 for review and audit as this is an orchestrated flow.
+
+## Key Implementation Decisions
+- Kept tests lightweight and isolated from any database imports to avoid circular dependencies and test slowness.
+- Asserted exact tuple matching for the constants to ensure ordering and contents remain identical to Plan 1 definitions.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: Batch03 - (03A)
+- can proceed: yes
+- handoff notes: Core configuration, logging, constants, and the contract test (Batch02) are fully complete and verified. The next batch (Batch03) can proceed with SQLite Models, Indexes, and session utilities.
+

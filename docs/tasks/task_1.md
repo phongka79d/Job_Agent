@@ -291,7 +291,7 @@ Later phases depend on stable configuration names and shared executable constant
 
 ### Tasks
 
-- [ ] (02A): Implement root `.env` backend settings loader
+- [x] (02A): Implement root `.env` backend settings loader
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Environment Settings`; `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
   - Source Requirements:
     - Backend configuration must load from the repository root, not from `backend/.env`.
@@ -314,7 +314,7 @@ Later phases depend on stable configuration names and shared executable constant
   - Blocked Condition: None for placeholder/default import validation; `BLOCKED_BY_USER_ACTION` for real external API validation without user-provided secrets.
   - Files: `backend/app/core/config.py`
 
-- [ ] (02B): Implement basic backend logging setup
+- [x] (02B): Implement basic backend logging setup
   - Source of Truth: `docs/plans/Plan_1.md` > `## 4. Scope`; `docs/plans/Plan_1.md` > `## 8. Implementation Steps`
   - Source Requirements:
     - Add basic logging setup for backend services.
@@ -334,7 +334,7 @@ Later phases depend on stable configuration names and shared executable constant
   - Blocked Condition: None
   - Files: `backend/app/core/logging.py`
 
-- [ ] (02C): Add shared status and source constants
+- [x] (02C): Add shared status and source constants
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Shared Status and Source Constants`; `docs/plans/Master_Plan.md` > `## 22. Table: job_posts`; `docs/plans/Master_Plan.md` > `## 23. Table: applications`
   - Source Requirements:
     - Create reusable backend constants or enum-like literal sets in a single backend module.
@@ -357,7 +357,7 @@ Later phases depend on stable configuration names and shared executable constant
   - Blocked Condition: None
   - Files: `backend/app/core/constants.py`
 
-- [ ] (02D): Add constants contract test
+- [x] (02D): Add constants contract test
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Shared Status and Source Constants`; `docs/plans/Plan_1.md` > `## 8. Implementation Steps`; `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`
   - Source Requirements:
     - Add `backend/tests/test_constants_contract.py` or an equivalent lightweight import check.
@@ -851,7 +851,7 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 ### Batches
 
 - [x] Batch01 - Repository Foundation and Local Infrastructure
-- [ ] Batch02 - Backend Configuration and Shared Contracts
+- [x] Batch02 - Backend Configuration and Shared Contracts
 - [ ] Batch03 - SQLite Models, Indexes, and Session
 - [ ] Batch04 - App Bootstrap and Verification
 
@@ -867,10 +867,10 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 #### Batch02
 
-- [ ] (02A): Implement root `.env` backend settings loader
-- [ ] (02B): Implement basic backend logging setup
-- [ ] (02C): Add shared status and source constants
-- [ ] (02D): Add constants contract test
+- [x] (02A): Implement root `.env` backend settings loader
+- [x] (02B): Implement basic backend logging setup
+- [x] (02C): Add shared status and source constants
+- [x] (02D): Add constants contract test
 
 #### Batch03
 

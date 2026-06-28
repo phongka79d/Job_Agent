@@ -910,3 +910,497 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+
+---
+
+# Task Review Report - (02A)
+
+## Source Task File
+[docs/tasks/task_1.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/tasks/task_1.md)
+
+## Execution Report Reviewed
+[docs/reports/report_1_execute_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/reports/report_1_execute_agent.md)
+
+## Review Report File
+[docs/review/review_1_review_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/review/review_1_review_agent.md)
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02A)
+- Task title: Implement root .env backend settings loader
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Environment Settings`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02A)
+- Reviewed task ID: (02A)
+- Correct selection: yes
+- Notes: Reviewed the implementation of the environment configuration settings loader.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: None
+- untracked files:
+  - backend/app/core/config.py
+
+## Files Reviewed
+- `backend/app/core/config.py`: in scope - Defines the application configurations and Settings loader using Pydantic Settings (Pydantic v2).
+
+## Reported Files Cross-Check
+- file from execution report: backend/app/core/config.py
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Loads configurations correctly from the repository root `.env` file using a dynamic 4-level relative path resolution.
+
+## Dependency Review
+- Required dependencies: (01A), (01B), (01C)
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Settings attributes map to real configuration values with correct types and default fallbacks.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Uses Pydantic's `SecretStr` for API keys to mask credentials and prevent them from being logged/printed in cleartext.
+
+## Validations Reviewed
+- Command/check: `python -c "from app.core.config import settings; print(settings.DATABASE_URL)"`
+- Reported result: passed
+- Rerun result: passed
+- Status: satisfied
+- Notes: Executed the validation check inside the virtual environment `backend/.venv` successfully.
+
+## Acceptance Review
+- Task acceptance: `from app.core.config import settings` succeeds and `settings.DATABASE_URL` resolves to the Plan 1 default or local root `.env` value.
+- Status: satisfied
+- Evidence: Settings file resolves the correct database URL and other properties without exceptions.
+
+## Progress Tracking
+- Selected task checkbox before review: [ ]
+- Checkbox updated by reviewer: yes
+- Batch status: not complete (Batch02 sibling tasks 02B, 02C, and 02D are still remaining)
+- Execution report entry: complete
+- Review report entry: complete
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+
+---
+
+# Task Review Report - (02B)
+
+## Source Task File
+[docs/tasks/task_1.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/tasks/task_1.md)
+
+## Execution Report Reviewed
+[docs/reports/report_1_execute_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/reports/report_1_execute_agent.md)
+
+## Review Report File
+[docs/review/review_1_review_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/review/review_1_review_agent.md)
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02B)
+- Task title: Implement basic backend logging setup
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_1.md` > `## 4. Scope`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02B)
+- Reviewed task ID: (02B)
+- Correct selection: yes
+- Notes: Reviewed the basic backend logging setup implementation.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: None
+- untracked files:
+  - backend/app/core/config.py
+  - backend/app/core/logging.py
+
+## Files Reviewed
+- `backend/app/core/logging.py`: in scope - Implements logging formatter and masking filter to exclude secrets from logs.
+
+## Reported Files Cross-Check
+- file from execution report: backend/app/core/logging.py
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Implemented with simple custom formatters, logging setup and secret masking filters.
+
+## Dependency Review
+- Required dependencies: (01A), (02A)
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Integrates with standard Python logging, supports JSONFormatter for production and basic Formatter for development.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Dynamically retrieves API keys from `app.core.config.settings` and masks them without any hardcoded credentials.
+
+## Validations Reviewed
+- Command/check: `python -c "from app.core.logging import setup_logging; setup_logging(); print('logging ok')"`
+- Reported result: passed
+- Rerun result: passed
+- Status: satisfied
+- Notes: Re-run inside `backend/.venv` virtual environment successfully.
+- Command/check: Python logging verification with mock secrets masking
+- Reported result: passed
+- Rerun result: passed
+- Status: satisfied
+- Notes: Re-run inline Python commands to test masking on standard pattern `sk-...` and `tvly-...`, which successfully replaced credentials with asterisks.
+
+## Acceptance Review
+- Task acceptance: Logging setup can be imported without side effects and does not expose secret values.
+- Status: satisfied
+- Evidence: Verified via dynamic imports and runtime execution tests.
+
+## Progress Tracking
+- Selected task checkbox before review: [ ]
+- Checkbox updated by reviewer: yes
+- Batch status: not complete (other tasks in subsequent batches remaining)
+- Execution report entry: complete
+- Review report entry: complete
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+
+---
+
+# Task Review Report - (02C)
+
+## Source Task File
+[docs/tasks/task_1.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/tasks/task_1.md)
+
+## Execution Report Reviewed
+[docs/reports/report_1_execute_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/reports/report_1_execute_agent.md)
+
+## Review Report File
+[docs/review/review_1_review_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/review/review_1_review_agent.md)
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02C)
+- Task title: Add shared status and source constants
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Shared Status and Source Constants`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02C)
+- Reviewed task ID: (02C)
+- Correct selection: yes
+- Notes: Reviewed the implementation of the shared status and source constants module.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: None
+- untracked files:
+  - backend/app/core/config.py
+  - backend/app/core/logging.py
+  - backend/app/core/constants.py
+
+## Files Reviewed
+- `backend/app/core/constants.py`: in scope - Defines central immutable constants for status and source values.
+- `backend/app/core/config.py`: questionable - Out of scope for (02C), but part of Batch02 (02A) previously accepted.
+- `backend/app/core/logging.py`: questionable - Out of scope for (02C), but part of Batch02 (02B) previously accepted.
+
+## Reported Files Cross-Check
+- file from execution report: backend/app/core/constants.py
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Implements tuples for all required status/source constants specified in Plan 1.
+
+## Dependency Review
+- Required dependencies: (01A)
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Defines constants as immutable tuples which can be imported and executed.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Not applicable for static constants definitions. No credentials or secrets are present.
+
+## Validations Reviewed
+- Command/check: `python -c "from app.core import constants; print(constants.JOB_STATUSES)"`
+- Reported result: passed
+- Rerun result: passed
+- Status: satisfied
+- Notes: Executed correctly and printed the expected status tuples.
+- Command/check: Python details constants check
+- Reported result: passed
+- Rerun result: passed
+- Status: satisfied
+- Notes: Confirmed that `TRACKED_JOB_STATUSES`, `APPLICATION_STATUSES`, `JD_STATUSES`, `PARSE_STATUSES`, `EXTRACTION_STATUSES`, `SOURCE_PLATFORMS`, and `INPUT_SOURCES` are all correctly defined.
+
+## Acceptance Review
+- Task acceptance: Constants expose only the Plan-approved values and can be imported by other backend modules.
+- Status: satisfied
+- Evidence: Verified via dynamic imports and matching constant values against Plan 1 specifications.
+
+## Progress Tracking
+- Selected task checkbox before review: [ ]
+- Checkbox updated by reviewer: yes
+- Batch status: not complete (other tasks in subsequent batches remaining)
+- Execution report entry: complete
+- Review report entry: complete
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (02D)
+
+## Source Task File
+[docs/tasks/task_1.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/tasks/task_1.md)
+
+## Execution Report Reviewed
+[docs/reports/report_1_execute_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/reports/report_1_execute_agent.md)
+
+## Review Report File
+[docs/review/review_1_review_agent.md](file:///c:/Users/ACER/OtherProjects/Job_Agent/docs/review/review_1_review_agent.md)
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Backend Configuration and Shared Contracts
+- Task ID: (02D)
+- Task title: Add constants contract test
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Shared Status and Source Constants`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02D)
+- Reviewed task ID: (02D)
+- Correct selection: yes
+- Notes: Reviewed the implementation of the constants contract test.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: None
+- untracked files:
+  - backend/app/core/config.py
+  - backend/app/core/constants.py
+  - backend/app/core/logging.py
+  - backend/tests/test_constants_contract.py
+
+## Files Reviewed
+- `backend/tests/test_constants_contract.py`: in scope - Verifies the shared constants using pytest.
+- `backend/app/core/constants.py`: in scope - Defines the shared status/source constants module.
+- `backend/app/core/config.py`: questionable - Out of scope for (02D), but part of Batch02 (02A) previously accepted.
+- `backend/app/core/logging.py`: questionable - Out of scope for (02D), but part of Batch02 (02B) previously accepted.
+
+## Reported Files Cross-Check
+- file from execution report: backend/tests/test_constants_contract.py
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Implements pytest checks for all required status/source constants specified in Plan 1.
+
+## Dependency Review
+- Required dependencies: (01B), (02C)
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The test file imports real constants and runs real assertions.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The test verifies actual constant values defined in the contract; no credentials or secrets are present.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest tests/test_constants_contract.py`
+- Reported result: passed
+- Rerun result: passed
+- Status: satisfied
+- Notes: Rerun successfully inside the `backend/.venv` virtual environment with 4 passed tests.
+
+## Acceptance Review
+- Task acceptance: `pytest tests/test_constants_contract.py` passes after installing `requirements-dev.txt`.
+- Status: satisfied
+- Evidence: Tested and verified that the test suite runs and passes cleanly.
+
+## Progress Tracking
+- Selected task checkbox before review: [ ]
+- Checkbox updated by reviewer: yes
+- Batch status: not complete (other tasks in subsequent batches remaining)
+- Execution report entry: complete
+- Review report entry: complete
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+

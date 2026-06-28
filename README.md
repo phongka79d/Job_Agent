@@ -34,7 +34,7 @@ The system uses a durable SQL database (SQLite) as the primary source of truth, 
 
 ## Directory Structure
 
-The completed Batch01 foundation setup establishes the following project layout:
+The project layout including Batch02 configuration and shared contracts is established as follows:
 
 ```text
 Job_Agent/
@@ -45,7 +45,10 @@ Job_Agent/
 |   |   |-- agents/
 |   |   |   `-- __init__.py
 |   |   |-- core/
-|   |   |   `-- __init__.py
+|   |   |   |-- __init__.py
+|   |   |   |-- config.py             # Root .env settings loader
+|   |   |   |-- constants.py          # Shared status and source constants
+|   |   |   `-- logging.py            # Basic backend logging configuration
 |   |   |-- db/
 |   |   |   |-- __init__.py
 |   |   |   `-- migrations/
@@ -55,7 +58,8 @@ Job_Agent/
 |   |-- data/
 |   |   `-- .gitkeep
 |   |-- tests/
-|   |   `-- __init__.py
+|   |   |-- __init__.py
+|   |   `-- test_constants_contract.py # Shared constants contract test
 |   |-- requirements.txt          # Backend runtime dependencies
 |   |-- requirements-dev.txt      # Backend test dependencies
 |   |-- .dockerignore             # Docker ignore configuration
@@ -101,7 +105,11 @@ docker compose up -d qdrant
    ```
 
 ### 4. Running Backend Verification
-Verify that `pytest` is successfully installed in the virtual environment:
-```bash
-pytest --version
-```
+1. Verify that `pytest` is successfully installed in the virtual environment:
+   ```bash
+   pytest --version
+   ```
+2. Run the shared constants contract tests:
+   ```bash
+   pytest tests/test_constants_contract.py
+   ```
