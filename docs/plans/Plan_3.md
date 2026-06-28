@@ -352,6 +352,15 @@ dedup_key = hash(normalized_company + normalized_title)
 
 Implementation may use `sha256(normalized_company + "|" + normalized_title)` for `dedup_key`, but the inputs must remain normalized company and normalized title only.
 
+Missing or unknown company/title rule:
+
+```text
+If normalized company or normalized title is missing, empty, or equal to an unknown placeholder, set dedup_key = None.
+Do not hash empty strings, "unknown", or null-equivalent values into a shared dedup key.
+```
+
+This prevents unrelated unclear jobs from collapsing into false duplicates.
+
 ```text
 Qdrant/vector similarity must not be used for deduplication in MVP.
 Vector-based deduplication is intentionally removed from the MVP to avoid latency, complexity, and unpredictable duplicate behavior.
@@ -404,11 +413,37 @@ For each Phase 2 job state:
 2. Normalize extracted job skills.
 3. Compute or receive `raw_content_hash`.
 4. Compute `dedup_key` from normalized company and title.
-5. Run deduplication before scoring when possible.
+5. Run deduplication before scoring whenever `raw_content_hash` or a valid `dedup_key` exists.
 6. Persist exact duplicates as skipped, not new rows.
 7. Persist duplicate metadata rows as `ignored` with all score fields null.
 8. For non-duplicate scorable jobs, build `embedding_text`, compute embeddings, compute score fields, save to SQLite as `pending_review`, then upsert to Qdrant after SQLite commit.
 9. For non-duplicate non-scorable jobs, save extracted fields and observability fields to SQLite as `pending_review`, with all score fields null and no Qdrant upsert.
+
+Storage result contract:
+
+```python
+from pydantic import BaseModel
+
+
+class StoredJobResult(BaseModel):
+    job_id: str | None
+    batch_id: str
+    status: str
+    dedup_action: str | None = None
+    duplicate_of_job_id: str | None = None
+    qdrant_sync_status: str | None = None
+    warning: str | None = None
+    error_reason: str | None = None
+    inserted: int = 0
+    scorable: int = 0
+    non_scorable: int = 0
+    skipped_exact_duplicate: int = 0
+    duplicate_ignored: int = 0
+    qdrant_upserted: int = 0
+    qdrant_failed: int = 0
+```
+
+Phase 4 must consume this contract instead of reimplementing storage, scoring, deduplication, or Qdrant sync decisions.
 
 For scorable jobs:
 
@@ -475,6 +510,15 @@ Definitions:
 
 Phase 3 services prepare these counters. Phase 4 exposes them through `/api/batches/{batch_id}/summary`.
 
+Counter durability rule:
+
+```text
+Counters returned by `StoredJobResult` are authoritative for the current pipeline response.
+Counters that are represented by persisted rows, such as inserted, scorable, non_scorable, duplicate_ignored, failed_extractions, tokens, and cost, may be reconstructed by Phase 4 with SQL aggregation.
+Counters for skipped rows, especially skipped_exact_duplicate, are not reconstructable from `job_posts` unless Phase 4 explicitly preserves the immediate pipeline summary in memory or response payload.
+Do not add a `search_runs` or batch summary table unless `Master_Plan.md` changes.
+```
+
 ## 14. Qdrant Collection Plan
 
 Create `backend/app/services/qdrant_service.py`.
@@ -492,7 +536,7 @@ Rules:
 - Vector size comes from `EMBEDDING_DIMENSION`.
 - Ensure collection exists before upsert/search.
 - If the collection is missing, create it with cosine distance and configured vector size.
-- Create payload indexes for the fields listed in Section 15.
+- Create and verify payload indexes for the fields listed in Section 15.
 
 Point ID:
 
@@ -531,6 +575,13 @@ status
 jd_status
 batch_id
 source_platform
+```
+
+Verification requirement:
+
+```text
+After collection setup, verify these payload indexes exist or that Qdrant accepted their creation without error.
+Treat missing payload indexes as a Phase 3 verification failure.
 ```
 
 Filter builder:
@@ -638,6 +689,8 @@ Implementation can split this into focused service-backed nodes:
 
 Add state fields such as `stored_job_id`, `dedup_action`, `duplicate_of_job_id`, `qdrant_sync_status`, and batch counters if useful.
 
+Phase 4 must call the Phase 3 processing graph or `job_storage_service.py` public contract. It must not duplicate the graph nodes, scoring formula, dedup policy, or Qdrant sync behavior inside route handlers or UI-facing orchestration.
+
 ## 18. Error Handling Plan
 
 Handle:
@@ -697,19 +750,22 @@ Required test cases:
 11. `unclear` is saved as `pending_review` without score fields or Qdrant upsert.
 12. Exact duplicate by `raw_content_hash` is skipped.
 13. Duplicate by `dedup_key` does not re-enter `pending_review`.
-14. Duplicate metadata row sets all score fields to null.
-15. Duplicate metadata row is not upserted to Qdrant.
-16. Qdrant/vector similarity is not called during deduplication.
-17. Scorable job is saved to SQLite and upserted to Qdrant.
-18. Qdrant point ID must be a valid UUID string.
-19. Qdrant collection creation uses `EMBEDDING_DIMENSION`.
-20. Qdrant query filter uses `role_profile_id` and `status`.
-21. Approve updates SQLite and Qdrant payload status.
-22. Reject updates SQLite and deletes Qdrant vector.
-23. Manual status update syncs Qdrant payload if vector exists.
-24. `embedding_text` change recomputes vector and updates Qdrant.
-25. Batch summary counters are updated correctly.
-26. One failed Qdrant upsert increments `qdrant_failed` and does not crash the whole batch.
+14. Missing or unknown company/title sets `dedup_key=None`.
+15. Missing company/title jobs are not collapsed into a shared duplicate group.
+16. Duplicate metadata row sets all score fields to null.
+17. Duplicate metadata row is not upserted to Qdrant.
+18. Qdrant/vector similarity is not called during deduplication.
+19. Scorable job is saved to SQLite and upserted to Qdrant.
+20. Qdrant point ID must be a valid UUID string.
+21. Qdrant collection creation uses `EMBEDDING_DIMENSION`.
+22. Qdrant payload indexes are created and verified.
+23. Qdrant query filter uses `role_profile_id` and `status`.
+24. Approve updates SQLite and Qdrant payload status.
+25. Reject updates SQLite and deletes Qdrant vector.
+26. Manual status update syncs Qdrant payload if vector exists.
+27. `embedding_text` change recomputes vector and updates Qdrant.
+28. Batch summary counters are updated correctly.
+29. One failed Qdrant upsert increments `qdrant_failed` and does not crash the whole batch.
 
 Use fake embeddings and fake Qdrant clients in normal unit tests. Do not call OpenAI or require live Qdrant in normal tests.
 
@@ -738,6 +794,7 @@ pytest tests/test_scoring_service.py tests/test_dedup_service.py tests/test_qdra
 - [ ] Qdrant/vector similarity is never used for deduplication.
 - [ ] Deduplication uses only `raw_content_hash` and `dedup_key`.
 - [ ] Exact duplicates are skipped.
+- [ ] `dedup_key = None` when normalized company or title is missing, empty, or unknown.
 - [ ] `dedup_key` duplicates never re-enter `pending_review`.
 - [ ] Duplicate metadata rows set all score fields to null and `should_score_similarity = false`.
 - [ ] Duplicate metadata rows are not upserted to Qdrant.
@@ -745,7 +802,7 @@ pytest tests/test_scoring_service.py tests/test_dedup_service.py tests/test_qdra
 - [ ] Qdrant point IDs are valid standard UUID strings.
 - [ ] Qdrant collection uses cosine distance.
 - [ ] Qdrant vector size comes from `EMBEDDING_DIMENSION`.
-- [ ] Qdrant payload indexes are planned for `role_profile_id`, `status`, `jd_status`, `batch_id`, and `source_platform`.
+- [ ] Qdrant payload indexes are created and verified for `role_profile_id`, `status`, `jd_status`, `batch_id`, and `source_platform`.
 - [ ] If `embedding_text` changes, the vector is recomputed and Qdrant is updated.
 - [ ] Reject/ignored deletes the vector from Qdrant.
 - [ ] Approve updates Qdrant payload status to `saved`.
@@ -769,6 +826,7 @@ At the end of Phase 3:
 - Qdrant vector search is isolated by `role_profile_id` and `status`.
 - Approve, reject, manual status update, embedding text update, scorable/non-scorable transitions, and delete operations keep SQLite and Qdrant consistent.
 - Batch summary counters are prepared for Phase 4.
+- Skipped exact duplicate counters are returned in the immediate pipeline result and are not assumed to be reconstructable later without a persisted summary mechanism.
 
 ## 23. Handoff Notes for Phase 4
 
@@ -783,6 +841,8 @@ Phase 4 may call:
 - `delete_job_sync(job_id)`
 - Qdrant filtered search helpers
 - batch summary counters prepared by Phase 3 services
+
+Phase 4 must call the Phase 3 processing graph or service contract. It must not rewire scoring, deduplication, SQLite persistence, or Qdrant synchronization inside `job_pipeline_service.py`.
 
 Phase 4 owns:
 

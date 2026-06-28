@@ -169,6 +169,19 @@ Behavior:
 
 Manual text terminal paths must still preserve `batch_id`, `role_profile_id`, `input_source`, `source_url`, `source_platform`, `parse_status`, and any available `raw_text` or `clean_text`.
 
+## 8.1. Source Platform Mapping
+
+Phase 2 must map source metadata consistently for downstream persistence:
+
+| `input_source` | `source_platform` |
+|---|---|
+| `manual_url` | `manual_url` |
+| `manual_text` | `manual_text` |
+| `tavily` | `tavily` |
+| `mock` | `mock` |
+
+`input_source = "mock"` is allowed only as a state value so demo jobs can reuse the same downstream contract. Phase 2 must not read files from `mock_data/`, load demo records, or implement demo seeding.
+
 ## 9. Pydantic Schema Plan
 
 Create `backend/app/agents/schemas.py`.
@@ -469,7 +482,7 @@ TERMINAL_METADATA_KEYS = (
 
 Each node output starts with required identifiers and copies source metadata from input state.
 
-`input_source = "mock"` is allowed in `JobAgentState` because demo jobs pass through the same downstream state shape. However, demo seeding and mock data loading are Phase 4 responsibilities, not Phase 2 responsibilities.
+`input_source = "mock"` is allowed in `JobAgentState` because demo jobs pass through the same downstream state shape. However, demo seeding and mock data loading are Phase 4 responsibilities, not Phase 2 responsibilities. Phase 2 must not read `mock_data/` files or create demo records.
 
 ## 15. LangGraph Workflow Plan
 
@@ -500,7 +513,8 @@ Nodes:
 
 - `prepare_content_node`
   - URL input: call `extract_text_from_url`.
-  - manual/mock input: call `prepare_manual_text`.
+  - manual input: call `prepare_manual_text`.
+  - mock input: accept pre-supplied state text from Phase 4 only; do not load mock files.
   - set `raw_text`, `clean_text`, `parse_status`, `raw_content_hash`, `source_url`, `source_platform`, and `error_reason`.
 - `structured_extract_node`
   - call initial structured-output or Pydantic parser chain.
@@ -572,6 +586,8 @@ Fallback requirements:
 - Retry failure must return `jd_status="unclear"`.
 - URL failure must return controlled fallback state, not an unhandled exception.
 - Low-content URL extraction must return `parse_status="needs_manual_input"` and a controlled fallback state.
+- Low-content URL fallback must include the stable warning text:
+  `We could not extract enough job content from this URL. The page may require JavaScript rendering, login, or cookie acceptance. Please paste the job description text manually.`
 - `should_score_similarity` must be `False`.
 - All score and embedding fields must be `None`.
 - Source metadata and required IDs must be preserved.
@@ -750,6 +766,7 @@ Expected:
 - Every terminal graph path preserves `batch_id`, `role_profile_id`, and `input_source`.
 - Every terminal graph path preserves source metadata where available.
 - `needs_manual_input` returns enough fallback state for Phase 3 to persist an `unclear` pending-review job.
+- Phase 3/4 must persist controlled `unclear` fallback records unless deduplication skips them.
 - `input_source = "mock"` is allowed in state but demo seeding remains Phase 4.
 - Phase 2 does not implement scoring, deduplication, Qdrant vector logic, final API routes, React UI, or demo seed scripts.
 
@@ -789,10 +806,12 @@ Phase 3 can consume:
 - `error_reason`
 - observability fields
 
+Phase 3 should consume `raw_content_hash` from Phase 2. It may recompute the hash only when `raw_content_hash` is missing and reliable `clean_text` exists; it must not hash unreliable low-content URL fallback text.
+
 `needs_manual_input` handoff contract:
 
 ```text
-When URL extraction returns `parse_status = "needs_manual_input"`, Phase 2 must return enough fallback state for Phase 3 to persist an `unclear` pending-review job if the pipeline chooses to save fallback records.
+When URL extraction returns `parse_status = "needs_manual_input"`, Phase 2 must return enough fallback state for Phase 3 to persist an `unclear` pending-review job unless deduplication skips it.
 ```
 
 The fallback state must preserve:
@@ -817,9 +836,10 @@ Phase 3 owns:
 
 - final SQLite persistence policy
 - mapping fallback state into a pending-review record
+- fallback persistence for `needs_manual_input` and failed/unclear extraction states unless deduplication skips them
 - building `embedding_text`
 - dedup key calculation and duplicate policy
 - scoring and score fields
 - Qdrant collection creation and vector sync
 
-Phase 2 must provide enough state to avoid silent failures, but Phase 2 must not decide whether or how final SQLite records are saved.
+Phase 2 must provide enough state to avoid silent failures, but Phase 2 must not write final SQLite records. Phase 3/4 decide the persistence implementation details while preserving the master rule that failed or unclear parsed jobs remain visible unless deduplication skips them.

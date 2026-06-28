@@ -306,7 +306,7 @@ Do not add `matching_text`.
 | `requirements` | `Text` | nullable |
 | `skills` | `Text` | not null, default `"[]"` JSON string |
 | `source_url` | `Text` | nullable |
-| `source_platform` | `String` | nullable until later ingestion code sets it |
+| `source_platform` | `String` | nullable only before ingestion; persisted job records should set it when known |
 | `parse_status` | `String` | default `success` |
 | `raw_content_hash` | `Text` | nullable |
 | `dedup_key` | `Text` | nullable |
@@ -404,6 +404,7 @@ Add SQLite-compatible constraints:
   - `level`: `intern`, `fresher`, `junior`, `mid`, `senior`, `unknown`
   - `employment_type`: `internship`, `full-time`, `part-time`, `contract`, `unknown`
   - `parse_status`: `success`, `needs_manual_input`, `failed`
+  - `source_platform`: `tavily`, `manual_url`, `manual_text`, `mock`, `job_board`
   - `jd_status`: `full_jd`, `partial_jd`, `contact_for_jd`, `no_jd`, `unclear`
   - `extraction_status`: `success`, `retried`, `failed`
   - `status`: `pending_review`, `saved`, `applied`, `interview`, `rejected`, `offer`, `ignored`
@@ -469,6 +470,7 @@ Create `backend/scripts/verify_db_schema.py`:
 - Verify required columns exist.
 - Verify foreign keys exist.
 - Verify required indexes exist.
+- Verify `source_platform` allows `NULL` before ingestion and otherwise accepts only `tavily`, `manual_url`, `manual_text`, `mock`, or `job_board`.
 - Verify `idx_job_posts_raw_content_hash` is a partial unique index with `WHERE raw_content_hash IS NOT NULL`.
 - Verify `PRAGMA foreign_keys;` returns `1` on the configured SQLAlchemy connection.
 - Verify `PRAGMA journal_mode;` returns `wal` if WAL mode is enabled.
@@ -735,3 +737,4 @@ After Phase 1 implementation:
 - Keep raw SQL SQLite-compatible with `?` placeholders or SQLAlchemy bound parameters.
 - Qdrant collection creation, embeddings, vector upsert/search/delete, payload indexes, and SQLite-Qdrant status sync belong to later phases.
 - Deduplication behavior belongs to a later phase; Phase 1 only provides the schema fields and indexes.
+- Phase 4 must define whether manual application status updates only update `job_posts.status` or also create/update rows in `applications`; Phase 1 only provides the table.

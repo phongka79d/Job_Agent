@@ -12,13 +12,7 @@ Phase 4 integrates and exposes existing services. It must not change core archit
 
 Use `docs/plans/Master_Plan.md` as the architecture source of truth.
 
-Priority order:
-
-1. `Master_Plan.md`
-2. `docs/plan_report/report.md`
-3. This Phase 4 plan
-
-Follow the master plan when any conflict appears.
+`Master_Plan.md` is the only source of truth. If this Phase 4 plan conflicts with `Master_Plan.md`, follow `Master_Plan.md`.
 
 Master plan sections most relevant to Phase 4:
 
@@ -207,7 +201,7 @@ The project uses a single root `.env` file as the only environment configuration
 
 No API keys or secrets are exposed to the frontend.
 
-Frontend API base URL should default to `http://localhost:8000` in the frontend API client or be generated from the root `.env` as safe public config. Do not create a separate frontend `.env.example` in Phase 4.
+Frontend API base URL should default to `http://localhost:8000` in the frontend API client or be generated from the root `.env` as safe public config. Do not create a separate frontend `.env`, `frontend/.env.example`, or `frontend/job-agent-ui/.env.example` in Phase 4.
 
 If a config file is needed, use a non-secret TypeScript config file:
 
@@ -218,11 +212,10 @@ frontend/job-agent-ui/src/config.ts
 Example:
 
 ```ts
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+export const API_BASE_URL = "http://localhost:8000";
 ```
 
-Only safe public values may be read by the frontend. Never expose `OPENAI_API_KEY`, `TAVILY_API_KEY`, `QDRANT_API_KEY`, `DATABASE_URL`, `SQLITE_DB_PATH`, or database settings.
+Only safe public values may be generated into the frontend config. Never expose `OPENAI_API_KEY`, `TAVILY_API_KEY`, `QDRANT_API_KEY`, `DATABASE_URL`, `SQLITE_DB_PATH`, or database settings. Do not require Vite environment variables for the MVP.
 
 ## 8. Demo Data Plan
 
@@ -258,6 +251,13 @@ Do not seed demo jobs directly as `saved` just to make the dashboard non-empty. 
 ## 9. Seed Demo Script Plan
 
 Create `backend/scripts/seed_demo.py`.
+
+Shared loader requirement:
+
+```text
+Implement one shared demo loading function that both `seed_demo.py` and `/api/jobs/mock-load` call.
+Do not create separate seed logic for the script and API route.
+```
 
 Command:
 
@@ -299,8 +299,9 @@ Deterministic mock vector constraints:
 - Deterministic mock vectors are allowed only inside `seed_demo.py` or demo-only test utilities.
 - They must match `EMBEDDING_DIMENSION`.
 - They must never be used in normal URL/text/search flows.
-- Use the same real embedding service as Phase 3 when available.
-- If demo mode needs deterministic offline behavior, isolate mock vectors behind an explicit demo-only flag or seed script path.
+- Use the same real embedding service and Phase 3 scoring/storage flow by default.
+- If demo mode needs deterministic offline behavior, isolate mock vectors behind an explicit demo-only flag or seed script path such as `--offline-demo-vectors`.
+- Tests must prove deterministic mock vectors cannot be used by normal URL, text, or Tavily search flows.
 
 ## 10. FastAPI Integration Plan
 
@@ -332,7 +333,8 @@ Rules:
 
 - Route handlers stay thin and call `job_pipeline_service.py`.
 - `job_pipeline_service.py` calls Phase 2 extraction services.
-- `job_pipeline_service.py` calls Phase 3 scoring, storage, dedup, and Qdrant sync services.
+- `job_pipeline_service.py` calls Phase 3 public service or graph contracts for scoring, storage, dedup, and Qdrant sync.
+- `job_pipeline_service.py` must not duplicate Phase 3 internals, scoring formulas, deduplication decisions, SQLite persistence rules, or Qdrant synchronization policy.
 - One failed job returns a controlled warning/error payload and does not fail the whole batch.
 - API responses must make warnings and partial failures visible to the frontend without crashing the user flow.
 
@@ -392,6 +394,65 @@ class SearchResultItem(BaseModel):
     snippet: str | None = None
 
 
+class RoleProfileResponse(BaseModel):
+    id: str
+    target_role: str
+    level: str | None = None
+    location: str | None = None
+    accept_remote: bool
+    skills: list[str]
+    resume_text: str | None = None
+    created_at: str
+    updated_at: str
+
+
+class ScoreBreakdownResponse(BaseModel):
+    embedding_similarity: float | None = None
+    skill_overlap_score: float | None = None
+    location_match_score: float | None = None
+    level_match_score: float | None = None
+    jd_confidence_multiplier: float | None = None
+    base_score: float | None = None
+    final_score: float | None = None
+    final_score_percent: float | None = None
+
+
+class JobListItemResponse(BaseModel):
+    id: str
+    batch_id: str
+    role_profile_id: str
+    title: str | None = None
+    company: str | None = None
+    location: str | None = None
+    work_mode: str
+    level: str
+    employment_type: str
+    source_url: str | None = None
+    source_platform: str | None = None
+    parse_status: str
+    jd_status: str
+    extraction_status: str
+    should_score_similarity: bool
+    status: str
+    duplicate_of_job_id: str | None = None
+    discovered_at: str
+    score_breakdown: ScoreBreakdownResponse
+    warning: str | None = None
+    sync_warning: str | None = None
+
+
+class JobDetailResponse(JobListItemResponse):
+    salary: str | None = None
+    responsibilities: str | None = None
+    requirements: str | None = None
+    skills: list[str]
+    error_reason: str | None = None
+    input_tokens: int
+    output_tokens: int
+    estimated_cost_usd: float
+    extraction_time_ms: int | None = None
+
+
 class JobPipelineResponse(BaseModel):
     job_id: str | None
     batch_id: str
@@ -436,6 +497,8 @@ class BatchSummaryResponse(BaseModel):
     estimated_cost_usd: float
     average_extraction_time_ms: float | None
 ```
+
+Role profile endpoints must return `RoleProfileResponse`. Review and dashboard endpoints must return `list[JobListItemResponse]`. Job detail must return `JobDetailResponse`. These DTOs expose stored Phase 3 fields only; the frontend must not recompute scoring.
 
 Parse URL request:
 
@@ -664,6 +727,14 @@ This job was saved for review but was not scored because the JD is incomplete or
 
 Use `GET /api/batches/{batch_id}/summary` and simple backend SQL aggregation over stored `job_posts` fields.
 
+Batch summary rule:
+
+```text
+Persisted job rows can reconstruct inserted, scorable, non_scorable, duplicate_ignored, failed_extractions, token totals, cost totals, and average extraction time.
+Skipped rows, especially skipped_exact_duplicate, are not reconstructable from `job_posts` unless Phase 4 preserves the immediate Phase 3 pipeline summary in the API response or in memory for the current run.
+Do not add a `search_runs` or analytics table unless `Master_Plan.md` changes.
+```
+
 Metrics:
 
 - total jobs
@@ -736,7 +807,7 @@ Behavior:
 - upserts Qdrant vectors only for scorable jobs
 - returns role profile, batch ID, inserted counts, and metrics summary
 
-The UI calls this endpoint from `DemoModePage`. The script `seed_demo.py` remains the command-line fallback for live demos.
+The UI calls this endpoint from `DemoModePage`. The script `seed_demo.py` remains the command-line fallback for live demos. Both entry points must call the same shared demo loader.
 
 Demo jobs must not be made `saved` by the seed script. The dashboard should be empty until the user approves at least one job.
 
@@ -765,6 +836,14 @@ Handle:
 - approve/reject sync issue: SQLite status remains source of truth, response includes `sync_warning`
 - empty review/dashboard: clear empty state
 - seed data already exists: `reset=true` clears it, otherwise skip duplicates safely
+
+Application table policy:
+
+```text
+For MVP, `/api/jobs/{id}/status` must update `job_posts.status` as the source of truth.
+When status changes to `applied`, `interview`, `rejected`, or `offer`, Phase 4 may create or update an `applications` row using `job_post_id`.
+If application-row writes are deferred, document that `applications` is reserved for later tracking and do not let that deferment block the demo.
+```
 
 Duplicate UI message:
 
@@ -921,7 +1000,8 @@ npm run build
 - [ ] Frontend API base URL uses a safe default or safe generated config only.
 - [ ] Phase 4 reuses Phase 2 extraction services.
 - [ ] Phase 4 reuses Phase 3 scoring, storage, dedup, and Qdrant sync services.
-- [ ] `job_pipeline_service.py` orchestrates existing services instead of rewriting them.
+- [ ] `job_pipeline_service.py` calls Phase 3 public service or graph contracts instead of rewriting them.
+- [ ] One shared demo loader is used by both `seed_demo.py` and `/api/jobs/mock-load`.
 - [ ] `seed_demo.py --reset` loads at least 12 demo jobs.
 - [ ] Seeded demo jobs start as `pending_review`, not `saved`.
 - [ ] Demo can run without internet for mock data.
@@ -940,7 +1020,9 @@ npm run build
 - [ ] Tavily results are normalized and processed independently.
 - [ ] One failed search result does not crash the whole batch.
 - [ ] Celery and Redis are not introduced.
-- [ ] Deterministic mock vectors are demo-only and match `EMBEDDING_DIMENSION`.
+- [ ] Deterministic mock vectors are demo-only, require an explicit demo-offline path, and match `EMBEDDING_DIMENSION`.
+- [ ] Normal URL, text, and Tavily flows cannot use deterministic mock vectors.
+- [ ] Job list, job detail, role profile, and score breakdown DTOs expose stored backend fields needed by the UI.
 - [ ] API responses make warnings and partial failures visible without crashing the user flow.
 - [ ] SQLite remains the source of truth for job status.
 - [ ] Empty states are clear and user-friendly.
@@ -972,7 +1054,8 @@ At the end of Phase 4:
 - Frontend API base URL uses a safe default or safe generated config only.
 - Phase 4 reuses Phase 2 extraction services.
 - Phase 4 reuses Phase 3 scoring, storage, dedup, and Qdrant sync services.
-- `job_pipeline_service.py` orchestrates existing services instead of rewriting them.
+- `job_pipeline_service.py` calls Phase 3 public service or graph contracts instead of rewriting them.
+- One shared demo loader is used by both `seed_demo.py` and `/api/jobs/mock-load`.
 - `needs_manual_input` returns a warning and persists a controlled `unclear` pending-review fallback record when fallback state exists.
 - Review queue is the first main demo screen after seeding.
 - Seeded demo jobs start as `pending_review`, not `saved`.
@@ -982,7 +1065,8 @@ At the end of Phase 4:
 - Tavily results are normalized and processed independently.
 - One failed search result does not crash the whole batch.
 - Celery and Redis are not introduced.
-- Deterministic mock vectors are demo-only and match `EMBEDDING_DIMENSION`.
+- Deterministic mock vectors are demo-only, require an explicit demo-offline path, and match `EMBEDDING_DIMENSION`.
+- Normal URL, text, and Tavily flows cannot use deterministic mock vectors.
 - Manual URL fallback warning is displayed clearly.
 - Manual raw text flow works.
 - Score breakdown UI uses stored Phase 3 score fields.
