@@ -26,6 +26,7 @@ This phase connects the Plan 2 extraction result to the Plan 1 SQLite schema and
 ## 3. Prerequisites from Prior Phases
 
 - [ ] Plan 1 database models, async session, and environment settings exist.
+- [ ] Plan 1 shared constants in `backend/app/core/constants.py` exist and expose the Master-approved status/source values.
 - [ ] Plan 1 Qdrant Docker Compose file exists.
 - [ ] Plan 2 extraction graph returns `JobAgentState`.
 - [ ] Plan 2 `JobPostExtract` schema is stable.
@@ -34,6 +35,7 @@ This phase connects the Plan 2 extraction result to the Plan 1 SQLite schema and
 ## 4. Scope
 
 - Implement deterministic scoring utilities in `scoring_service.py`.
+- Import Plan 1 shared constants for executable status/source/JD validation and transition policies.
 - Implement skill alias normalization.
 - Implement `build_embedding_text(job)` from clean extracted fields only.
 - Implement `build_role_query_text(role_profile)` dynamically without storing it.
@@ -45,13 +47,14 @@ This phase connects the Plan 2 extraction result to the Plan 1 SQLite schema and
 - Implement skill overlap normalized to `[0, 1]`.
 - Implement base score and final score formulas.
 - Implement JD confidence multiplier for `full_jd` and `partial_jd`.
-- Ensure embedding/scoring failures do not crash the whole batch; persist the job with null score fields and an error reason.
+- Ensure embedding/scoring failures do not crash the whole batch; the job must already be persisted with null score fields before any embedding or Qdrant operation is attempted.
 - Implement deduplication by `raw_content_hash` first and `dedup_key` second.
 - Implement duplicate status policy so saved, applied, interview, rejected, and offer jobs do not re-enter `pending_review`.
 - Implement job persistence using the Plan 1 `job_posts` schema.
 - Add one orchestration helper that converts a Plan 2 `JobAgentState` into a persisted `job_posts` row and optional Qdrant point.
 - Implement Qdrant collection creation with cosine distance and embedding dimension from `.env`.
 - Implement Qdrant payload indexes.
+- Expose an idempotent `ensure_collection()` / startup initialization method in `qdrant_service.py` so Plan 4 can initialize Qdrant during FastAPI startup without owning collection logic.
 - Upsert only scorable jobs into Qdrant.
 - Use `job_posts.id` canonical UUID strings as Qdrant point IDs.
 - Implement Qdrant payload updates for status changes.
@@ -314,7 +317,7 @@ Rules:
 - Build role text dynamically with `build_role_query_text(role_profile)`.
 - Build job text with `build_embedding_text(job)`.
 - Validate `len(vector) == settings.EMBEDDING_DIMENSION`.
-- If embedding generation fails, persist the job as `pending_review` with all score fields as `None` and `error_reason` set.
+- If embedding generation fails, keep the already committed job as `pending_review` with all score fields as `None` and set or append `error_reason`.
 - Map the incoming `JobAgentState.user_warning` (if present) to the returned `JobProcessingResult.warnings`.
 
 Semantic similarity:
@@ -326,11 +329,25 @@ def normalize_qdrant_similarity_score(score: float) -> float:
 
 Use Qdrant as the canonical semantic similarity source for `embedding_similarity`, matching the Master Plan scoring path.
 
+Ordering clarification:
+
+```text
+This phase follows the Master's explicit SQLite-first durability rule over the older architecture diagram ordering.
+The canonical order is:
+1. Insert the parsed job into SQLite as pending_review with nullable score fields.
+2. Commit the SQLite row and use its canonical UUID as the Qdrant point ID.
+3. Generate embeddings and upsert/query Qdrant.
+4. Update the same SQLite row with score fields.
+```
+
+This avoids losing failed or partially processed jobs when embedding or Qdrant operations fail.
+
 Required behavior:
 
-- Generate the role query embedding from `build_role_query_text(role_profile)`.
-- Generate the job vector from `build_embedding_text(job)`.
-- Insert the SQLite row first with `status = pending_review` and nullable score fields so the canonical UUID `job_posts.id` exists.
+- Build `embedding_text` locally from `build_embedding_text(job)` before insert when the job is scorable; this is deterministic string construction only and must not call external providers.
+- Insert the SQLite row first with `status = pending_review`, the generated `embedding_text` if available, and nullable score fields so the canonical UUID `job_posts.id` exists before any external embedding or Qdrant call.
+- Generate the role query embedding from `build_role_query_text(role_profile)` only after the SQLite row has committed.
+- Generate the job vector from `build_embedding_text(job)` / the persisted `embedding_text` only after the SQLite row has committed.
 - Upsert the scorable job vector into Qdrant using `job_posts.id` as the point ID.
 - Query Qdrant with the role query vector using filters that include the active `role_profile_id`, `status = pending_review`, and the current point/job ID.
 - Use the returned Qdrant cosine score as `embedding_similarity` after clamping to `[0, 1]`.
@@ -338,6 +355,34 @@ Required behavior:
 - Update the same SQLite row with score fields after the Qdrant similarity score is available.
 
 If Qdrant upsert or Qdrant similarity query fails, do not fall back to local cosine scoring in MVP. Keep the committed SQLite row visible as `pending_review`, set score fields to `None`, append/set an error reason, and return `qdrant_synced = false`.
+
+### Qdrant Write/Read Consistency Guard
+
+New scorable job scoring must not assume that a just-upserted vector is immediately visible to a filtered similarity query unless the Qdrant client call has explicitly requested write acknowledgement and the query can prove it found the current job.
+
+Required behavior:
+
+```text
+1. Upsert the Qdrant point with `wait=True` or the client/library equivalent when available.
+2. Use payload `job_id = current_job_id` and active `role_profile_id` + `status = pending_review` filters for the scoring query.
+3. Treat "no point returned for current_job_id" as a transient Qdrant visibility/sync failure, not as a score of 0 and not as permission to use another job's score.
+4. Retry the job-specific Qdrant scoring query with a small bounded retry policy such as 3 attempts with short backoff.
+5. If the current job is still not returned, keep the SQLite row committed with null score fields, append/set `error_reason = "Qdrant similarity unavailable for newly upserted job"`, and return `qdrant_synced = false`.
+```
+
+Do not use local cosine fallback in this race condition path. The UI must still see the `pending_review` job, but score fields remain `null` until a later explicit reprocessing feature exists.
+
+Durability rule:
+
+```text
+Dedup decision first.
+SQLite insert second.
+Embedding provider calls third.
+Qdrant upsert/query fourth.
+SQLite score update last.
+```
+
+The only exceptions are skipped duplicates, which do not insert or call embedding/Qdrant, and duplicate metadata rows, which insert `ignored` metadata and do not call embedding/Qdrant.
 
 ### Processing Pipeline Order
 
@@ -358,9 +403,10 @@ For each Plan 2 `JobAgentState`:
    - no Qdrant upsert
 8. If non-duplicate and scorable:
    - build embedding_text
+   - insert SQLite row first with a canonical UUID and nullable score fields
+   - commit the row before external embedding or Qdrant calls
    - embed role query text
    - embed job embedding_text
-   - insert SQLite row first with a canonical UUID and nullable score fields
    - upsert the job vector into Qdrant using the SQLite job ID as the point ID
    - query Qdrant for this job using role_profile_id, status, and point/job ID filters
    - use the Qdrant query score as embedding_similarity after clamping to [0, 1]
@@ -422,7 +468,8 @@ Exact duplicate policy:
 Dedup key policy:
 
 ```python
-TRACKED_STATUSES = {"saved", "applied", "interview", "rejected", "offer"}
+# Import TRACKED_JOB_STATUSES from backend.app.core.constants.
+TRACKED_STATUSES = TRACKED_JOB_STATUSES
 
 
 def decide_duplicate_action(existing_job_status: str) -> str:
@@ -474,11 +521,74 @@ User approval later changes:
 pending_review -> saved
 ```
 
-Status flow:
+Allowed user-visible status transitions:
 
 ```text
-pending_review -> saved -> applied -> interview -> rejected -> offer
 pending_review -> ignored
+pending_review -> saved
+saved -> applied
+saved -> rejected
+applied -> interview
+applied -> rejected
+interview -> rejected
+interview -> offer
+```
+
+### Service-Owned Status Transitions
+
+`job_processing_service.py` owns status transition validation. FastAPI routes in Plan 4 must call these methods and translate service-domain errors into HTTP responses instead of duplicating transition rules.
+
+Plan 5 frontend transition options must be generated from, exported from, or contract-tested against this backend transition map. The UI must not maintain an unverified independent transition map. Any `StatusSelect` options shown in the frontend must match backend-allowed transitions for the current job status, and frontend tests must fail if this backend map changes without an intentional frontend update.
+
+Allowed transition map:
+
+```python
+# Build and validate this map against JOB_STATUSES and APPLICATION_STATUSES
+# from backend.app.core.constants.
+ALLOWED_STATUS_TRANSITIONS = {
+    "pending_review": {"saved", "ignored"},
+    "saved": {"applied", "rejected"},
+    "applied": {"interview", "rejected"},
+    "interview": {"rejected", "offer"},
+    "rejected": set(),
+    "offer": set(),
+    "ignored": set(),
+}
+```
+
+Required service behavior:
+
+```python
+class InvalidStatusTransition(ValueError):
+    pass
+
+
+async def approve_job(job_id: str) -> JobPost:
+    """Validate pending_review -> saved, update SQLite, then update Qdrant payload."""
+
+
+async def reject_job(job_id: str) -> JobPost:
+    """Validate pending_review -> ignored, update SQLite, then delete the Qdrant point if present."""
+
+
+async def update_job_status(job_id: str, status: Literal["applied", "interview", "rejected", "offer"]) -> JobPost:
+    """Validate manual tracked transitions, update SQLite/applications, then update Qdrant payload."""
+```
+
+`PATCH /api/jobs/{id}/status` in Plan 4 must never pass `ignored`; only `reject_job(...)` can set review jobs to `ignored`.
+
+### Applications Row Semantics
+
+When `update_job_status(...)` changes a job to a tracked application state, it must create or update one `applications` row for that `job_post_id`.
+
+Rules:
+
+```text
+1. If status becomes applied and no application row exists, create one with status = applied and applied_at = now.
+2. If status becomes interview, rejected, or offer and an application row exists, update only applications.status and updated_at; preserve the existing applied_at.
+3. If status becomes rejected directly from saved and no application row exists, create one with status = rejected and applied_at = null.
+4. Do not create application rows for pending_review, saved, or ignored.
+5. Do not create more than one application row for the same job_post_id.
 ```
 
 ### Qdrant Collection
@@ -573,7 +683,8 @@ If the Qdrant similarity query for a new scorable job fails after SQLite insert:
 
 Qdrant delete and payload update helpers must be idempotent.
 Deleting a missing point should not fail the workflow.
-The `QdrantService` must dynamically verify if the `job_posts` collection exists during backend startup, and initialize it with the configured vector dimension and cosine metric if missing.
+The `QdrantService` must expose idempotent initialization that verifies whether the `job_posts` collection exists and creates it with the configured vector dimension and cosine metric if missing.
+Plan 3 owns the initialization logic in `qdrant_service.py`; Plan 4 owns calling that logic from FastAPI startup. Unit tests may call it directly with mocked Qdrant clients.
 
 During SQLite insertions, catch any `IntegrityError` caused by raw_content_hash unique collisions. When caught, roll back the transaction, fetch the existing job post ID, and return it as `skipped_exact_duplicate` without making Qdrant upsert calls.
 
@@ -632,9 +743,18 @@ For computing the newly inserted job's `embedding_similarity`, the Qdrant query 
 This keeps scoring deterministic and prevents another pending job from supplying the score.
 ```
 
+Implementation rule:
+
+```text
+The job-specific Qdrant filter must include payload field `job_id = current_job_id`.
+If the Qdrant client supports direct point-ID lookup or a point-ID condition, use that as an additional guard.
+Do not accept the highest-scoring result from other pending jobs as the newly inserted job's embedding_similarity.
+```
+
 ## 8. Implementation Steps
 
 - [ ] Create `backend/app/services/scoring_service.py`.
+- [ ] Import Plan 1 constants for executable status/source/JD validation in scoring, deduplication, persistence, and status transition services.
 - [ ] Implement `normalize_skill`, skill alias mapping, and skill overlap.
 - [ ] Implement `build_embedding_text` and `build_role_query_text`.
 - [ ] Implement location and level scoring.
@@ -647,22 +767,30 @@ This keeps scoring deterministic and prevents another pending job from supplying
 - [ ] Implement null-safe `dedup_key` generation and duplicate action policy.
 - [ ] Create `backend/app/services/job_processing_service.py`.
 - [ ] Implement the full Plan 2 state -> dedup -> score -> SQLite -> Qdrant pipeline.
+- [ ] Implement `ALLOWED_STATUS_TRANSITIONS` and service-level transition validation in an importable backend module consumed by both status mutation services and the Plan 4 API contract export.
+- [ ] Implement `InvalidStatusTransition` or an equivalent domain error for invalid status changes.
+- [ ] Ensure `approve_job`, `reject_job`, and `update_job_status` are the only backend status mutation entrypoints consumed by routes.
+- [ ] Ensure tracked status updates create or update exactly one `applications` row with the defined `applied_at` semantics.
 - [ ] Add persistence helpers that convert Plan 2 extraction state into `job_posts` rows.
 - [ ] Ensure every persisted new job defaults to `status = pending_review`.
+- [ ] Ensure every non-duplicate scorable job commits a SQLite row before calling OpenAI embeddings or Qdrant.
 - [ ] Ensure duplicate metadata rows use `status = ignored` and `duplicate_of_job_id`.
 - [ ] Ensure duplicate skipped jobs do not call embedding or Qdrant.
 - [ ] Ensure non-scorable jobs do not call embedding or Qdrant.
 - [ ] Ensure embedding failures persist jobs with null score fields and `error_reason`.
 - [ ] Create `backend/app/services/qdrant_service.py`.
-- [ ] Implement collection creation with configured embedding dimension and cosine distance.
+- [ ] Implement idempotent collection creation with configured embedding dimension and cosine distance.
+- [ ] Expose Qdrant collection initialization so Plan 4 can invoke it during FastAPI startup.
 - [ ] Implement Qdrant payload indexes.
 - [ ] Implement vector upsert for scorable jobs only.
 - [ ] Implement Qdrant similarity query for newly inserted scorable jobs.
+- [ ] Upsert Qdrant points with write acknowledgement (`wait=True` or client equivalent) and add a bounded retry for the current-job scoring query.
 - [ ] Implement point deletion for ignored review jobs and deleted jobs.
 - [ ] Implement payload status update for saved/applied/interview/rejected/offer.
 - [ ] Ensure Qdrant failures do not roll back SQLite commits.
 - [ ] Use update-payload for manual `rejected`; delete only for `ignored`.
 - [ ] Implement role-profile and status filter builders.
+- [ ] Add constants contract tests proving Plan 3 policies use Plan 1 shared constants instead of independent executable status sets.
 - [ ] Add unit tests for every deterministic scoring function.
 - [ ] Add tests for dedup decision policy.
 - [ ] Add integration tests with SQLite for persistence and duplicate exclusion.
@@ -707,8 +835,10 @@ Expected embedding/scoring pipeline tests:
 - Duplicate skipped job does not call embedding.
 - Embedding vector dimension mismatch returns null score fields and an error reason.
 - Embedding provider failure does not crash processing and still persists the job.
+- Embedding provider failure happens after SQLite insert and leaves the committed row as `pending_review` with null score fields and an error reason.
 - Qdrant query score is clamped to `[0, 1]`.
 - Qdrant similarity query failure does not crash processing and leaves the persisted job with null score fields plus an error reason.
+- Qdrant eventual-consistency visibility failure after upsert uses bounded retries, never borrows another job's score, and leaves the persisted row with null score fields plus `qdrant_synced = false` if the current job is not returned.
 
 Expected dedup test cases:
 
@@ -721,10 +851,15 @@ Expected dedup test cases:
 Expected persistence/Qdrant tests:
 
 - SQLite row is committed before Qdrant upsert.
+- SQLite row is committed before OpenAI embedding calls for scorable jobs.
 - Scorable job updates the committed SQLite row after Qdrant returns the similarity score.
 - Qdrant upsert failure keeps the SQLite row.
 - Qdrant similarity query failure keeps the SQLite row with null score fields.
 - Duplicate metadata row is inserted as `ignored` and does not upsert Qdrant.
+- Invalid status transitions raise the service domain error before SQLite or Qdrant mutation.
+- `ALLOWED_STATUS_TRANSITIONS` is importable by the Plan 4 API contract export and validates only statuses from Plan 1 constants.
+- `saved -> rejected` creates one `applications` row with `applied_at = null` when no prior application exists.
+- `applied -> interview/rejected` updates the existing `applications` row and preserves `applied_at`.
 - Manual `rejected` updates Qdrant payload instead of deleting.
 - Review reject to `ignored` deletes Qdrant point idempotently.
 
@@ -732,11 +867,13 @@ Expected Qdrant test cases:
 
 - Scorable job upserts with canonical UUID point ID.
 - Scorable job uses Qdrant query score for `embedding_similarity`.
+- Scorable job upsert requests write acknowledgement before the scoring query.
 - Non-scorable job does not upsert.
 - Review reject to `ignored` deletes point.
 - Approve updates payload status to `saved`.
 - Pending review filter includes both `role_profile_id` and `status`.
 - Job-specific scoring filter includes the current point/job ID.
+- If the job-specific scoring query returns no current job after bounded retries, score fields stay null and the service returns `qdrant_synced = false`.
 - Payload indexes are requested for configured fields.
 
 Manual verification:
@@ -759,23 +896,31 @@ Plan 4 consumes:
 - Deduplication service and duplicate action policy.
 - Persistence helpers for extraction results and warning propagation through `JobProcessingResult.warnings`.
 - Qdrant collection auto-initialization, upsert, similarity query scoring, delete, payload update, and filter helpers.
-- Status mutation service behavior that keeps SQLite and Qdrant synchronized.
+- Qdrant write/read consistency behavior for newly upserted points, including write acknowledgement, job-specific filtering, bounded retry, and null-score fallback when the current point is not visible.
+- Status mutation service behavior that validates allowed transitions, creates/updates `applications`, and keeps SQLite and Qdrant synchronized.
+- Canonical `ALLOWED_STATUS_TRANSITIONS` values that Plan 4 must export in the API contract and Plan 5 must consume or contract-test before rendering `StatusSelect` options.
 - Propagated warning strings in `JobProcessingResult.warnings`.
 
 Plan 4 must:
 
 - Call `job_processing_service.py` instead of reimplementing scoring, deduplication, embedding, persistence, or Qdrant sync inside route handlers.
+- Call Plan 3 status mutation methods instead of reimplementing status transition checks, application-row creation, or Qdrant status sync in route handlers.
+- Call the Plan 3 Qdrant initialization helper during FastAPI startup; do not duplicate collection or payload-index creation logic in route modules.
+- Pass `input_source = "tavily"` to the Plan 2 URL extraction entrypoint for Tavily search results.
 - Add Tavily search and route-level input validation.
 - Add `seed_demo.py` and mock data that reuse the same persistence and Qdrant services.
 - Keep SQLite as the source of truth for job status.
+- Keep Plan 1 shared constants as the source of truth for executable status/source validation.
 - Ensure the API routes explicitly map `JobProcessingResult.warnings` to the ingestion response `warnings` array.
 - Fetch full job rows for `JobProcessingResult.job_ids` before returning ingestion responses with a `jobs` array.
 - Rely on `job_processing_service.update_job_status(...)` to create or update the corresponding `applications` row when manual job status changes to `applied`, `interview`, `rejected`, or `offer` occur.
+- Export or expose the canonical status transition map through Plan 4's API contract artifact so Plan 5 cannot silently drift from backend transition rules.
 
 Hard rules for later phases:
 
 - API routes must reuse Plan 3 services and must not duplicate scoring or dedup logic.
 - Demo seeding must use the same score and Qdrant sync behavior as real parsing.
 - Later phases must not re-open duplicates of saved, applied, interview, rejected, or offer jobs into `pending_review`.
-- Qdrant collection checks and creations must occur dynamically during `QdrantService` constructor initialization.
+- Qdrant collection checks and creations must occur dynamically through `QdrantService` initialization / `ensure_collection()` methods.
+- Plan 4 may invoke Qdrant startup initialization, but Plan 3 remains the only owner of Qdrant collection and payload-index logic.
 - The `seed_demo.py` CLI script must follow the Master Plan command: `python scripts/seed_demo.py --reset` from the `backend/` directory.

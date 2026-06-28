@@ -114,14 +114,16 @@ flowchart TD
     L -->|full_jd / partial_jd| M[Build Clean Embedding Text]
     L -->|contact_for_jd / no_jd / unclear| N[Skip Similarity]
 
-    M --> O[Qdrant Similarity]
-    O --> P[Calculate Final Score]
-
-    P --> Q[Save to SQLite as pending_review]
+    M --> Q[Save to SQLite as pending_review]
     N --> Q
     K --> Q
 
-    Q --> R[React Review Dashboard]
+    Q -->|scorable persisted row| O[Qdrant Similarity Derived Index]
+    O --> P[Calculate Final Score]
+    P --> V[Update SQLite Score Fields]
+
+    Q -->|non-scorable / score pending| R[React Review Dashboard]
+    V --> R
     R -->|Approve| S[status = saved]
     R -->|Reject| T[status = ignored]
     S -->|Manual Update| U[applied / interview / rejected / offer]
@@ -132,6 +134,8 @@ Important rule:
 ```text
 All parsed jobs are saved to SQLite first with status = pending_review.
 User approval only changes status from pending_review to saved.
+Qdrant is updated only after SQLite persistence succeeds.
+SQLite remains the durable source of truth; Qdrant is a derived vector/search index.
 ```
 
 ---
@@ -1307,12 +1311,17 @@ Job_Agent/
 │   │   └── main.py
 │   │
 │   ├── scripts/
+│   │   ├── export_api_contract.py
 │   │   └── seed_demo.py
 │   │
 │   ├── data/
 │   │   └── .gitkeep
 │   │
+│   ├── tests/
+│   │   └── test_constants_contract.py
+│   │
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
 │   └── Dockerfile
 │
 ├── frontend/
@@ -1321,6 +1330,9 @@ Job_Agent/
 ├── mock_data/
 │   ├── demo_jobs.json
 │   └── messy_social_posts.json
+│
+├── shared/
+│   └── api-contract.json
 │
 ├── docker-compose.yml
 ├── .env.example
@@ -1360,13 +1372,24 @@ python-dotenv>=1.0.0
 tenacity>=8.2.0
 ```
 
+### Backend Test Requirements
+
+```text
+-r requirements.txt
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+respx>=0.21.0
+```
+
+Use `backend/requirements-dev.txt` for backend test-capable local setup. `respx` is the default HTTP mocking tool for `httpx` tests.
+
 ### Backend Run
 
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -1493,7 +1516,7 @@ async def main(reset: bool = False):
 - [ ] Add `mock_data/demo_jobs.json`.
 - [ ] Add at least 12 demo jobs.
 - [ ] Seed both SQLite and local Qdrant.
-- [ ] Dashboard works without internet.
+- [ ] Dashboard works from preloaded demo data without internet.
 - [ ] Demo can start from preloaded data.
 
 ### UI

@@ -128,6 +128,8 @@ class JobAgentState(TypedDict, total=False):
     extraction_time_ms: int | None
 ```
 
+Runtime validation for `input_source`, `parse_status`, `jd_status`, and `extraction_status` must use the shared constants from `backend/app/core/constants.py` created in Plan 1. The `Literal[...]` annotations above are allowed for static typing, but they must not become divergent executable source-of-truth sets.
+
 Every node must return partial updates that preserve these required fields:
 
 ```text
@@ -192,6 +194,62 @@ Map `JobAgentState.input_source` to `JobPostExtract.source_platform` exactly:
 
 `job_board` is allowed in the database schema but is not produced by Plan 2 unless a later approved phase adds normalization for known boards.
 
+`map_input_source_to_source_platform(...)` must validate against Plan 1 `INPUT_SOURCES` and `SOURCE_PLATFORMS`. Tests must fail if the mapping accepts a non-Master input source or emits a non-Master source platform.
+
+### Public Extraction Entrypoints
+
+Expose a small service API that later phases can call without knowing LangGraph internals. These entrypoints must not persist to SQLite, calculate scores, call Qdrant, or create batches.
+
+```python
+async def run_extraction_graph(initial_state: JobAgentState) -> JobAgentState:
+    """Run the compiled extraction graph and return a complete extraction state."""
+
+
+async def extract_from_raw_text(
+    *,
+    batch_id: str,
+    role_profile_id: str,
+    raw_text: str,
+    source_url: str | None = None,
+) -> JobAgentState:
+    """Prepare a manual_text state, clean/truncate raw text, and run extraction."""
+
+
+async def extract_from_url(
+    *,
+    batch_id: str,
+    role_profile_id: str,
+    source_url: str,
+    input_source: Literal["manual_url", "tavily"] = "manual_url",
+) -> JobAgentState:
+    """Prepare a manual_url or tavily state, fetch/clean URL content, and run extraction or fallback."""
+```
+
+Plan 4 must pass `input_source = "tavily"` for Tavily search results and leave the default `manual_url` for direct URL parsing. It must not bypass Plan 2 URL cleaning/fallback behavior.
+
+### Mockable LLM Client Boundary
+
+Define the LLM call boundary so tests can replace provider behavior without patching LangGraph internals:
+
+```python
+class JobExtractionClientProtocol(Protocol):
+    async def extract_job(self, *, clean_text: str, source_url: str | None, source_platform: str) -> JobPostExtract:
+        ...
+
+    async def repair_job(
+        self,
+        *,
+        clean_text: str,
+        invalid_output: str,
+        validation_error: str,
+        source_url: str | None,
+        source_platform: str,
+    ) -> JobPostExtract:
+        ...
+```
+
+The production implementation may use LangChain/OpenAI structured output. Tests should inject a fake implementation that returns valid output, invalid output followed by repair success, and invalid output after retry.
+
 ### JD Status Rules
 
 Extraction must produce one of:
@@ -213,6 +271,28 @@ Rules:
 - `unclear`: extraction failed or content is unreliable.
 
 Only `full_jd` and `partial_jd` set `should_score_similarity = true`.
+
+### Parse vs Extraction Status Semantics
+
+`parse_status` describes only input/content parsing:
+
+```text
+success = raw text or URL content was accepted, cleaned, and is available for extraction
+needs_manual_input = URL/content could not be parsed reliably and the user should paste JD text
+failed = content parsing itself failed before extraction could run
+```
+
+`extraction_status` describes only LLM/schema extraction:
+
+```text
+success = structured output validated on the first attempt
+retried = first structured output failed validation but repair succeeded
+failed = structured output failed validation after retry or an attempted LLM/schema extraction could not produce a reliable job
+```
+
+If content parsing fails or returns `needs_manual_input` before the LLM is called, leave `extraction_status = None` because no LLM/schema extraction attempt occurred. Use `parse_status`, `error_reason`, and `user_warning` to explain parser failures or manual-input fallbacks.
+
+If content parsing succeeds but LLM extraction or Pydantic validation fails, do not overwrite parser success. Preserve `parse_status = "success"`, set `extraction_status = "failed"`, set `jd_status = "unclear"`, and put the schema/LLM failure reason in `error_reason` and `extracted_job.extraction_notes`. Parser failures and LLM/schema failures must remain separately interpretable by Plans 3 and 4.
 
 ### URL Parsing
 
@@ -252,6 +332,10 @@ If `trafilatura` returns text that falls below the threshold, return this state:
         "title": None,
         "company": None,
         "location": None,
+        "work_mode": "unknown",
+        "level": "unknown",
+        "employment_type": "unknown",
+        "salary": None,
         "responsibilities": None,
         "requirements": None,
         "skills": [],
@@ -272,7 +356,7 @@ If `trafilatura` returns text that falls below the threshold, return this state:
     "jd_confidence_multiplier": None,
     "final_score": None,
     "final_score_percent": None,
-    "extraction_status": "failed",
+    "extraction_status": None,
     "error_reason": "URL content was too short or unreliable for extraction",
     "user_warning": "We could not extract enough job content from this URL.\nThe page may require JavaScript rendering, login, or cookie acceptance.\nPlease paste the job description text manually.",
 }
@@ -318,16 +402,23 @@ Fallback result must include:
 
 ```json
 {
-  "parse_status": "failed",
+  "parse_status": "success",
   "extracted_job": {
     "title": null,
     "company": null,
     "location": null,
+    "work_mode": "unknown",
+    "level": "unknown",
+    "employment_type": "unknown",
+    "salary": null,
     "responsibilities": null,
     "requirements": null,
     "skills": [],
+    "source_url": "<state source_url or null>",
+    "source_platform": "<mapped input_source>",
     "jd_status": "unclear",
-    "should_score_similarity": false
+    "should_score_similarity": false,
+    "extraction_notes": "LLM output failed schema validation after retry"
   },
   "jd_status": "unclear",
   "should_score_similarity": false,
@@ -345,25 +436,36 @@ Fallback result must include:
 }
 ```
 
+Use `parse_status = "success"` in this fallback only when raw text or URL content parsing succeeded and the failure occurred in LLM/schema extraction. If the content parser failed before usable clean text existed, return the parser failure path instead with `parse_status = "failed"` or `needs_manual_input` as appropriate.
+
 The actual returned `JobAgentState` must also preserve `batch_id`, `role_profile_id`, and `input_source`.
+
+All fallback `extracted_job` dictionaries must be directly ingestible by Plan 3 without route-layer or persistence-layer guessing. They must include the `JobPostExtract` default fields (`work_mode`, `level`, `employment_type`, `salary`, `source_url`, `source_platform`, `jd_status`, `should_score_similarity`, and `extraction_notes`) even when values are unknown or null. `source_platform` must always be produced by `map_input_source_to_source_platform(state["input_source"])`; it must not be hardcoded to one input type.
 
 ## 8. Implementation Steps
 
 - [ ] Create `backend/app/agents/schemas.py` with `JobAgentState` and `JobPostExtract`.
+- [ ] Import Plan 1 shared constants for runtime validation of input sources, source platforms, parse statuses, extraction statuses, and JD statuses.
 - [ ] Create `backend/app/agents/prompts.py` with extraction and repair prompt templates.
 - [ ] Create `backend/app/services/cost_service.py` for token and estimated cost calculations.
 - [ ] Ensure `input_tokens`, `output_tokens`, `estimated_cost_usd`, and `extraction_time_ms` are always returned as provider values or explicitly `None`.
 - [ ] Create `backend/app/services/extraction_service.py` for URL fetch, text cleaning, content hashing, LLM structured output, and retry orchestration.
+- [ ] Expose `run_extraction_graph`, `extract_from_raw_text`, and `extract_from_url` service entrypoints for Plan 4.
+- [ ] Define a mockable LLM extraction client boundary so provider behavior can be replaced in tests.
 - [ ] Create `backend/app/agents/nodes.py` with content preparation, extraction, retry, classification, and `mark_unclear` nodes.
 - [ ] Create `backend/app/agents/graph.py` to compile and run the extraction graph.
 - [ ] Ensure every node preserves `batch_id`, `role_profile_id`, and `input_source`.
 - [ ] Add source mapping from `input_source` to `source_platform`.
+- [ ] Add tests proving source/status runtime validation uses the Plan 1 constants and rejects values outside those constants.
 - [ ] Ensure URL parsing uses `httpx` and `trafilatura`.
 - [ ] Ensure low-content URL parsing returns `parse_status = needs_manual_input` and the configured user warning.
 - [ ] Ensure low-content URL parsing skips LLM extraction and returns `needs_manual_input`.
+- [ ] Ensure low-content/manual-input parser fallback does not set `extraction_status = failed` when no LLM/schema extraction was attempted.
 - [ ] Ensure invalid LLM output retries exactly once.
+- [ ] Ensure LLM/schema failure after successful content parsing preserves `parse_status = success` and sets `extraction_status = failed`.
 - [ ] Ensure failed extraction returns `jd_status = unclear`, `should_score_similarity = false`, and score fields as `None`.
 - [ ] Ensure every failure path sets all score fields to `None`.
+- [ ] Ensure every fallback `extracted_job` includes the `JobPostExtract` default fields so Plan 3 can persist it without adding missing-key defaults.
 - [ ] Ensure `raw_content_hash` is computed from cleaned content when clean content exists.
 - [ ] Add a reusable helper for preserving required state keys.
 - [ ] Add mocked tests for valid extraction, retry success, retry failure, low-content URL extraction, and state key preservation.
@@ -391,18 +493,24 @@ Expected test coverage:
 - Valid LLM JSON validates as `JobPostExtract`.
 - Invalid first LLM response retries once.
 - Invalid response after retry returns `jd_status = unclear`.
+- Invalid response after retry, when content parsing succeeded, returns `parse_status = success` and `extraction_status = failed`.
 - `mark_unclear` preserves `batch_id`, `role_profile_id`, and `input_source`.
 - `manual_text` input does not require URL fetch.
 - `manual_url` input uses `httpx` and `trafilatura`.
 - Low-content URL output sets `parse_status = needs_manual_input`.
 - Low-content URL path does not call the LLM.
 - Low-content URL path returns `jd_status = unclear`, `should_score_similarity = false`, and all score fields as `None`.
+- Low-content URL path returns fallback `extracted_job` fields for `work_mode`, `level`, `employment_type`, `salary`, `source_url`, `source_platform`, `jd_status`, `should_score_similarity`, and `extraction_notes`.
+- Low-content URL path returns `extraction_status = None` because LLM/schema extraction was not attempted.
+- Retry-failure fallback returns fallback `extracted_job` fields for `work_mode`, `level`, `employment_type`, `salary`, `source_url`, `source_platform`, `jd_status`, `should_score_similarity`, and `extraction_notes`.
 - Low-content URL path preserves `batch_id`, `role_profile_id`, and `input_source`.
 - Low-content URL path returns the exact stable `user_warning` text.
 - `input_source` maps to the expected `source_platform`.
+- `input_source`, `source_platform`, `parse_status`, `jd_status`, and `extraction_status` validation remains synchronized with Plan 1 shared constants.
 - Invalid URL scheme rejects non-http/non-https URLs.
 - Timeout or oversized response returns `parse_status = failed` or `needs_manual_input` without crashing the graph.
 - Token, cost, and extraction time fields are present or explicitly `None`.
+- Plan 3/Plan 4 can distinguish parser failures from LLM/schema failures by reading `parse_status` and `extraction_status` separately.
 
 Manual verification:
 
@@ -417,8 +525,12 @@ Plan 3 consumes:
 
 - `JobAgentState` with extraction, scoring placeholder fields, and `user_warning`.
 - `JobPostExtract` validated output shape.
+- The Plan 2 service entrypoints `run_extraction_graph`, `extract_from_raw_text`, and `extract_from_url`.
 - `clean_text`, `raw_content_hash`, `parse_status`, `extracted_job`, `jd_status`, `should_score_similarity`, `user_warning`, and observability fields.
 - The guarantee that all failed extractions return `jd_status = unclear` and preserve foreign key context.
+- The guarantee that successful content parsing is not overwritten by LLM/schema failure: `parse_status` stays `success` while `extraction_status` becomes `failed`.
+- The guarantee that fallback `extracted_job` dictionaries include the same default keys as `JobPostExtract`, so Plan 3 persistence does not need to invent missing extraction defaults.
+- Runtime status and source validation tied to Plan 1 constants, so Plan 3 does not need to reconcile divergent enum/string definitions.
 
 Plan 3 must be able to persist both successful extraction states and low-content/manual-input states. Plan 2 guarantees that these states always include `batch_id`, `role_profile_id`, `input_source`, `parse_status`, `jd_status`, `should_score_similarity`, and nullable score placeholders.
 
@@ -435,6 +547,7 @@ Hard rules for later phases:
 
 - Do not make the extraction graph responsible for final scoring.
 - Do not let any node drop `batch_id`, `role_profile_id`, or `input_source`.
+- Do not define independent executable status/source sets in extraction code; use Plan 1 constants for runtime checks.
 - Do not introduce Playwright/browser rendering in the MVP parser.
 - Do not let one bad job crash an entire batch.
 - Terminal success states of the extraction graph must hand off `extracted_job` as a `JobPostExtract.model_dump()` dictionary so Phase 3 services can ingest it directly.

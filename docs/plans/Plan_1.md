@@ -34,6 +34,7 @@ This phase creates the stable storage and configuration contract that all later 
 - Create backend package layout under `backend/app/`.
 - Add backend dependency file with the MVP backend packages.
 - Add root `.env.example` matching the master environment contract.
+- Add or update the root `.gitignore` so local secrets, virtual environments, generated SQLite files, frontend dependencies, and build outputs are not committed.
 - Add `docker-compose.yml` for local Qdrant with a persistent `qdrant_data` volume.
 - Add backend configuration loading from the single root `.env`.
 - Add basic logging setup for backend services.
@@ -88,9 +89,13 @@ Job_Agent/
 |   |   `-- main.py
 |   |-- data/
 |   |   `-- .gitkeep
+|   |-- tests/
+|   |   `-- test_constants_contract.py
 |   |-- requirements.txt
+|   |-- requirements-dev.txt
 |   `-- Dockerfile
 |-- docker-compose.yml
+|-- .gitignore
 `-- .env.example
 ```
 
@@ -131,6 +136,36 @@ MAX_RESPONSE_SIZE_MB=2
 
 No API keys may be exposed to the frontend.
 
+### Repository Ignore Rules
+
+Create or update the root `.gitignore` in this phase. It must ignore local secrets and generated artifacts while keeping checked-in examples and placeholders available.
+
+Required ignore entries:
+
+```text
+.env
+.venv/
+backend/.venv/
+__pycache__/
+.pytest_cache/
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
+node_modules/
+frontend/job-agent-ui/node_modules/
+frontend/job-agent-ui/dist/
+```
+
+Required keep rules:
+
+```text
+!.env.example
+!backend/data/.gitkeep
+!backend/app/db/migrations/.gitkeep
+```
+
+Do not create frontend-specific `.env` or `.env.example` files in this phase or later phases.
+
 ### Backend Dependencies
 
 `backend/requirements.txt` must include:
@@ -156,6 +191,17 @@ aiosqlite>=0.20.0
 python-dotenv>=1.0.0
 tenacity>=8.2.0
 ```
+
+`backend/requirements-dev.txt` must include the runtime requirements plus the backend test dependencies used by Plans 2 through 4:
+
+```text
+-r requirements.txt
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+respx>=0.21.0
+```
+
+`respx` is the chosen HTTP mocking tool for `httpx` URL parsing and route tests. Later phases may add a different test helper only if they also update this file and the verification commands. A clean backend environment must be able to run `pytest` after installing `requirements-dev.txt`.
 
 ### SQLite Rules
 
@@ -283,6 +329,25 @@ mock
 job_board
 ```
 
+### Shared Status and Source Constants
+
+Create reusable backend constants or enum-like literal sets for values that later services and routes must share. Place them in a single backend module such as `backend/app/core/constants.py` so Plans 2 through 4 do not invent local copies:
+
+```text
+JOB_STATUSES = pending_review/saved/applied/interview/rejected/offer/ignored
+TRACKED_JOB_STATUSES = saved/applied/interview/rejected/offer
+APPLICATION_STATUSES = applied/interview/rejected/offer
+JD_STATUSES = full_jd/partial_jd/contact_for_jd/no_jd/unclear
+PARSE_STATUSES = success/needs_manual_input/failed
+EXTRACTION_STATUSES = success/retried/failed
+SOURCE_PLATFORMS = tavily/manual_url/manual_text/mock/job_board
+INPUT_SOURCES = tavily/manual_url/manual_text/mock
+```
+
+These constants must not create new tables or alter the database schema. They exist only to prevent later plans from hardcoding divergent status/source strings in scoring, routing, demo loading, and frontend response serialization.
+
+Later backend phases must import these constants from `backend/app/core/constants.py` for runtime validation, route schemas, service transition checks, deduplication policies, and demo loading. Type hints such as `Literal[...]` may repeat the same values for editor/static typing support, but executable validation must derive from these shared constants so status and source strings cannot drift across Plans 2 through 4.
+
 ### Table: applications
 
 Required columns:
@@ -363,15 +428,33 @@ volumes:
 
 The Qdrant collection, payload indexes, upsert, delete, and query filtering are implemented in Plan 3.
 
+### Backend Dockerfile Boundary
+
+Create a minimal `backend/Dockerfile` for packaging the FastAPI backend only. It must:
+
+- Use a Python runtime image.
+- Set the working directory to `/app`.
+- Copy `requirements.txt` and install backend dependencies.
+- Copy backend application code.
+- Default to running `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+- Not bake API keys or `.env` values into the image.
+- Not start Qdrant, SQLite as a service, workers, frontend code, Redis, Celery, or cron jobs.
+
+Do not add a backend service to `docker-compose.yml` in this phase. The master plan uses Docker Compose only for local Qdrant in the MVP.
+
 ## 8. Implementation Steps
 
 - [ ] Create the backend folder structure and `__init__.py` files.
 - [ ] Create `backend/requirements.txt` with all backend dependencies from the master plan.
+- [ ] Create `backend/requirements-dev.txt` with `-r requirements.txt`, `pytest`, `pytest-asyncio`, and `respx` so later phase tests run in a clean environment.
 - [ ] Create `.env.example` at the repository root using the required environment names.
+- [ ] Create or update root `.gitignore` with the required local-secret and generated-artifact rules.
 - [ ] Create `docker-compose.yml` for Qdrant local with the persistent `qdrant_data` volume.
 - [ ] Create `backend/app/core/config.py` using Pydantic settings and root `.env` loading.
 - [ ] Create `backend/app/core/logging.py` with a simple structured logging configuration.
 - [ ] Create `backend/app/db/models.py` with SQLAlchemy ORM models for the three MVP tables.
+- [ ] Add shared backend constants or enum-like literal sets for job statuses, application statuses, JD statuses, parse statuses, extraction statuses, source platforms, and input sources.
+- [ ] Add `backend/tests/test_constants_contract.py` or an equivalent lightweight import check that proves the shared constants expose the exact Master Plan status/source values consumed by later phases.
 - [ ] Add model-level indexes and the partial unique index for `raw_content_hash`.
 - [ ] Create `backend/app/db/session.py` with async engine, async session maker, and database initialization function.
 - [ ] Add SQLite connection pragmas for `foreign_keys` and `journal_mode`.
@@ -381,6 +464,7 @@ The Qdrant collection, payload indexes, upsert, delete, and query filtering are 
 - [ ] Create `backend/app/main.py` with FastAPI app initialization and database startup initialization.
 - [ ] Add `backend/data/.gitkeep` and `backend/app/db/migrations/.gitkeep`.
 - [ ] Create `backend/Dockerfile` for backend containerization.
+- [ ] Ensure `backend/Dockerfile` does not introduce extra runtime services, baked secrets, queues, workers, or frontend behavior.
 - [ ] Confirm no frontend, extraction, scoring, or Qdrant service behavior is implemented in this phase.
 
 ## 9. Verification & Testing Plan
@@ -391,10 +475,11 @@ Automated checks:
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python -c "from app.core.config import settings; print(settings.DATABASE_URL)"
 python -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"
 python -c "from app.db.models import RoleProfile, JobPost, Application; print(RoleProfile.__tablename__, JobPost.__tablename__, Application.__tablename__)"
+pytest tests/test_constants_contract.py
 ```
 
 SQLite verification:
@@ -447,7 +532,31 @@ required_indexes = {
     "idx_applications_job_post_id",
 }
 print("missing_indexes", sorted(required_indexes - set(indexes)))
+
+fk_rows = conn.execute("PRAGMA foreign_key_list(applications)").fetchall()
+print("applications foreign_keys", fk_rows)
+print("applications_on_delete", [row[6] for row in fk_rows])
 '@ | python -
+```
+
+Repository ignore verification:
+
+```powershell
+git check-ignore .env
+git check-ignore backend/data/job_matching.db
+git check-ignore backend/data/job_matching.db-wal
+git check-ignore backend/.venv/pyvenv.cfg
+git check-ignore frontend/job-agent-ui/node_modules/example
+```
+
+Expected:
+
+```text
+.env
+backend/data/job_matching.db
+backend/data/job_matching.db-wal
+backend/.venv/pyvenv.cfg
+frontend/job-agent-ui/node_modules/example
 ```
 
 App-session PRAGMA verification:
@@ -488,6 +597,7 @@ docker compose down
 Expected outcomes:
 
 - Importing `settings` succeeds and reads root environment defaults.
+- Installing `backend/requirements-dev.txt` succeeds and provides `pytest`, `pytest-asyncio`, and `respx` for Plans 2 through 4.
 - `backend/data/job_matching.db` can be created locally.
 - Exactly three MVP application tables exist: `role_profiles`, `job_posts`, and `applications`.
 - No `search_runs` table exists.
@@ -495,14 +605,18 @@ Expected outcomes:
 - Required indexes exist.
 - Foreign keys are enabled on app-managed SQLAlchemy connections.
 - WAL mode is enabled for the SQLite database.
-- The application foreign-key delete behavior is documented so Plan 4 can safely reset demo/mock jobs that have tracked application rows.
+- The application foreign-key delete behavior is verified. If `applications.job_post_id` does not report `CASCADE`, Plan 4 must delete matching `applications` rows before mock-owned `job_posts` rows during demo reset.
 - Qdrant container can start locally on ports `6333` and `6334`.
+- `.env`, local SQLite database files, SQLite WAL/SHM sidecars, virtual environments, frontend `node_modules`, and frontend build output are ignored by git.
 
 Manual verification:
 
 - Confirm `.env.example` contains no real API keys.
+- Confirm `.env.example`, `backend/data/.gitkeep`, and `backend/app/db/migrations/.gitkeep` are not accidentally ignored.
 - Confirm `role_profiles` has no `matching_text` column.
 - Confirm no extraction, scoring, frontend, or API workflow scope was added.
+- Confirm `backend/app/core/constants.py` is importable and contains only the Master-approved status/source values listed in this phase.
+- Confirm `backend/tests/test_constants_contract.py` passes after installing `backend/requirements-dev.txt`.
 
 ## 10. Handoff Notes for Phase 2
 
@@ -512,7 +626,10 @@ Plan 2 consumes:
 - Root environment settings from `backend/app/core/config.py`.
 - SQLAlchemy async session utilities from `backend/app/db/session.py`.
 - Stable table and field names from `backend/app/db/models.py`.
+- Shared backend constants/literal sets for status and source values. Plans 2 through 4 must import these constants for runtime validation instead of inventing separate executable sets.
 - Existing dependency set for LangChain, LangGraph, OpenAI, httpx, and trafilatura.
+- Backend test dependency set from `backend/requirements-dev.txt`, including `pytest`, `pytest-asyncio`, and `respx`.
+- Root `.gitignore` rules that protect the local root `.env`, generated SQLite files, virtual environments, frontend dependencies, and build outputs.
 
 Plan 2 must:
 
@@ -525,6 +642,7 @@ Hard rules for later phases:
 - Do not rename database columns from this phase.
 - Do not add `matching_text` to `role_profiles`.
 - Do not change status values without a migration plan.
+- Do not duplicate status/source values in executable backend logic; import the Plan 1 constants and add tests when schemas or services depend on those values.
 - Do not create new database tables unless a later approved plan explicitly requires them.
 - Manual status transitions to `applied`, `interview`, `rejected`, and `offer` must update `job_posts.status` and create/update a corresponding record in the `applications` table.
 - Plan 3 may verify database models but must not alter schemas. Any model updates require explicit Phase 1 revision or migration tasks.

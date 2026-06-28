@@ -27,6 +27,8 @@ After this phase, the project meets the final MVP definition from `Master_Plan.m
 - [ ] Plan 3 scoring, deduplication, persistence, and Qdrant sync work.
 - [ ] Plan 4 FastAPI routes and demo seeding work.
 - [ ] Plan 4 exposes stable API response schemas from `backend/app/api/schemas.py`.
+- [ ] Plan 4 exports `shared/api-contract.json` by running `backend/scripts/export_api_contract.py`.
+- [ ] Plan 4 API schemas are validated against Plan 1 backend constants for statuses and source values.
 - [ ] Plan 4 ingestion endpoints return the standard ingestion response with `batch_id`, counts, full jobs, and ingestion-level warnings.
 - [ ] Plan 4 supports `GET /api/jobs?status=tracked` for saved/applied/interview/rejected/offer jobs.
 - [ ] Plan 4 CORS allows `http://localhost:5173`.
@@ -42,6 +44,7 @@ After this phase, the project meets the final MVP definition from `Master_Plan.m
   - `lucide-react`
 - Add API client for backend endpoints.
 - Add TypeScript types for role profiles, jobs, score fields, statuses, warnings, and batch metrics.
+- Keep frontend status/source TypeScript unions synchronized with the Plan 4 exported `shared/api-contract.json`, which is generated from backend constants, Plan 3 status transitions, endpoint metadata, and API schemas.
 - Build role profile creation and selection UI.
 - Build job ingestion controls:
   - Tavily/public search
@@ -62,7 +65,7 @@ After this phase, the project meets the final MVP definition from `Master_Plan.m
 - Show manual-input warning for URL parsing failures.
 - Add loading, error, and empty states.
 - Add responsive layout for laptop and mobile demo.
-- Ensure the dashboard can work from seeded demo data without internet.
+- Ensure the dashboard can work from already seeded local demo data without Tavily, public internet search, URL fetching, or LLM extraction access.
 
 ## 5. Out of Scope
 
@@ -103,6 +106,11 @@ frontend/
         |   `-- ReviewPage.tsx
         |-- styles/
         |   `-- app.css
+        |-- test/
+        |   |-- activeBatch.test.tsx
+        |   |-- apiContract.test.ts
+        |   |-- setup.ts
+        |   `-- StatusSelect.test.tsx
         `-- types/
             `-- api.ts
 ```
@@ -142,6 +150,20 @@ http://localhost:8000
 
 Do not create any `.env` or `.env.example` files under the frontend directory. This enforces the single-root `.env` architecture.
 The frontend API client base URL must default in code to `http://localhost:8000`. If custom configuration is required for production, it must be loaded via a centralized root configuration mechanism, not via a frontend-specific environment file. Only expose frontend-safe configurations if necessary, and never expose backend API keys.
+
+`package.json` must include these scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "preview": "vite preview"
+  }
+}
+```
 
 ### Pages and Navigation
 
@@ -286,6 +308,10 @@ export interface BatchSummary {
 }
 ```
 
+These TypeScript unions mirror backend API response values; they are not an independent source of truth. Add a frontend contract test or schema snapshot check that loads `shared/api-contract.json` from the repository root. When running tests from `frontend/job-agent-ui`, resolve it as `path.resolve(process.cwd(), "../../shared/api-contract.json")`. Compare `JobStatus`, `JdStatus`, `ParseStatus`, `ExtractionStatus`, source platform values, endpoint metadata, and key response schema names against the exported backend contract. If the backend adds or removes a Master-approved value, the frontend test must fail until `src/types/api.ts` is updated deliberately or regenerated from the contract.
+
+If API types are generated instead of handwritten, generate them from `shared/api-contract.json` or from the backend OpenAPI/schema export referenced by that contract. Local hardcoded literals are acceptable only when covered by a contract test that fails on drift.
+
 ### Active Batch Handling
 
 When any ingestion action succeeds:
@@ -309,6 +335,21 @@ the UI must:
 
 If there is no active batch, the metrics panel should show an empty state instead of calling the summary endpoint.
 When the user switches role profiles, the UI must reload the corresponding `activeBatchId` from localStorage for that profile, or reset the batch metrics view if no batch history exists. This ensures metrics do not disappear or leak across profiles on refresh.
+
+There is no backend "latest batch for profile" endpoint in the MVP API contract. Do not invent one in the frontend phase. If no active batch ID exists for the selected profile in localStorage, show the metrics empty state until the user runs an ingestion action.
+
+Use this stable localStorage key format:
+
+```text
+job-agent.activeBatchId.{role_profile_id}
+```
+
+Rules:
+
+- Write the key only after a successful ingestion response that includes a `batch_id`.
+- Read the key after selecting or creating a role profile.
+- Remove the key if `GET /api/batches/{batch_id}/summary` returns 404 for that profile's saved batch.
+- Never reuse an active batch ID across different role profiles.
 
 ### Role Profile UI
 
@@ -432,13 +473,14 @@ rejected
 offer
 ```
 
-`StatusSelect` must be current-status aware and filter dropdown options to only display valid manual transition paths allowed by the backend:
+`StatusSelect` must be current-status aware and filter dropdown options to only display valid manual transition paths allowed by the backend contract:
 - If current status is `saved`: show options `applied` and `rejected`.
 - If current status is `applied`: show options `interview` and `rejected`.
 - If current status is `interview`: show options `rejected` and `offer`.
 - If current status is `rejected` or `offer` (terminal states): disable the dropdown or hide status controls.
 
 The dropdown must never offer `pending_review`, `saved`, or `ignored` options.
+These examples must be tested against `allowed_status_transitions` from `shared/api-contract.json`, not accepted as an unverified independent frontend transition map.
 
 Approve uses the approve endpoint, reject from review uses the reject endpoint, and manual tracking uses `PATCH /api/jobs/{id}/status`.
 
@@ -532,7 +574,10 @@ Required states:
 
 - [ ] Scaffold `frontend/job-agent-ui` with Vite React TypeScript.
 - [ ] Install `react-router-dom`, `axios`, and `lucide-react`.
+- [ ] Add required `package.json` scripts for `dev`, `build`, `typecheck`, `test`, and `preview`.
 - [ ] Add `src/types/api.ts` matching Plan 4 response contracts.
+- [ ] Add a contract test or generated-schema snapshot check that loads `shared/api-contract.json` and keeps frontend status/source unions synchronized with the exported backend contract.
+- [ ] Ensure frontend endpoint constants/client paths are covered by `shared/api-contract.json` endpoint metadata or tested against it.
 - [ ] Add complete nullable TypeScript API types.
 - [ ] Add `src/api/client.ts` with all backend client functions.
 - [ ] Store active `role_profile_id` and active `batch_id`.
@@ -547,6 +592,7 @@ Required states:
 - [ ] Add approve and reject actions.
 - [ ] Build tracked jobs dashboard.
 - [ ] Fetch dashboard jobs with `status=tracked`.
+- [ ] Add a test or mocked client assertion that the dashboard calls `GET /api/jobs` with `status=tracked`, not only `saved`.
 - [ ] Add manual status update control.
 - [ ] Ensure manual status select does not offer `ignored`.
 - [ ] Add score breakdown UI.
@@ -555,8 +601,15 @@ Required states:
 - [ ] Add loading, empty, disabled, and error states.
 - [ ] Add responsive CSS.
 - [ ] Add frontend tests for API client/type-safe rendering where practical.
-- [ ] Verify seeded demo data can populate the UI without internet.
+- [ ] Add `src/test/setup.ts` and configure Vitest to use `jsdom`.
+- [ ] Add tests for localStorage active batch keys being isolated per role profile.
+- [ ] Add tests that profile switching uses the profile-specific localStorage active batch key or shows empty metrics when no key exists.
+- [ ] Add tests for `StatusSelect` only showing valid backend transition options from `shared/api-contract.json`.
+- [ ] Add tests proving frontend status/source unions match `shared/api-contract.json` values and do not contain non-Master statuses such as `archived` or unsupported source platforms.
+- [ ] Add rendering tests for null score fields and ingestion warnings.
+- [ ] Verify already seeded local demo data can populate the UI without Tavily, public internet search, URL fetching, or LLM extraction access.
 - [ ] Confirm frontend never exposes API keys or calls external AI/search/vector services directly.
+- [ ] Confirm no frontend `.env`, `frontend/.env.example`, or `frontend/job-agent-ui/.env.example` exists.
 
 ## 9. Verification & Testing Plan
 
@@ -575,6 +628,16 @@ Frontend checks:
 ```powershell
 cd frontend/job-agent-ui
 npm install
+```
+
+Backend contract prerequisite:
+
+```powershell
+cd ../..
+cd backend
+.\.venv\Scripts\Activate.ps1
+python scripts/export_api_contract.py
+cd ..\frontend\job-agent-ui
 ```
 
 Install test dependencies and configure the Vite test runner:
@@ -609,10 +672,46 @@ npm test -- --run
 npm run dev
 ```
 
+Contract verification:
+
+```powershell
+npm test -- --run
+```
+
+Expected contract coverage:
+
+```text
+Frontend JobStatus, JdStatus, ParseStatus, ExtractionStatus, source platform unions, endpoint metadata, and StatusSelect transition options match shared/api-contract.json generated from backend constants, Plan 3 transitions, and Plan 4 API schemas.
+```
+
 If no separate `typecheck` script exists, add one:
 
 ```json
 "typecheck": "tsc --noEmit"
+```
+
+If no separate `test` script exists, add one:
+
+```json
+"test": "vitest"
+```
+
+Frontend environment file verification:
+
+```powershell
+Test-Path frontend/.env
+Test-Path frontend/.env.example
+Test-Path frontend/job-agent-ui/.env
+Test-Path frontend/job-agent-ui/.env.example
+```
+
+Expected:
+
+```text
+False
+False
+False
+False
 ```
 
 Manual verification:
@@ -629,6 +728,9 @@ Manual verification:
 - After changing a job to applied/interview/rejected/offer, it remains in tracked dashboard.
 - Confirm metrics panel shows parsed jobs, scorable jobs, failed extractions, tokens, and estimated cost.
 - Metrics panel updates after mock-load, parse-text, parse-url, and search.
+- Metrics panel reloads the active batch from `job-agent.activeBatchId.{role_profile_id}` after page refresh.
+- Switching role profiles uses that profile's own active batch key and does not show metrics from another profile.
+- Switching to a profile without a stored active batch key shows metrics empty state and does not call a non-existent latest-batch endpoint.
 - Parse a manual raw text job and confirm it appears in review queue.
 - Parse a low-content URL and confirm manual input warning appears.
 - Null score fields render as `Not scored`.
@@ -637,11 +739,14 @@ Manual verification:
 - No request is made to OpenAI, Tavily, Qdrant, or SQLite from browser devtools.
 - Confirm browser console has no critical errors.
 - Confirm the app works at a mobile viewport without overlapping text.
+- Confirm no frontend `.env` or `.env.example` files exist.
+- Confirm frontend status/source labels and dropdown options match the backend API schema and do not introduce frontend-only states.
+- Confirm contract tests fail if `shared/api-contract.json` removes or changes a status, source platform, endpoint path, or allowed status transition.
 
 Expected MVP behavior:
 
 - Demo can start from preloaded data.
-- Dashboard works without internet.
+- Dashboard works from preloaded local demo data without internet search or extraction API access.
 - User can create a profile.
 - User can search or manually ingest jobs.
 - Extracted jobs are shown as `pending_review`.
