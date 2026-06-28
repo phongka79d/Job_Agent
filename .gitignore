@@ -216,3 +216,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Repository Ignore Rules (Plan 1)
+.env
+.venv/
+backend/.venv/
+__pycache__/
+.pytest_cache/
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
+node_modules/
+frontend/job-agent-ui/node_modules/
+frontend/job-agent-ui/dist/
+
+# Keep rules
+!.env.example
+!backend/data/.gitkeep
+!backend/app/db/migrations/.gitkeep

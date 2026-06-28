@@ -113,7 +113,7 @@ Plan 1 must establish a stable project foundation before backend configuration a
 
 ### Tasks
 
-- [ ] (01A): Create backend package skeleton and placeholder files
+- [x] (01A): Create backend package skeleton and placeholder files
   - Source of Truth: `docs/plans/Plan_1.md` > `## 4. Scope`; `docs/plans/Plan_1.md` > `## 6. Target Directory Structure`; `docs/plans/Master_Plan.md` > `## 30. Project Directory Structure`
   - Source Requirements:
     - Create backend package layout under `backend/app/`.
@@ -135,7 +135,7 @@ Plan 1 must establish a stable project foundation before backend configuration a
   - Blocked Condition: None
   - Files: `backend/app/**/__init__.py`, `backend/data/.gitkeep`, `backend/app/db/migrations/.gitkeep`
 
-- [ ] (01B): Add backend runtime and test dependency files
+- [x] (01B): Add backend runtime and test dependency files
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Backend Dependencies`; `docs/plans/Master_Plan.md` > `## 31. Environment Setup`
   - Source Requirements:
     - `backend/requirements.txt` must include all MVP backend packages.
@@ -156,7 +156,7 @@ Plan 1 must establish a stable project foundation before backend configuration a
   - Blocked Condition: None
   - Files: `backend/requirements.txt`, `backend/requirements-dev.txt`
 
-- [ ] (01C): Add root environment example and repository ignore rules
+- [x] (01C): Add root environment example and repository ignore rules
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Environment Settings`; `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Repository Ignore Rules`; `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
   - Source Requirements:
     - Use one root `.env` file loaded by backend configuration.
@@ -179,7 +179,7 @@ Plan 1 must establish a stable project foundation before backend configuration a
   - Blocked Condition: None
   - Files: `.env.example`, `.gitignore`
 
-- [ ] (01D): Add local Qdrant Docker Compose infrastructure
+- [x] (01D): Add local Qdrant Docker Compose infrastructure
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Qdrant Infrastructure`; `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema`; `docs/plans/Master_Plan.md` > `## 33. Docker Compose`
   - Source Requirements:
     - Create only the local Docker Compose service for Qdrant in Plan 1.
@@ -200,7 +200,7 @@ Plan 1 must establish a stable project foundation before backend configuration a
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` if Docker is not installed or not running.
   - Files: `docker-compose.yml`
 
-- [ ] (01E): Add minimal backend Dockerfile
+- [x] (01E): Add minimal backend Dockerfile
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Backend Dockerfile Boundary`; `docs/plans/Plan_1.md` > `## 8. Implementation Steps`
   - Source Requirements:
     - Backend Dockerfile must package the FastAPI backend only.
