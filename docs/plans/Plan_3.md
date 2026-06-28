@@ -40,7 +40,7 @@ This phase connects the Plan 2 extraction result to the Plan 1 SQLite schema and
 - Implement `embedding_service.py` using `OPENAI_EMBEDDING_MODEL` from settings.
 - Generate embeddings for both `build_role_query_text(role_profile)` and `build_embedding_text(job)`.
 - Validate embedding vector length against `EMBEDDING_DIMENSION`.
-- Calculate `embedding_similarity` as normalized cosine similarity between role and job embeddings.
+- Calculate `embedding_similarity` from the local Qdrant cosine query score, normalized to `[0, 1]`.
 - Implement location and level scoring using three-tier rules.
 - Implement skill overlap normalized to `[0, 1]`.
 - Implement base score and final score formulas.
@@ -101,7 +101,7 @@ Recommended ownership:
 embedding_service.py       -> embedding API calls and vector validation
 scoring_service.py         -> deterministic score math only
 dedup_service.py           -> duplicate decisions only
-qdrant_service.py          -> Qdrant collection, indexes, upsert/delete/filter/status payload
+qdrant_service.py          -> Qdrant collection, indexes, upsert/delete/filter/similarity query/status payload
 job_processing_service.py  -> end-to-end Plan 2 state -> SQLite + Qdrant pipeline
 ```
 
@@ -319,14 +319,25 @@ Rules:
 
 Semantic similarity:
 
-Use local cosine similarity calculation as the primary path to score role and job embedding pairs.
-
 ```python
-def calculate_embedding_similarity(role_vector: list[float], job_vector: list[float]) -> float:
-    """Return cosine similarity clamped to [0, 1]."""
+def normalize_qdrant_similarity_score(score: float) -> float:
+    """Clamp the Qdrant cosine score to [0, 1] for final scoring."""
 ```
 
-`embedding_similarity` must be normalized and clamped to `[0, 1]` before use in the final score. Do not rely on Qdrant query scores for the final score, only for candidate retrieval.
+Use Qdrant as the canonical semantic similarity source for `embedding_similarity`, matching the Master Plan scoring path.
+
+Required behavior:
+
+- Generate the role query embedding from `build_role_query_text(role_profile)`.
+- Generate the job vector from `build_embedding_text(job)`.
+- Insert the SQLite row first with `status = pending_review` and nullable score fields so the canonical UUID `job_posts.id` exists.
+- Upsert the scorable job vector into Qdrant using `job_posts.id` as the point ID.
+- Query Qdrant with the role query vector using filters that include the active `role_profile_id`, `status = pending_review`, and the current point/job ID.
+- Use the returned Qdrant cosine score as `embedding_similarity` after clamping to `[0, 1]`.
+- Calculate deterministic score components, `base_score`, `final_score`, and `final_score_percent`.
+- Update the same SQLite row with score fields after the Qdrant similarity score is available.
+
+If Qdrant upsert or Qdrant similarity query fails, do not fall back to local cosine scoring in MVP. Keep the committed SQLite row visible as `pending_review`, set score fields to `None`, append/set an error reason, and return `qdrant_synced = false`.
 
 ### Processing Pipeline Order
 
@@ -349,16 +360,18 @@ For each Plan 2 `JobAgentState`:
    - build embedding_text
    - embed role query text
    - embed job embedding_text
-   - calculate embedding_similarity
+   - insert SQLite row first with a canonical UUID and nullable score fields
+   - upsert the job vector into Qdrant using the SQLite job ID as the point ID
+   - query Qdrant for this job using role_profile_id, status, and point/job ID filters
+   - use the Qdrant query score as embedding_similarity after clamping to [0, 1]
    - calculate deterministic score components
    - calculate final_score and final_score_percent
+   - update the SQLite row with embedding and score fields
 9. If non-duplicate and non-scorable:
    - persist with status = pending_review
    - all score fields = null
    - no Qdrant upsert
-10. Insert SQLite row first using a canonical UUID string.
-11. After SQLite commit, upsert Qdrant point only if the job is scorable and embedding succeeded.
-12. Return a processing result containing inserted/skipped/duplicate/qdrant status counts.
+10. Return a processing result containing inserted/skipped/duplicate/qdrant status counts and inserted job IDs.
 ```
 
 ### Processing Result
@@ -392,10 +405,19 @@ raw_content_hash
 dedup_key = hash(normalized_company + normalized_title)
 ```
 
+Null-safe dedup key rule:
+
+```text
+If either normalized_company or normalized_title is missing or blank, do not generate a dedup_key.
+Never hash empty company/title values into a shared duplicate key.
+Use raw_content_hash as the only duplicate signal for those rows.
+```
+
 Exact duplicate policy:
 
 - Compute `raw_content_hash` from cleaned raw content.
 - If `raw_content_hash` already exists, skip inserting a new row and count it as `skipped_exact_duplicate`.
+- If `dedup_key` is `None` because company/title is incomplete, skip the dedup-key duplicate check.
 
 Dedup key policy:
 
@@ -513,6 +535,7 @@ Payload:
 Qdrant rules:
 
 - New scorable job: upsert vector.
+- New scorable job scoring: query Qdrant with the role query vector and a job-specific filter; use the returned score for `embedding_similarity`.
 - `embedding_text` changes: recompute vector.
 - Job ignored or rejected from review queue: delete vector.
 - Job deleted: delete vector.
@@ -539,6 +562,14 @@ If Qdrant upsert, delete, payload update, or payload-index creation fails:
 - Return a processing result flag such as `qdrant_synced = false`.
 - Keep the job visible in SQLite.
 - Do not retry indefinitely in this phase.
+
+If the Qdrant similarity query for a new scorable job fails after SQLite insert:
+
+- Keep the SQLite row committed as `status = pending_review`.
+- Set `embedding_similarity`, deterministic score components, `base_score`, `jd_confidence_multiplier`, `final_score`, and `final_score_percent` to `None`.
+- Preserve `embedding_text` if it was generated.
+- Set or append an `error_reason` explaining that Qdrant similarity failed.
+- Return `qdrant_synced = false`.
 
 Qdrant delete and payload update helpers must be idempotent.
 Deleting a missing point should not fail the workflow.
@@ -594,6 +625,13 @@ def build_pending_review_filter(role_profile_id: str) -> models.Filter:
 
 For saved dashboard search, use status `saved`.
 
+Job-specific scoring filter:
+
+```text
+For computing the newly inserted job's `embedding_similarity`, the Qdrant query must also restrict the result to the current point/job ID.
+This keeps scoring deterministic and prevents another pending job from supplying the score.
+```
+
 ## 8. Implementation Steps
 
 - [ ] Create `backend/app/services/scoring_service.py`.
@@ -603,10 +641,10 @@ For saved dashboard search, use status `saved`.
 - [ ] Implement JD confidence multiplier, base score, final score, and final percent.
 - [ ] Create `backend/app/services/embedding_service.py`.
 - [ ] Implement OpenAI embedding generation using configured model and dimension.
-- [ ] Implement cosine similarity calculation and clamp result to `[0, 1]`.
+- [ ] Implement Qdrant similarity query scoring and clamp the returned score to `[0, 1]`.
 - [ ] Create `backend/app/services/dedup_service.py`.
 - [ ] Implement `raw_content_hash` exact duplicate check.
-- [ ] Implement `dedup_key` generation and duplicate action policy.
+- [ ] Implement null-safe `dedup_key` generation and duplicate action policy.
 - [ ] Create `backend/app/services/job_processing_service.py`.
 - [ ] Implement the full Plan 2 state -> dedup -> score -> SQLite -> Qdrant pipeline.
 - [ ] Add persistence helpers that convert Plan 2 extraction state into `job_posts` rows.
@@ -619,6 +657,7 @@ For saved dashboard search, use status `saved`.
 - [ ] Implement collection creation with configured embedding dimension and cosine distance.
 - [ ] Implement Qdrant payload indexes.
 - [ ] Implement vector upsert for scorable jobs only.
+- [ ] Implement Qdrant similarity query for newly inserted scorable jobs.
 - [ ] Implement point deletion for ignored review jobs and deleted jobs.
 - [ ] Implement payload status update for saved/applied/interview/rejected/offer.
 - [ ] Ensure Qdrant failures do not roll back SQLite commits.
@@ -668,7 +707,8 @@ Expected embedding/scoring pipeline tests:
 - Duplicate skipped job does not call embedding.
 - Embedding vector dimension mismatch returns null score fields and an error reason.
 - Embedding provider failure does not crash processing and still persists the job.
-- Cosine similarity is clamped to `[0, 1]`.
+- Qdrant query score is clamped to `[0, 1]`.
+- Qdrant similarity query failure does not crash processing and leaves the persisted job with null score fields plus an error reason.
 
 Expected dedup test cases:
 
@@ -676,11 +716,14 @@ Expected dedup test cases:
 - Existing `pending_review` duplicate skips insert.
 - Existing tracked duplicate can be inserted only as `status = ignored` with `duplicate_of_job_id`.
 - Existing `ignored` duplicate skips insert.
+- Missing company or missing title produces `dedup_key = None` and does not collide with other unclear jobs.
 
 Expected persistence/Qdrant tests:
 
 - SQLite row is committed before Qdrant upsert.
+- Scorable job updates the committed SQLite row after Qdrant returns the similarity score.
 - Qdrant upsert failure keeps the SQLite row.
+- Qdrant similarity query failure keeps the SQLite row with null score fields.
 - Duplicate metadata row is inserted as `ignored` and does not upsert Qdrant.
 - Manual `rejected` updates Qdrant payload instead of deleting.
 - Review reject to `ignored` deletes Qdrant point idempotently.
@@ -688,10 +731,12 @@ Expected persistence/Qdrant tests:
 Expected Qdrant test cases:
 
 - Scorable job upserts with canonical UUID point ID.
+- Scorable job uses Qdrant query score for `embedding_similarity`.
 - Non-scorable job does not upsert.
 - Review reject to `ignored` deletes point.
 - Approve updates payload status to `saved`.
 - Pending review filter includes both `role_profile_id` and `status`.
+- Job-specific scoring filter includes the current point/job ID.
 - Payload indexes are requested for configured fields.
 
 Manual verification:
@@ -713,7 +758,7 @@ Plan 4 consumes:
 - Deterministic scoring functions.
 - Deduplication service and duplicate action policy.
 - Persistence helpers for extraction results and warning propagation through `JobProcessingResult.warnings`.
-- Qdrant collection auto-initialization, upsert, delete, payload update, and filter helpers.
+- Qdrant collection auto-initialization, upsert, similarity query scoring, delete, payload update, and filter helpers.
 - Status mutation service behavior that keeps SQLite and Qdrant synchronized.
 - Propagated warning strings in `JobProcessingResult.warnings`.
 
@@ -723,7 +768,8 @@ Plan 4 must:
 - Add Tavily search and route-level input validation.
 - Add `seed_demo.py` and mock data that reuse the same persistence and Qdrant services.
 - Keep SQLite as the source of truth for job status.
-- Ensure the API routes explicitly map `JobProcessingResult.warnings` to warning fields in API response DTOs.
+- Ensure the API routes explicitly map `JobProcessingResult.warnings` to the ingestion response `warnings` array.
+- Fetch full job rows for `JobProcessingResult.job_ids` before returning ingestion responses with a `jobs` array.
 - Rely on `job_processing_service.update_job_status(...)` to create or update the corresponding `applications` row when manual job status changes to `applied`, `interview`, `rejected`, or `offer` occur.
 
 Hard rules for later phases:

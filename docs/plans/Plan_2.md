@@ -352,6 +352,7 @@ The actual returned `JobAgentState` must also preserve `batch_id`, `role_profile
 - [ ] Create `backend/app/agents/schemas.py` with `JobAgentState` and `JobPostExtract`.
 - [ ] Create `backend/app/agents/prompts.py` with extraction and repair prompt templates.
 - [ ] Create `backend/app/services/cost_service.py` for token and estimated cost calculations.
+- [ ] Ensure `input_tokens`, `output_tokens`, `estimated_cost_usd`, and `extraction_time_ms` are always returned as provider values or explicitly `None`.
 - [ ] Create `backend/app/services/extraction_service.py` for URL fetch, text cleaning, content hashing, LLM structured output, and retry orchestration.
 - [ ] Create `backend/app/agents/nodes.py` with content preparation, extraction, retry, classification, and `mark_unclear` nodes.
 - [ ] Create `backend/app/agents/graph.py` to compile and run the extraction graph.

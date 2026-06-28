@@ -27,7 +27,7 @@ After this phase, the project meets the final MVP definition from `Master_Plan.m
 - [ ] Plan 3 scoring, deduplication, persistence, and Qdrant sync work.
 - [ ] Plan 4 FastAPI routes and demo seeding work.
 - [ ] Plan 4 exposes stable API response schemas from `backend/app/api/schemas.py`.
-- [ ] Plan 4 ingestion endpoints return the standard ingestion response with `batch_id`, counts, jobs, and warnings.
+- [ ] Plan 4 ingestion endpoints return the standard ingestion response with `batch_id`, counts, full jobs, and ingestion-level warnings.
 - [ ] Plan 4 supports `GET /api/jobs?status=tracked` for saved/applied/interview/rejected/offer jobs.
 - [ ] Plan 4 CORS allows `http://localhost:5173`.
 - [ ] `python scripts/seed_demo.py --reset` can preload demo jobs from the `backend/` directory.
@@ -351,7 +351,9 @@ IngestionResponse.warnings
 Job.error_reason
 ```
 
-Warnings should be visible on the relevant job card and in a short ingestion result area after parse/search/mock-load.
+Show `IngestionResponse.warnings` in a short ingestion result area after parse/search/mock-load.
+Show persisted per-job extraction or processing issues on job cards from `Job.error_reason`.
+Do not assume the `warnings` array can identify a specific job card unless Plan 4 later adds job-keyed warning metadata.
 
 ### Review Queue UI
 
@@ -539,6 +541,8 @@ Required states:
 - [ ] Build ingestion panel for search, URL, raw text, and mock load.
 - [ ] Use standard ingestion response for search, URL parse, text parse, and mock load.
 - [ ] Show ingestion warnings and per-job extraction errors.
+- [ ] Display `IngestionResponse.warnings` only in the ingestion result area unless the backend returns job-keyed warning metadata.
+- [ ] Display per-job persisted issues from `Job.error_reason` on job cards.
 - [ ] Build review queue and job cards.
 - [ ] Add approve and reject actions.
 - [ ] Build tracked jobs dashboard.
@@ -629,6 +633,7 @@ Manual verification:
 - Parse a low-content URL and confirm manual input warning appears.
 - Null score fields render as `Not scored`.
 - Ingestion warnings appear after low-content URL parsing.
+- Job cards show persisted `Job.error_reason` without requiring transient `warnings` to be job-keyed.
 - No request is made to OpenAI, Tavily, Qdrant, or SQLite from browser devtools.
 - Confirm browser console has no critical errors.
 - Confirm the app works at a mobile viewport without overlapping text.

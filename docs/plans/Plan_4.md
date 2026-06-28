@@ -55,7 +55,7 @@ After this phase, the backend can run the complete MVP workflow without the Reac
 - Add `demo_loader.py` and `backend/scripts/seed_demo.py`.
 - Add `mock_data/demo_jobs.json` and `mock_data/messy_social_posts.json`.
 - Ensure demo seeding creates 12 jobs with the required composition.
-- Ensure `seed_demo.py --reset` clears only demo/mock-owned data and matching Qdrant demo vectors.
+- Ensure `seed_demo.py --reset` clears only demo/mock-owned data, dependent mock-owned application rows, and matching Qdrant demo vectors.
 - Add route tests with mocked LLM, Tavily, and Qdrant where needed.
 
 ## 5. Out of Scope
@@ -173,6 +173,8 @@ Job response fields must include all fields needed by Plan 5:
 
 For nullable score fields, return `null`; do not omit them.
 Ingestion endpoints must return transient warning messages through the standard `warnings` array. Persisted job responses should expose stored fields from `job_posts`, including `error_reason`, without adding non-Master columns.
+
+`warnings` are ingestion-level messages, not persisted job-card fields. Job cards must display persisted `Job.error_reason`; ingestion result panels may display `warnings`.
 
 ### API Schema Ownership
 
@@ -296,6 +298,7 @@ All ingestion endpoints must return:
 ```
 
 This response should be produced from Plan 3 `job_processing_service.py`.
+If Plan 3 returns `job_ids`, the route layer must fetch those rows from SQLite and serialize them into the `jobs` array before responding. Route handlers must not recompute scores, dedup decisions, or Qdrant sync while doing this response shaping.
 
 URL route must include this production note in code:
 
@@ -564,6 +567,16 @@ Do not wipe manually entered or Tavily-created jobs.
 Qdrant reset must delete only matching demo vectors.
 Delete the demo role profile only if it matches the deterministic demo profile name and has no remaining non-mock jobs referencing it.
 
+Demo reset order:
+
+```text
+1. Collect mock job IDs from `job_posts` where `source_platform = 'mock'`.
+2. Delete `applications` rows whose `job_post_id` is in that mock job ID set, unless Plan 1 explicitly implemented and verified `ON DELETE CASCADE`.
+3. Delete matching mock Qdrant vectors.
+4. Delete matching mock `job_posts`.
+5. Delete the deterministic demo role profile only if no non-mock jobs still reference it.
+```
+
 Expected output:
 
 ```text
@@ -592,6 +605,7 @@ Local Qdrant vectors upserted: 10
 - [ ] Ensure `/api/jobs/parse-url` reuses Plan 2 URL cleaning and Plan 3 persistence pipeline.
 - [ ] Ensure `/api/jobs/search` uses Tavily then reuses the same URL parsing pipeline.
 - [ ] Ensure ingestion endpoints return the standard ingestion response.
+- [ ] Ensure ingestion responses fetch full `Job` DTOs for Plan 3 `job_ids`.
 - [ ] Ensure all route handlers call Plan 3 service methods instead of duplicating business logic.
 - [ ] Ensure `/api/jobs/mock-load` loads mock files and reuses Plan 3 scoring/persistence/Qdrant behavior.
 - [ ] Implement review queue and dashboard queries with duplicate exclusion.
@@ -603,6 +617,7 @@ Local Qdrant vectors upserted: 10
 - [ ] Create `backend/scripts/seed_demo.py`.
 - [ ] Ensure mock-load and seed_demo share `demo_loader.py`.
 - [ ] Ensure `--reset` only clears demo/mock data.
+- [ ] Ensure `--reset` deletes dependent `applications` rows for mock jobs before deleting mock `job_posts`, unless cascading deletes are explicitly implemented and verified.
 - [ ] Create `mock_data/demo_jobs.json`.
 - [ ] Create `mock_data/messy_social_posts.json`.
 - [ ] Add route tests with mocked LLM and Qdrant.
@@ -672,6 +687,9 @@ Expected route test cases:
 - Invalid status transitions return HTTP 400.
 - Mock-load reuses demo_loader and returns batch_id.
 - seed_demo --reset does not delete non-mock jobs.
+- seed_demo --reset succeeds after a mock job has been approved/applied and has an `applications` row.
+- Ingestion responses populate `jobs` by loading rows for Plan 3 `job_ids`.
+- Ingestion `warnings` are returned as ingestion-level messages and persisted job cards use `error_reason`.
 - Batch summary sums tokens, cost, failure count, and parsed jobs from `job_posts`.
 - Batch summary returns 404 for unknown batch_id.
 - API responses do not contain API keys or env secrets.
@@ -691,10 +709,11 @@ Plan 5 consumes:
 - Role profile endpoints.
 - Job parse, search, mock-load, review, dashboard, detail, approve, reject, status, and batch summary endpoints.
 - Shared API response schemas from `backend/app/api/schemas.py`.
-- Standard ingestion response shape with `batch_id`, counts, `jobs`, and `warnings`.
+- Standard ingestion response shape with `batch_id`, counts, full `jobs`, and ingestion-level `warnings`.
 - `GET /api/jobs?status=tracked` for saved/applied/interview/rejected/offer dashboard views.
 - Demo data that can be seeded without internet.
 - Warning messages for URL pages that need manual text input.
+- Persisted job-card errors through `Job.error_reason`; `warnings` are transient ingestion-result messages.
 - Score fields and score component fields for UI display.
 
 Plan 5 must:

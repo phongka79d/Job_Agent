@@ -297,6 +297,8 @@ applied_at DateTime
 updated_at DateTime
 ```
 
+Foreign key delete behavior must be explicit for demo reset safety. If the implementation does not configure `applications.job_post_id` with `ON DELETE CASCADE`, Plan 4 `seed_demo.py --reset` must delete matching `applications` rows before deleting mock-owned `job_posts` rows.
+
 Allowed application status values:
 
 ```text
@@ -493,6 +495,7 @@ Expected outcomes:
 - Required indexes exist.
 - Foreign keys are enabled on app-managed SQLAlchemy connections.
 - WAL mode is enabled for the SQLite database.
+- The application foreign-key delete behavior is documented so Plan 4 can safely reset demo/mock jobs that have tracked application rows.
 - Qdrant container can start locally on ports `6333` and `6334`.
 
 Manual verification:
