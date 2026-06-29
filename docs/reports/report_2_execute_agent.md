@@ -439,3 +439,365 @@ complete
 - next task ID: (02A)
 - can proceed: yes, after (01D) review acceptance and the Batch01 audit/approval gate
 - handoff notes: The future extraction client should pass its normalized usage mapping and explicit model pricing into `normalize_usage`, wrapping each attempted extraction in `track_extraction_time`.
+
+---
+
+# Task Execution Report - (02A)
+
+## Source Task File
+`docs/tasks/task_2.md`
+
+## Report File
+`docs/reports/report_2_execute_agent.md`
+
+## Batch
+Mandatory Batch02 - Input Preparation and URL Fallback
+
+## Task
+(02A) - Implement raw-text cleaning, truncation, and content hashing
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Master_Plan.md` > `## 28. Input Size and Retry Limits`
+- `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Input Limits`
+- `docs/plans/Plan_2.md` > `## 8. Implementation Steps`
+
+## Supplemental Documents Used
+- `docs/plans/Master_Plan.md`
+
+## Selected Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02A)
+- Task title: Implement raw-text cleaning, truncation, and content hashing
+
+## Completed Work
+- Status: complete.
+- Added reusable helpers that enforce `settings.MAX_RAW_TEXT_CHARS` before cleanup and `settings.MAX_CLEAN_TEXT_CHARS` after cleanup.
+- Added deterministic horizontal-whitespace normalization while preserving headings, lines, and paragraph boundaries.
+- Added conservative removal of exact known low-signal footer lines only when content exceeds the clean-text limit, followed by readable-boundary truncation.
+- Added SHA-256 hashing of final non-empty clean content.
+- Added network-free manual-text state preparation that returns parser success only for usable clean content and parser failure for empty or whitespace-only input.
+- Did not add URL fetching, `httpx`, `trafilatura`, URL fallback behavior, LLM calls, nodes, graph work, or sibling task behavior.
+
+## Files Created or Modified
+- `backend/app/services/extraction_service.py`
+- `backend/tests/test_manual_text_preparation.py`
+- `docs/reports/report_2_execute_agent.md`
+
+## Tests or Validations Run
+- `.\.venv\Scripts\python.exe -m pytest -q tests/test_manual_text_preparation.py` before implementation: Failed as expected because `app.services.extraction_service` did not exist.
+- `.\.venv\Scripts\python.exe -m pytest -q tests/test_manual_text_preparation.py` after initial implementation: Passed (`4 passed in 0.05s`).
+- Focused low-signal truncation test before implementation: Failed as expected because repeated cookie footer lines remained.
+- `.\.venv\Scripts\python.exe -m pytest -q tests/test_manual_text_preparation.py`: Passed (`5 passed in 0.05s`).
+- `.\.venv\Scripts\python.exe -m pytest -q`: Passed (`9 passed in 0.07s`).
+- `.\.venv\Scripts\python.exe -m compileall -q app`: Passed.
+- `git diff --check`: Passed.
+- Network dependency scan of `backend/app/services/extraction_service.py`: Passed; no `httpx`, `trafilatura`, `requests`, or `urllib` reference exists.
+
+## Acceptance Check
+- Task acceptance condition: Manual text stays within configured bounds, produces a stable hash, and never invokes HTTP.
+- Status: satisfied.
+- Evidence: Focused tests verify empty, normal, oversized, low-signal, and repeat-hash inputs; the manual preparer is synchronous and the module contains no HTTP client or URL-fetch path.
+
+## Artifacts Produced
+- `bound_raw_text`
+- `truncate_clean_text`
+- `clean_text_content`
+- `compute_content_hash`
+- `prepare_manual_text`
+- `backend/tests/test_manual_text_preparation.py`
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; A2 owns checkbox updates after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Used the existing Phase 1 `settings` instance for both limits rather than defining duplicate values.
+- Used SHA-256 over UTF-8 encoded final clean text so equivalent prepared content has a stable deduplication hash.
+- Preserved line and paragraph structure instead of flattening all whitespace, protecting meaningful JD section boundaries.
+- Limited semantic cleanup to a small exact-match set and only applied it to oversized content, avoiding broad keyword deletion from valid job descriptions.
+- Returned a parser-only partial state; the public async extraction entrypoint and graph invocation remain scoped to (03C).
+
+## Risks or Open Issues
+- None.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- No source conflict, dependency issue, required user action, or missing source-of-truth field was identified.
+- Dependencies (01A) and (01B) are accepted in commit `5e87f3e`.
+- Scope stayed within (02A); no URL/HTTP, unreliable-page fallback, LLM, graph, persistence, scoring, task checkbox, batch status, or commit was added.
+
+## Notes for Next Task
+- next task ID: (02B)
+- can proceed: yes, after A2 reviews and accepts (02A)
+- handoff notes: URL extraction can reuse the raw bound, cleanup, clean bound, and hash helpers, while adding network behavior only in (02B).
+---
+
+# Task Execution Report - (02B)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Report File
+docs/reports/report_2_execute_agent.md
+
+## Batch
+Mandatory Batch02 - Input Preparation and URL Fallback
+
+## Task
+(02B) - Implement bounded HTTP fetch and trafilatura extraction
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Master_Plan.md > ## 7. Handling JavaScript Pages and Cookie Banners
+- docs/plans/Master_Plan.md > ## 27. URL Parsing Security Note
+- docs/plans/Plan_2.md > ## 7. Technical Specifications > ### URL Parsing
+
+## Supplemental Documents Used
+- docs/plans/Master_Plan.md
+- docs/plans/Plan_2.md
+
+## Selected Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02B)
+- Task title: Implement bounded HTTP fetch and trafilatura extraction
+
+## Completed Work
+- Status: complete.
+- Added bounded async URL preparation in `backend/app/services/extraction_service.py`.
+- Rejected non-HTTP(S) schemes before network access.
+- Used `httpx.AsyncClient` with `REQUEST_TIMEOUT_SECONDS`, redirects enabled, streamed response reading, and `MAX_RESPONSE_SIZE_MB` byte cap enforcement.
+- Returned safe parser failure states for invalid scheme, timeout, HTTP status failure, generic HTTP failure, oversized response, and empty extraction without crashing.
+- Used `trafilatura.extract` as the HTML-to-text extraction path for accepted responses.
+- Reused the existing shared raw-bound, clean/truncate, and SHA-256 hashing helpers from (02A).
+- Added the exact required production SSRF note near the URL-fetch code.
+- Added `respx`-backed URL tests with no live network dependency.
+- Did not implement (02C) low-content/manual-input fallback warning semantics.
+
+## Files Created or Modified
+- backend/app/services/extraction_service.py
+- backend/tests/test_url_cleaning.py
+- docs/reports/report_2_execute_agent.md
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_url_cleaning.py`: Passed (`5 passed in 1.05s`).
+- `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_manual_text_preparation.py tests/test_url_cleaning.py`: Passed (`10 passed in 1.10s`).
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app tests`: Passed.
+- `git diff --check`: Passed; only existing CRLF conversion warnings were reported for already-modified docs.
+- `cd backend; .\.venv\Scripts\python.exe -m pytest -q`: Passed (`14 passed in 1.06s`).
+
+## Acceptance Check
+- Task acceptance condition: Valid mocked pages produce bounded clean text; invalid scheme, timeout, oversized, and failed HTTP cases do not crash.
+- Status: satisfied.
+- Evidence: `backend/tests/test_url_cleaning.py` covers successful mocked URL extraction and hashing, invalid scheme with zero HTTP calls, timeout handling, oversized response failure before `trafilatura.extract`, and HTTP 404 failure handling. All required mocked tests passed.
+
+## Artifacts Produced
+- `prepare_url_content`
+- Private URL parser failure helper in `backend/app/services/extraction_service.py`
+- `backend/tests/test_url_cleaning.py`
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; A2 owns checkbox updates after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Kept URL preparation as a parser-only async helper and did not add graph, LLM, route, persistence, scoring, or manual-input fallback behavior.
+- Used streaming byte accumulation with an immediate cap check to avoid unbounded response buffering.
+- Stored extracted readable text, not raw HTML, in the parser state's `raw_text`, then applied the existing cleaning, truncation, and hashing pipeline.
+- Returned `parse_status = "failed"` for URL parser failures in this task; `(02C)` remains responsible for `needs_manual_input` low-content and unreliable-page semantics.
+
+## Risks or Open Issues
+- Production SSRF hardening is intentionally not implemented in MVP scope; the required code note was added exactly as specified.
+
+## Minor Issues Fixed During Execution
+- Removed a duplicate import introduced during the initial edit before validation.
+
+## Workflow Integrity Check
+- No missing source-of-truth fields, dependency issues, required user actions, or source conflicts were identified.
+- Dependency (02A) is checked in `docs/tasks/task_2.md` and its helpers were reused.
+- Scope stayed within (02B); no sibling task checkbox, batch status, commit, LLM call, graph work, low-content warning behavior, route, persistence, scoring, Qdrant, Tavily search, or frontend change was added.
+
+## Notes for Next Task
+- next task ID: (02C)
+- can proceed: yes, after A2 reviews and accepts (02B)
+- handoff notes: `(02C)` can build on `prepare_url_content` by converting low-content/unreliable parser failures into the approved `needs_manual_input` state and warning without changing the bounded fetch mechanics.
+---
+
+# Task Execution Report - (02B) Repair
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Report File
+docs/reports/report_2_execute_agent.md
+
+## Batch
+Mandatory Batch02 - Input Preparation and URL Fallback
+
+## Task
+(02B) - Implement bounded HTTP fetch and trafilatura extraction
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Master_Plan.md > ## 27. URL Parsing Security Note
+- A2 review outcome: REJECTED_WITH_WARNINGS repair instruction for (02B)
+
+## Supplemental Documents Used
+- docs/plans/Master_Plan.md
+
+## Selected Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02B)
+- Task title: Implement bounded HTTP fetch and trafilatura extraction
+
+## Completed Work
+- Status: complete.
+- Added the omitted second SSRF production-note line near the URL-fetch code in `backend/app/services/extraction_service.py`.
+- Did not implement enterprise SSRF filtering or any sibling-task behavior.
+
+## Files Created or Modified
+- backend/app/services/extraction_service.py
+- docs/reports/report_2_execute_agent.md
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_url_cleaning.py`: Passed (`5 passed in 1.32s`).
+- `cd backend; .\.venv\Scripts\python.exe -m pytest -q`: Passed (`14 passed in 1.33s`).
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app tests`: Passed.
+- `git diff --check`: Passed; only existing CRLF conversion warnings were reported for already-modified docs.
+- `rg -n "Production note: Implement SSRF mitigation for URL parsing endpoints\.|Block localhost, private IPs, link-local metadata IPs, unsafe redirects, and internal network targets\." backend/app/services/extraction_service.py`: Passed; both note lines found at lines 162 and 163.
+
+## Acceptance Check
+- Task acceptance condition: Include the required production SSRF mitigation note near URL-fetch code while keeping bounded URL fetch and extraction behavior passing.
+- Status: satisfied.
+- Evidence: Both SSRF note lines are present near the `httpx.AsyncClient` URL-fetch block, URL tests pass, full backend tests pass, and no SSRF filtering logic was added.
+
+## Artifacts Produced
+- Repaired SSRF production note in `backend/app/services/extraction_service.py`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated repair run; A2 owns checkbox updates after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Kept the repair to a comment-only change as instructed by A2.
+- Preserved the existing MVP boundary: note-only SSRF mitigation guidance, no enterprise filtering implementation.
+
+## Risks or Open Issues
+- None.
+
+## Minor Issues Fixed During Execution
+- Added the missing second SSRF note line identified by A2.
+
+## Workflow Integrity Check
+- No dependency issue, required user action, source conflict, or architecture concern was identified.
+- Scope stayed within the rejected (02B) repair instruction; no task checkbox, batch status, commit, sibling task, low-content fallback, route, graph, LLM, persistence, scoring, Qdrant, Tavily search, or frontend change was added.
+
+## Notes for Next Task
+- next task ID: (02C)
+- can proceed: yes, after A2 reviews and accepts the repaired (02B)
+- handoff notes: Both SSRF note lines are now present; `(02C)` remains responsible for low-content/manual-input fallback semantics.
+---
+
+# Task Execution Report - (02C)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Report File
+docs/reports/report_2_execute_agent.md
+
+## Batch
+Mandatory Batch02 - Input Preparation and URL Fallback
+
+## Task
+(02C) - Implement low-content and unreliable-page fallback semantics
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/tasks/task_2.md > Mandatory Batch02 > (02C)
+- docs/plans/Master_Plan.md > ## 7. Handling JavaScript Pages and Cookie Banners > ### UI Warning Example
+- docs/plans/Master_Plan.md > ## 8. JD Status Rules
+- docs/plans/Plan_2.md > ## 7. Technical Specifications > ### Parse vs Extraction Status Semantics
+- docs/plans/Plan_2.md > ## 7. Technical Specifications > ### URL Parsing
+
+## Supplemental Documents Used
+- docs/plans/Master_Plan.md
+- docs/plans/Plan_2.md
+
+## Selected Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02C)
+- Task title: Implement low-content and unreliable-page fallback semantics
+
+## Completed Work
+- Status: complete.
+- Implemented `is_unreliable_extraction` with the required fewer-than-150-clean-character threshold after cleaning plus supported blocked/login/JavaScript/cookie signal detection.
+- Implemented complete URL manual-input fallback state using the canonical unclear-job and score-placeholder helpers.
+- Preserved `batch_id`, `role_profile_id`, `input_source`, and `source_url` on the fallback path.
+- Set parser and extraction statuses independently: `parse_status = "needs_manual_input"` and `extraction_status = None` when no LLM extraction should occur.
+- Returned the exact multiline Plan 2 manual-input warning.
+- Added `should_run_llm_extraction` so orchestration can treat parser fallback states as terminal before LLM extraction without adding Batch03 client or graph scope.
+
+## Files Created or Modified
+- backend/app/services/extraction_service.py
+- backend/tests/test_url_cleaning.py
+- docs/reports/report_2_execute_agent.md
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_url_cleaning.py`: Passed (`8 passed in 1.44s`) after implementation.
+- `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_manual_text_preparation.py`: Passed (`5 passed in 0.41s`).
+- `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_url_cleaning.py tests/test_manual_text_preparation.py`: Passed (`13 passed in 1.45s`).
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app/services/extraction_service.py tests/test_url_cleaning.py`: Passed.
+- TDD red check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_url_cleaning.py` initially failed during collection with `ImportError: cannot import name 'MANUAL_INPUT_WARNING'`, proving the new contract was absent before implementation.
+- Environment note: running `pytest tests/test_url_cleaning.py` with the non-venv Python was blocked by missing `trafilatura`; validation was rerun successfully with the repository backend virtualenv.
+
+## Acceptance Check
+- Task acceptance condition: Unreliable URL content returns the exact contract and zero LLM calls.
+- Status: satisfied.
+- Evidence: `test_low_content_url_returns_complete_manual_input_fallback` asserts exact status values, warning text, fallback `extracted_job`, score placeholders, observability placeholders, preserved identifiers, source URL, and `extraction_status is None`; `test_manual_input_parser_state_is_terminal_before_fake_llm_call` asserts a fake client call count remains `0` when `parse_status = "needs_manual_input"`.
+
+## Artifacts Produced
+- Complete manual-input fallback state for low-content/unreliable URL extraction.
+- Focused unit coverage in `backend/tests/test_url_cleaning.py`.
+- Execution report appended to `docs/reports/report_2_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; A2 owns checkbox and batch-status updates after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Reused `build_unclear_job` and `score_placeholder_update` from `backend/app/agents/schemas.py` instead of duplicating fallback shape or score-placeholder logic.
+- Kept blocked/login/JavaScript detection as simple phrase checks over cleaned extracted text, matching MVP parser scope and avoiding custom HTML/browser parsing.
+- Added only a small parser-terminal predicate for future orchestration; did not implement Batch03 LLM client, graph, nodes, or public extraction entrypoints.
+
+## Risks or Open Issues
+- The signal list is intentionally conservative and text-based; highly obfuscated blocked pages may still require later parser improvements.
+
+## Minor Issues Fixed During Execution
+- Added independent test literal for the stable warning text so tests catch warning drift instead of importing the production constant.
+
+## Workflow Integrity Check
+- Dependencies `(01B)` and `(02B)` were complete per the task file and user-provided dependency state.
+- No required implementation-time user action was pending.
+- No source-of-truth conflict was identified.
+- `grep` was requested by repository instructions but is unavailable in this PowerShell environment; `rg` was used as the search fallback before adding helpers.
+- Existing uncommitted/untracked Batch02 files were preserved; no task checkbox, batch status, commit, Batch03 scope, route, graph, persistence, scoring, Qdrant, Tavily search, or frontend change was added.
+
+## Notes for Next Task
+- next task ID: (03A)
+- can proceed: yes, after A2 reviews and accepts `(02C)`
+- handoff notes: Low-content/unreliable URL parser states now return terminal `needs_manual_input` states with exact warning text, complete unclear job shape, all score placeholders as `None`, and `should_run_llm_extraction(state) == False`.

@@ -692,3 +692,616 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - (02A)
+
+## Source Task File
+`docs/tasks/task_2.md`
+
+## Execution Report Reviewed
+`docs/reports/report_2_execute_agent.md`
+
+## Review Report File
+`docs/review/review_2_review_agent.md`
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02A)
+- Task title: Implement raw-text cleaning, truncation, and content hashing
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 28. Input Size and Retry Limits`; `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Input Limits`; `docs/plans/Plan_2.md` > `## 8. Implementation Steps`
+- Supplemental documents: `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02A)
+- Reviewed task ID: (02A)
+- Correct selection: yes
+- Notes: The latest entry at the physical EOF of the execution report is the requested (02A) entry.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes
+- changed files from git: `docs/reports/report_2_execute_agent.md`; untracked implementation and test files were read directly because untracked files do not appear in `git diff`
+- untracked files: `backend/app/services/extraction_service.py`, `backend/tests/test_manual_text_preparation.py`
+- Notes: Commit `5e87f3e` contains the accepted Batch01 artifacts. Current uncommitted work is limited to the (02A) implementation, its focused tests, and its appended execution report before reviewer-owned tracking/report updates.
+
+## Files Reviewed
+- `backend/app/services/extraction_service.py`: in scope - deterministic raw bound, cleanup, clean bound, SHA-256 hash, and manual-text preparation
+- `backend/tests/test_manual_text_preparation.py`: in scope - focused empty, normal, oversized, low-signal, and repeated-hash coverage
+- `backend/app/core/config.py`: in scope - confirms both limits are Phase 1 settings with approved defaults
+- `backend/app/agents/schemas.py`: in scope - confirms the returned partial `JobAgentState` keys and status contract
+- `docs/reports/report_2_execute_agent.md`: in scope - latest (02A) execution evidence is appended
+- `docs/tasks/task_2.md`: in scope - reviewed task requirements and reviewer-owned checkbox update
+- `docs/plans/Plan_2.md`: in scope - cited input-limit, parse-status, hash, and phase-boundary requirements
+- `docs/plans/Master_Plan.md`: in scope - cited Phase 1 limits and clean-content hash direction
+
+## Reported Files Cross-Check
+- `backend/app/services/extraction_service.py`: present in git/repo: yes; matches task scope: yes; notes: untracked new file inspected in full
+- `backend/tests/test_manual_text_preparation.py`: present in git/repo: yes; matches task scope: yes; notes: untracked focused test file inspected in full
+- `docs/reports/report_2_execute_agent.md`: present in git/repo: yes; matches task scope: yes; notes: appended (02A) entry is the only tracked pre-review change
+
+## Dependency Review
+- Required dependencies: (01A), (01B)
+- Dependency status: satisfied; accepted Batch01 schema/state helpers are committed in `5e87f3e`
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Both bounds read `settings.MAX_RAW_TEXT_CHARS` and `settings.MAX_CLEAN_TEXT_CHARS`; raw input is bounded before normalization and final clean text is bounded afterward.
+- Passed: Whitespace normalization is deterministic, preserves headings, lines, and paragraph boundaries, and only removes a narrow exact-match low-signal set when content exceeds the clean limit.
+- Passed: The final non-empty clean content is hashed with SHA-256 over UTF-8; empty or whitespace-only manual input yields no clean text and no hash.
+- Passed: `parse_status` is `success` only when prepared clean text exists; empty and whitespace-only input safely returns `failed`.
+- Passed: The implementation contains no HTTP, URL fetch, `trafilatura`, LLM, graph, persistence, scoring, or sibling-task behavior.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Independent runtime assertions exercised settings overrides, both bounds, exact section preservation, stable SHA-256 output, and empty-input failure behavior.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Runtime limits come from the existing Phase 1 settings instance. The low-signal set contains generic exact footer lines and is applied only during oversized clean-text truncation; no fixture strings, IDs, expected hashes, or sample-specific success logic appear in production code.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\python.exe -m pytest -q tests/test_manual_text_preparation.py`
+- Reported result: passed, 5 tests
+- Rerun result: passed, 5 tests in 0.04s
+- Status: passed
+- Notes: Covers empty, normal, oversized, low-signal, and repeat-hash inputs.
+- Command/check: `.\.venv\Scripts\python.exe -m pytest -q`
+- Reported result: passed, 9 tests
+- Rerun result: passed, 9 tests in 0.06s
+- Status: passed
+- Notes: Full backend suite remains green.
+- Command/check: `.\.venv\Scripts\python.exe -m compileall -q app`
+- Reported result: passed
+- Rerun result: passed
+- Status: passed
+- Notes: No compilation errors.
+- Command/check: independent configured-limit, section-preservation, SHA-256, and empty-input assertions
+- Reported result: not executor-reported
+- Rerun result: passed
+- Status: passed
+- Notes: Temporarily overrode both settings at runtime and restored them in a `finally` block.
+- Command/check: forbidden-scope source scan
+- Reported result: passed
+- Rerun result: passed
+- Status: passed
+- Notes: No HTTP, URL-fetch, `trafilatura`, provider, LLM, graph, persistence, or sibling-task references were found.
+- Command/check: `git diff --check`
+- Reported result: passed
+- Rerun result: passed
+- Status: passed
+- Notes: Only the existing LF-to-CRLF warning for the execution report was emitted.
+
+## Acceptance Review
+- Task acceptance: Manual text stays within configured bounds, produces a stable hash, and never invokes HTTP.
+- Status: satisfied
+- Evidence: Code inspection, focused tests, full tests, and independent runtime assertions verify both Phase 1 limits, stable clean-content SHA-256, safe empty handling, readable section preservation, and a network-free synchronous manual-text path.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the primary (02A) task entry and mirrored Progress Tracker entry
+- Checkbox updated by reviewer: yes, both mirrored (02A) entries only
+- Batch status: remains unchecked; (02B) and (02C) are pending
+- Execution report entry: latest matching (02A) entry present and appended
+- Review report entry: appended at physical EOF
+- Other: No sibling task, Batch02, or project-level acceptance checkbox was changed.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- The focused test file is intentionally introduced before Batch04 because (02A) explicitly requires unit validation. The later Batch04 URL-preparation coverage remains untouched.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, but this run must stop before (02B) per the user's explicit one-task limit
+- Should batch be marked complete? no; (02B) and (02C) remain pending
+
+## Repair Instructions
+- None
+---
+
+# Task Review Report - (02B)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+REJECTED_WITH_WARNINGS
+
+## Reviewed Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02B)
+- Task title: Implement bounded HTTP fetch and trafilatura extraction
+- Executor status reported: complete
+- Source of Truth: docs/plans/Master_Plan.md > ## 7. Handling JavaScript Pages and Cookie Banners; docs/plans/Master_Plan.md > ## 27. URL Parsing Security Note; docs/plans/Plan_2.md > ## 7. Technical Specifications > ### URL Parsing
+- Supplemental documents: docs/plans/Master_Plan.md
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02B)
+- Reviewed task ID: (02B)
+- Correct selection: yes
+- Notes: The user explicitly requested (02B), and the latest execution report entry is also (02B).
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes
+- changed files from git: docs/reports/report_2_execute_agent.md; docs/review/review_2_review_agent.md; docs/tasks/task_2.md; plus untracked backend/app/services/extraction_service.py, backend/tests/test_manual_text_preparation.py, backend/tests/test_url_cleaning.py
+- untracked files: backend/app/services/extraction_service.py; backend/tests/test_manual_text_preparation.py; backend/tests/test_url_cleaning.py
+- Notes: Tracked task/review changes include prior accepted (02A) progress and review artifacts. The (02B) implementation is in the untracked extraction service and URL test file, with extraction_service.py also carrying accepted (02A) helpers.
+
+## Files Reviewed
+- `backend/app/services/extraction_service.py`: in scope - contains accepted (02A) helpers plus (02B) async URL fetch, scheme validation, response byte cap, httpx usage, trafilatura extraction, and parser failure states
+- `backend/tests/test_url_cleaning.py`: in scope - respx-backed tests for successful mocked extraction, invalid scheme, timeout, oversized response, and HTTP failure
+- `backend/tests/test_manual_text_preparation.py`: prior accepted (02A) / dependency context - read to verify reused helper behavior and combined validation scope
+- `backend/app/core/config.py`: in scope - confirms REQUEST_TIMEOUT_SECONDS and MAX_RESPONSE_SIZE_MB settings exist
+- `backend/requirements.txt`: in scope - confirms trafilatura dependency is present
+- `docs/tasks/task_2.md`: in scope - selected (02B) task requirements and checkbox state
+- `docs/reports/report_2_execute_agent.md`: in scope - (02B) execution evidence and reported validations
+- `docs/review/review_2_review_agent.md`: in scope - prior (02A) accepted review, EOF append target inspected before append
+- `docs/plans/Plan_2.md`: in scope - cited URL parsing section and exact production note
+- `docs/plans/Master_Plan.md`: in scope - cited URL parsing and SSRF security note sections
+
+## Reported Files Cross-Check
+- `backend/app/services/extraction_service.py`: present in git/repo: yes; matches task scope: yes; notes: implements bounded URL fetch and extraction but omits the second line of the required production SSRF note
+- `backend/tests/test_url_cleaning.py`: present in git/repo: yes; matches task scope: yes; notes: no-live-network respx coverage matches reported parser cases
+- `docs/reports/report_2_execute_agent.md`: present in git/repo: yes; matches task scope: yes; notes: appended (02B) entry exists but its exact SSRF-note claim is inaccurate
+
+## Dependency Review
+- Required dependencies: (02A)
+- Dependency status: satisfied; (02A) is accepted in docs/tasks/task_2.md and its mirrored Progress Tracker entry, and its helpers are present in extraction_service.py
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Non-HTTP(S) schemes are rejected before network access.
+- Passed: `httpx.AsyncClient` uses `settings.REQUEST_TIMEOUT_SECONDS` and `follow_redirects=True`.
+- Passed: Response content is read through `client.stream(...)` and checked against `settings.MAX_RESPONSE_SIZE_MB` before trafilatura extraction.
+- Passed: Accepted HTML content is extracted with `trafilatura.extract`, then passed through shared clean/truncate/hash helpers from (02A).
+- Passed: Invalid scheme, timeout, HTTP status, HTTP transport, oversized response, and empty extraction paths return safe parser states without crashing.
+- Failed: The required production SSRF note from Plan 2 is not exact; the code contains only `Production note: Implement SSRF mitigation for URL parsing endpoints.` and omits `Block localhost, private IPs, link-local metadata IPs, unsafe redirects, and internal network targets.`
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Code inspection and passing respx-backed tests show real async HTTP fetching, streaming byte cap enforcement, status/timeout handling, trafilatura extraction, and helper reuse.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Runtime timeout and response-size limits come from settings. Tests use fixtures and mocked responses, but production logic is not overfit to fixture URLs, text, or expected hashes.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_url_cleaning.py`
+- Reported result: passed, 5 tests
+- Rerun result: passed, 5 tests in 1.33s
+- Status: passed
+- Notes: Covers successful mocked URL extraction, invalid scheme before network, timeout, oversized response before extraction, and HTTP failure.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_manual_text_preparation.py tests/test_url_cleaning.py`
+- Reported result: passed, 10 tests
+- Rerun result: passed, 10 tests in 1.33s
+- Status: passed
+- Notes: Confirms (02B) still composes accepted (02A) helper behavior.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app tests`
+- Reported result: passed
+- Rerun result: passed
+- Status: passed
+- Notes: No compilation errors.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest -q`
+- Reported result: passed, 14 tests
+- Rerun result: passed, 14 tests in 1.07s
+- Status: passed
+- Notes: Full backend suite is green.
+- Command/check: `git diff --check`
+- Reported result: passed with CRLF warnings only
+- Rerun result: passed with CRLF warnings only
+- Status: passed
+- Notes: No whitespace errors; Git emitted existing LF-to-CRLF warnings for modified docs.
+- Command/check: source check for the exact required production SSRF note
+- Reported result: claimed exact note was added
+- Rerun result: failed
+- Status: failed
+- Notes: Plan_2.md lines 368-369 contain the two-line note; extraction_service.py line 162 contains only the first line.
+
+## Acceptance Review
+- Task acceptance: Valid mocked pages produce bounded clean text; invalid scheme, timeout, oversized, and failed HTTP cases do not crash; URL code includes the required production SSRF mitigation note.
+- Status: partially satisfied
+- Evidence: Behavioral acceptance is satisfied by code inspection and passing tests. The required exact production SSRF note is incomplete, so the selected task cannot be accepted as complete.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the primary (02B) task block and mirrored Progress Tracker entry
+- Checkbox updated by reviewer: no
+- Batch status: remains unchecked; (02B) and (02C) are not accepted
+- Execution report entry: appended (02B) entry present
+- Review report entry: appended at physical EOF
+- Other: No sibling task, Batch02, or implementation file was modified by this review.
+
+## Report Accuracy
+- Partial
+- Mismatches: The execution report says the exact required production SSRF note was added, but the implementation omits the second required sentence.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- `backend/app/services/extraction_service.py` does not include the full required production SSRF note from Plan 2.
+
+### Warnings
+- The execution report overstates the implementation by claiming the exact SSRF note was added.
+
+### Observations
+- Low-content and unreliable-page `needs_manual_input` semantics remain correctly deferred to (02C) per the task file, so returning parser `failed` for empty extraction is not treated as a (02B) defect.
+- Prior accepted uncommitted (02A) files remain in the worktree and were not re-reviewed as new (02B) scope except where (02B) depends on their helpers.
+
+## Decision
+- Accept selected task? no
+- Repair required? yes
+- Can next task proceed? no; REJECTED_WITH_WARNINGS blocks the next task until the narrow repair is made and re-reviewed
+- Should batch be marked complete? no; (02B) is not accepted and (02C) remains pending
+
+## Repair Instructions
+- target: `backend/app/services/extraction_service.py`, near the URL-fetch code comment above the `httpx.AsyncClient` stream block
+- change: add the omitted second line of the required Plan 2 production note exactly: `Block localhost, private IPs, link-local metadata IPs, unsafe redirects, and internal network targets.` Keep this as a note/comment only; do not implement enterprise SSRF filtering in this task.
+- validation: rerun `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_url_cleaning.py`, `cd backend; .\.venv\Scripts\python.exe -m pytest -q`, `cd backend; .\.venv\Scripts\python.exe -m compileall -q app tests`, `git diff --check`, and verify both required SSRF-note lines are present in `backend/app/services/extraction_service.py`.
+- blocks next task: yes
+---
+
+# Task Review Report - (02B) Repair Re-review
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02B)
+- Task title: Implement bounded HTTP fetch and trafilatura extraction
+- Executor status reported: complete
+- Source of Truth: docs/plans/Master_Plan.md > ## 7. Handling JavaScript Pages and Cookie Banners; docs/plans/Master_Plan.md > ## 27. URL Parsing Security Note; docs/plans/Plan_2.md > ## 7. Technical Specifications > ### URL Parsing; prior A2 repair instruction for (02B)
+- Supplemental documents: docs/plans/Master_Plan.md
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02B)
+- Reviewed task ID: (02B)
+- Correct selection: yes
+- Notes: The latest matching execution-report entry is `Task Execution Report - (02B) Repair`, and this re-review is limited to whether the prior rejected-with-warnings issue was repaired without new scope.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: docs/reports/report_2_execute_agent.md; docs/review/review_2_review_agent.md; docs/tasks/task_2.md; plus untracked backend/app/services/extraction_service.py, backend/tests/test_manual_text_preparation.py, backend/tests/test_url_cleaning.py
+- untracked files: backend/app/services/extraction_service.py; backend/tests/test_manual_text_preparation.py; backend/tests/test_url_cleaning.py
+- Notes: Tracked docs include prior accepted (02A), prior rejected (02B) review, the latest (02B) repair report, and reviewer-owned (02B) checkbox/report updates. The implementation and tests remain untracked and were inspected directly.
+
+## Files Reviewed
+- `backend/app/services/extraction_service.py`: in scope - verified the two-line SSRF production note is present near the `httpx.AsyncClient` URL-fetch block, with no enterprise SSRF filtering added
+- `backend/tests/test_url_cleaning.py`: in scope - respx-backed URL preparation tests remain focused on success, invalid scheme, timeout, oversized response, and HTTP failure
+- `docs/reports/report_2_execute_agent.md`: in scope - latest (02B) repair report reviewed
+- `docs/review/review_2_review_agent.md`: in scope - prior rejected-with-warnings review and EOF append target reviewed
+- `docs/tasks/task_2.md`: in scope - selected (02B) task entry and mirrored Progress Tracker entry updated after acceptance
+- `docs/plans/Plan_2.md`: in scope - URL Parsing section and exact two-line production note checked
+- `docs/plans/Master_Plan.md`: in scope - URL parsing strategy and SSRF security note checked
+- `backend/app/core/config.py`: in scope - timeout and response-size settings confirmed during URL implementation review
+
+## Reported Files Cross-Check
+- `backend/app/services/extraction_service.py`: present in git/repo: yes; matches task scope: yes; notes: repaired comment contains both required lines at lines 162-163 and remains note-only
+- `docs/reports/report_2_execute_agent.md`: present in git/repo: yes; matches task scope: yes; notes: latest repair entry accurately describes the comment-only repair and validation reruns
+
+## Dependency Review
+- Required dependencies: accepted (02A)
+- Dependency status: satisfied; (02A) remains checked in both task locations and its helper functions are reused by the URL path
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Prior bounded URL behavior remains intact: only `http` and `https` are accepted, `httpx.AsyncClient` uses configured timeout and redirects, response bytes are capped by `MAX_RESPONSE_SIZE_MB`, and accepted HTML is extracted with `trafilatura` before shared cleaning/truncation/hashing.
+- Passed: The exact two-line production SSRF note from Plan 2 and the Master Plan is now present near the URL-fetch code.
+- Passed: The repair did not implement enterprise SSRF filtering, persistence, graph, LLM, low-content manual-input fallback, route, scoring, Qdrant, Tavily, frontend, or sibling-task behavior.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The repaired code contains the required note and the previously reviewed real async URL preparation path. Rerun validations prove behavior still passes.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The added line is the exact required production note from the plan. Runtime bounds still come from settings, and tests still use mocked HTTP fixtures without production overfitting.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_url_cleaning.py`
+- Reported result: passed, 5 tests
+- Rerun result: passed, 5 tests in 1.34s
+- Status: passed
+- Notes: Confirms URL fetch/extraction behavior remains green after the repair.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest -q`
+- Reported result: passed, 14 tests
+- Rerun result: passed, 14 tests in 1.34s
+- Status: passed
+- Notes: Full backend suite remains green.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app tests`
+- Reported result: passed
+- Rerun result: passed
+- Status: passed
+- Notes: No compilation errors.
+- Command/check: `git diff --check`
+- Reported result: passed with CRLF warnings only
+- Rerun result: passed with CRLF warnings only
+- Status: passed
+- Notes: No whitespace errors; Git emitted existing LF-to-CRLF warnings for modified docs.
+- Command/check: exact SSRF-note verification with `rg`
+- Reported result: passed; both note lines found at lines 162 and 163
+- Rerun result: passed; both note lines found at lines 162 and 163
+- Status: passed
+- Notes: Verifies the prior A2 repair instruction exactly.
+
+## Acceptance Review
+- Task acceptance: Valid mocked pages produce bounded clean text; invalid scheme, timeout, oversized, and failed HTTP cases do not crash; URL code includes the required production SSRF mitigation note.
+- Status: satisfied
+- Evidence: The earlier behavioral implementation remains present and validated, and the repaired code now includes both required SSRF note lines exactly, without adding out-of-scope filtering behavior.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the primary (02B) task block and mirrored Progress Tracker entry
+- Checkbox updated by reviewer: yes; only the two mirrored (02B) entries were changed
+- Batch status: remains unchecked; (02C) is still pending
+- Execution report entry: latest (02B) repair entry present and appended
+- Review report entry: appended at physical EOF
+- Other: No sibling task checkbox, future task checkbox, or Batch02 checkbox was updated.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Low-content and unreliable-page `needs_manual_input` behavior remains correctly deferred to (02C), and this repair did not alter that boundary.
+- Prior accepted uncommitted (02A) artifacts remain in the worktree and were treated as dependency context only.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, to (02C)
+- Should batch be marked complete? no; (02C) remains pending
+
+## Repair Instructions
+- None
+---
+
+# Task Review Report - (02C)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch02 - Input Preparation and URL Fallback
+- Task ID: (02C)
+- Task title: Implement low-content and unreliable-page fallback semantics
+- Executor status reported: complete
+- Source of Truth: docs/plans/Master_Plan.md > ## 7. Handling JavaScript Pages and Cookie Banners > ### UI Warning Example; docs/plans/Master_Plan.md > ## 8. JD Status Rules; docs/plans/Plan_2.md > ## 7. Technical Specifications > ### Parse vs Extraction Status Semantics / ### URL Parsing
+- Supplemental documents: docs/plans/Master_Plan.md
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02C)
+- Reviewed task ID: (02C)
+- Correct selection: yes
+- Notes: The user explicitly requested (02C), and the latest execution report entry is also (02C). Prior accepted uncommitted (02A) and (02B) work was treated as dependency context only.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: docs/reports/report_2_execute_agent.md; docs/review/review_2_review_agent.md; docs/tasks/task_2.md; plus untracked backend/app/services/extraction_service.py, backend/tests/test_manual_text_preparation.py, backend/tests/test_url_cleaning.py
+- untracked files: backend/app/services/extraction_service.py; backend/tests/test_manual_text_preparation.py; backend/tests/test_url_cleaning.py
+- Notes: `git diff` does not show untracked implementation/test content, so those files were read directly. Tracked docs include prior accepted (02A)/(02B) progress and review artifacts plus the latest (02C) execution-report append.
+
+## Files Reviewed
+- `backend/app/services/extraction_service.py`: in scope - contains accepted (02A)/(02B) parser foundations plus (02C) reliability threshold, manual-input fallback builder, exact warning, and parser-terminal predicate
+- `backend/tests/test_url_cleaning.py`: in scope - adds low-content fallback, unreliable-signal detection, exact warning, complete fallback keys, score-placeholder, and zero fake-client-call coverage
+- `backend/tests/test_manual_text_preparation.py`: prior accepted (02A) / dependency context - rerun to confirm manual-text behavior was not regressed
+- `backend/app/agents/schemas.py`: dependency context - verified reuse of canonical unclear-job and score-placeholder helpers
+- `docs/tasks/task_2.md`: in scope - selected (02C) requirements and checkbox state
+- `docs/reports/report_2_execute_agent.md`: in scope - latest (02C) execution evidence and validation claims
+- `docs/review/review_2_review_agent.md`: in scope - prior review history and EOF append target inspected before append
+- `docs/plans/Plan_2.md`: in scope - cited parse/extraction semantics and URL parsing fallback contract checked
+- `docs/plans/Master_Plan.md`: in scope - cited UI warning and JD status rules checked
+
+## Reported Files Cross-Check
+- `backend/app/services/extraction_service.py`: present in git/repo: yes; matches task scope: yes; notes: (02C) behavior is implemented and reuses existing helpers rather than duplicating fallback/score logic
+- `backend/tests/test_url_cleaning.py`: present in git/repo: yes; matches task scope: yes; notes: focused tests cover the required low-content/manual-input fallback contract and no-LLM terminal behavior
+- `docs/reports/report_2_execute_agent.md`: present in git/repo: yes; matches task scope: yes; notes: latest (02C) execution-report entry is appended and accurately describes files, status, and validations
+
+## Dependency Review
+- Required dependencies: (01B), (02B)
+- Dependency status: satisfied; (01B), (02A), and repaired (02B) are accepted, with (02A)/(02B) checked in both task locations before this review
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Low-content detection uses the required fewer-than-150-clean-character threshold after cleaning.
+- Passed: Blocked/login/JavaScript/cookie signal detection is text-based and remains within MVP parser scope.
+- Passed: Manual-input fallback preserves `batch_id`, `role_profile_id`, `input_source`, and `source_url`.
+- Passed: Parser and extraction statuses remain independent: `parse_status = "needs_manual_input"` and `extraction_status = None` when no LLM/schema attempt occurred.
+- Passed: The fallback uses canonical `build_unclear_job` and `score_placeholder_update` helpers, avoiding duplicate fallback shape and score-placeholder logic.
+- Passed: The exact stable multiline manual-input warning matches Plan 2 and the Master Plan.
+- Passed: No Batch03 graph/client, route, persistence, scoring, Qdrant, Tavily search, or frontend scope was implemented.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Code inspection shows real fallback construction in the URL preparation path. Tests exercise low-content extraction, unreliable signals, complete fallback shape, `extraction_status is None`, and fake-client call count remaining zero.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The 150-character threshold, exact warning text, and fallback note are plan-required constants. Production logic is not overfit to fixture URLs, record IDs, dataset order, or expected hashes.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_url_cleaning.py`
+- Reported result: passed, 8 tests
+- Rerun result: passed, 8 tests in 1.40s
+- Status: passed
+- Notes: Covers URL success/failure paths plus (02C) low-content fallback, unreliable-signal detection, and no-LLM terminal behavior.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_manual_text_preparation.py`
+- Reported result: passed, 5 tests
+- Rerun result: passed, 5 tests in 0.40s
+- Status: passed
+- Notes: Confirms accepted manual-text preparation behavior still passes.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_url_cleaning.py tests/test_manual_text_preparation.py`
+- Reported result: passed, 13 tests
+- Rerun result: passed, 13 tests in 1.42s
+- Status: passed
+- Notes: Matches the reported combined parser validation.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app/services/extraction_service.py tests/test_url_cleaning.py`
+- Reported result: passed
+- Rerun result: passed
+- Status: passed
+- Notes: No compilation errors.
+- Command/check: `git diff --check`
+- Reported result: not reported for (02C); earlier Batch02 reports used it
+- Rerun result: passed with LF-to-CRLF warnings only for already modified docs
+- Status: passed
+- Notes: No whitespace errors were reported.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest -q`
+- Reported result: not reported for (02C)
+- Rerun result: passed, 17 tests in 1.41s
+- Status: passed
+- Notes: Extra regression check; full backend suite is green.
+- Command/check: scope scan for graph/client/persistence/route/Qdrant/Tavily/scoring implementation
+- Reported result: not reported
+- Rerun result: passed
+- Status: passed
+- Notes: Matches only test fixture text, score-placeholder assertions, and fake-client test references; no production out-of-scope implementation found.
+
+## Acceptance Review
+- Task acceptance: Unreliable URL content returns the exact contract and zero LLM calls.
+- Status: satisfied
+- Evidence: `prepare_url_content` returns the required complete `needs_manual_input` state for unreliable clean text; `test_low_content_url_returns_complete_manual_input_fallback` asserts the exact status values, warning, fallback job shape, identifiers, score placeholders, observability placeholders, and `extraction_status is None`; `test_manual_input_parser_state_is_terminal_before_fake_llm_call` keeps fake-client calls at zero.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the primary (02C) task block and mirrored Progress Tracker entry
+- Checkbox updated by reviewer: yes; only the two mirrored (02C) entries were changed
+- Batch status: remains unchecked; A3/commit gate owns batch completion status
+- Execution report entry: latest (02C) entry present and appended
+- Review report entry: appended at physical EOF
+- Other: No sibling task checkbox, future task checkbox, implementation file, batch checkbox, or commit was changed by this review.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Prior accepted uncommitted (02A) and (02B) artifacts remain in the worktree and were treated as dependencies, not new (02C) scope.
+- `backend/app/services/extraction_service.py` remains under the repository's 300-line guideline by current line count.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, subject to the orchestrator's Batch02 A3/commit gate
+- Should batch be marked complete? no; all Batch02 task IDs are now checked, but the orchestrator's A3/commit gate owns batch completion status
+
+## Repair Instructions
+- None

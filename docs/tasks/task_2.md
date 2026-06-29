@@ -267,7 +267,7 @@ The LLM must receive deterministic, bounded content and must never be asked to i
 
 ### Tasks
 
-- [ ] (02A): Implement raw-text cleaning, truncation, and content hashing
+- [x] (02A): Implement raw-text cleaning, truncation, and content hashing
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 28. Input Size and Retry Limits`
     - `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Input Limits`
@@ -292,7 +292,7 @@ The LLM must receive deterministic, bounded content and must never be asked to i
   - Blocked Condition: None.
   - Files: `backend/app/services/extraction_service.py`.
 
-- [ ] (02B): Implement bounded HTTP fetch and trafilatura extraction
+- [x] (02B): Implement bounded HTTP fetch and trafilatura extraction
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners`
     - `docs/plans/Master_Plan.md` > `## 27. URL Parsing Security Note`
@@ -319,7 +319,7 @@ The LLM must receive deterministic, bounded content and must never be asked to i
   - Blocked Condition: None.
   - Files: `backend/app/services/extraction_service.py`, `backend/tests/test_url_cleaning.py`.
 
-- [ ] (02C): Implement low-content and unreliable-page fallback semantics
+- [x] (02C): Implement low-content and unreliable-page fallback semantics
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners` > `### UI Warning Example`
     - `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
@@ -746,9 +746,9 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch02
 
-- [ ] (02A): Implement raw-text cleaning, truncation, and content hashing
-- [ ] (02B): Implement bounded HTTP fetch and trafilatura extraction
-- [ ] (02C): Implement low-content and unreliable-page fallback semantics
+- [x] (02A): Implement raw-text cleaning, truncation, and content hashing
+- [x] (02B): Implement bounded HTTP fetch and trafilatura extraction
+- [x] (02C): Implement low-content and unreliable-page fallback semantics
 
 #### Batch03
 
