@@ -827,9 +827,9 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch01
 
-- [ ] (01A): Verify Phase 3 prerequisites and schema compatibility
-- [ ] (01B): Implement deterministic scoring and clean text builders
-- [ ] (01C): Implement embedding provider service and vector validation
+- [x] (01A): Verify Phase 3 prerequisites and schema compatibility
+- [x] (01B): Implement deterministic scoring and clean text builders
+- [x] (01C): Implement embedding provider service and vector validation
 
 #### Batch02
 
