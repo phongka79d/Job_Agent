@@ -114,7 +114,7 @@ Content preparation and graph orchestration need one stable contract before beha
 
 ### Tasks
 
-- [ ] (01A): Define the extraction state and structured output schema
+- [x] (01A): Define the extraction state and structured output schema
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking` > `### Required State Fields`
     - `docs/plans/Master_Plan.md` > `## 29. Pydantic Schema Sketch`
@@ -138,7 +138,7 @@ Content preparation and graph orchestration need one stable contract before beha
   - Blocked Condition: None.
   - Files: `backend/app/agents/schemas.py`.
 
-- [ ] (01B): Add source mapping, state-preservation, and fallback-shape helpers
+- [x] (01B): Add source mapping, state-preservation, and fallback-shape helpers
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking` > `### Required Rule`
     - `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Source Mapping` / `### LLM Fallback`
@@ -163,7 +163,7 @@ Content preparation and graph orchestration need one stable contract before beha
   - Blocked Condition: None.
   - Files: `backend/app/agents/schemas.py` or a narrowly scoped support module if needed.
 
-- [ ] (01C): Define extraction and repair prompt templates
+- [x] (01C): Define extraction and repair prompt templates
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4. Architecture`
     - `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
@@ -189,7 +189,7 @@ Content preparation and graph orchestration need one stable contract before beha
   - Blocked Condition: None.
   - Files: `backend/app/agents/prompts.py`.
 
-- [ ] (01D): Add token, cost, and timing normalization utilities
+- [x] (01D): Add token, cost, and timing normalization utilities
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 15. Cost & Performance Metrics Panel`
     - `docs/plans/Plan_2.md` > `## 4. Scope`
@@ -739,10 +739,10 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch01
 
-- [ ] (01A): Define the extraction state and structured output schema
-- [ ] (01B): Add source mapping, state-preservation, and fallback-shape helpers
-- [ ] (01C): Define extraction and repair prompt templates
-- [ ] (01D): Add token, cost, and timing normalization utilities
+- [x] (01A): Define the extraction state and structured output schema
+- [x] (01B): Add source mapping, state-preservation, and fallback-shape helpers
+- [x] (01C): Define extraction and repair prompt templates
+- [x] (01D): Add token, cost, and timing normalization utilities
 
 #### Batch02
 

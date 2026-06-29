@@ -43,7 +43,9 @@ Job_Agent/
 |   |   |-- api/
 |   |   |   `-- __init__.py
 |   |   |-- agents/
-|   |   |   `-- __init__.py
+|   |   |   |-- __init__.py
+|   |   |   |-- prompts.py            # Extraction and validation-repair prompts
+|   |   |   `-- schemas.py            # Extraction state, output schema, and fallback helpers
 |   |   |-- core/
 |   |   |   |-- __init__.py
 |   |   |   |-- config.py             # Root .env settings loader
@@ -57,7 +59,8 @@ Job_Agent/
 |   |   |   `-- session.py            # Async database session and initialization (Batch03)
 |   |   |-- main.py                   # Minimal FastAPI app bootstrap with DB startup initialization
 |   |   |-- services/
-|   |   |   `-- __init__.py
+|   |   |   |-- __init__.py
+|   |   |   `-- cost_service.py       # Provider-neutral token, cost, and timing normalization
 |   |-- data/
 |   |   `-- .gitkeep
 |   |-- tests/
@@ -128,4 +131,28 @@ From the `backend` directory, verify that the minimal FastAPI app imports and ca
 ```bash
 python -c "from app.main import app; print(app.title)"
 uvicorn app.main:app --reload --port 8000
+```
+
+## Extraction Contracts
+
+Phase 2 Batch01 provides the shared extraction foundation without performing
+network calls, persistence, scoring, or vector operations:
+
+- `JobAgentState` carries required identifiers, parsing and extraction status,
+  score placeholders, warnings, errors, and observability fields.
+- `JobPostExtract` validates the structured job payload and shared source/JD
+  status values.
+- Source mapping and fallback helpers preserve `batch_id`, `role_profile_id`,
+  and `input_source`, and produce complete `unclear` records when extraction
+  fails after parsing.
+- Provider-neutral extraction and repair prompts require grounded output and
+  apply the five approved JD classifications.
+- Usage helpers normalize optional token metadata, calculate cost only from
+  explicit pricing, and measure attempted extraction with a monotonic clock.
+
+From the `backend` directory, smoke-check these modules with:
+
+```bash
+python -m compileall -q app/agents app/services/cost_service.py
+python -c "from app.agents.schemas import JobAgentState, JobPostExtract; from app.agents.prompts import build_extraction_prompt; from app.services.cost_service import normalize_usage; print('extraction contracts import successfully')"
 ```
