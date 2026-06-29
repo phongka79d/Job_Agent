@@ -12,6 +12,9 @@ from app.agents.schemas import (
     score_placeholder_update,
     build_unclear_job,
     build_unclear_extraction_failure_update,
+    validate_parse_status,
+    validate_extraction_status,
+    validate_jd_status,
 )
 
 
@@ -86,6 +89,32 @@ def test_source_mapping_invalid():
     with pytest.raises(ValueError) as exc_info:
         map_input_source_to_source_platform("invalid_input_source")
     assert "input_source must be one of" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("parse_status", constants.PARSE_STATUSES)
+def test_validate_parse_status_accepts_phase_one_constants(parse_status: str):
+    assert validate_parse_status(parse_status) == parse_status
+
+
+@pytest.mark.parametrize("extraction_status", constants.EXTRACTION_STATUSES)
+def test_validate_extraction_status_accepts_phase_one_constants(extraction_status: str):
+    assert validate_extraction_status(extraction_status) == extraction_status
+
+
+@pytest.mark.parametrize("jd_status", constants.JD_STATUSES)
+def test_validate_jd_status_accepts_phase_one_constants(jd_status: str):
+    assert validate_jd_status(jd_status) == jd_status
+
+
+def test_status_validation_helpers_reject_values_outside_phase_one_constants():
+    with pytest.raises(ValueError, match="parse_status must be one of"):
+        validate_parse_status("invalid_parse_status")
+
+    with pytest.raises(ValueError, match="extraction_status must be one of"):
+        validate_extraction_status("invalid_extraction_status")
+
+    with pytest.raises(ValueError, match="jd_status must be one of"):
+        validate_jd_status("invalid_jd_status")
 
 
 def test_preserve_required_state():

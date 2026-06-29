@@ -710,30 +710,30 @@ Future-phase tracks are outside this mandatory chain.
 
 ## Global Verification Checklist
 
-- [ ] `JobAgentState` and `JobPostExtract` match the approved contracts.
-- [ ] Runtime sources and statuses use Phase 1 shared constants.
-- [ ] Every node preserves `batch_id`, `role_profile_id`, and `input_source`.
-- [ ] Raw and clean input limits use Phase 1 settings.
-- [ ] URL parsing allows only HTTP(S), enforces timeout/size limits, and uses `trafilatura`.
-- [ ] Low-content URL results use the exact warning, skip the LLM, and leave `extraction_status = None`.
-- [ ] Invalid LLM/schema output retries exactly once.
-- [ ] LLM/schema failure after parsing preserves `parse_status = "success"` and sets `extraction_status = "failed"`.
-- [ ] Every fallback job includes all `JobPostExtract` default fields and all score fields are `None`.
-- [ ] Observability fields are present as provider values or explicit `None`.
-- [ ] Public entrypoints are async, importable, and free of persistence/scoring side effects.
-- [ ] Focused Phase 2 tests and the full backend test suite pass.
-- [ ] No SQLite rows are inserted and no Qdrant collections are created by Phase 2.
-- [ ] Implementation code is clean, idiomatic, typed where appropriate, and easy to understand.
-- [ ] No scoring, persistence, deduplication, Qdrant, Tavily search, route, seed, or frontend scope was added.
+- [x] `JobAgentState` and `JobPostExtract` match the approved contracts.
+- [x] Runtime sources and statuses use Phase 1 shared constants.
+- [x] Every node preserves `batch_id`, `role_profile_id`, and `input_source`.
+- [x] Raw and clean input limits use Phase 1 settings.
+- [x] URL parsing allows only HTTP(S), enforces timeout/size limits, and uses `trafilatura`.
+- [x] Low-content URL results use the exact warning, skip the LLM, and leave `extraction_status = None`.
+- [x] Invalid LLM/schema output retries exactly once.
+- [x] LLM/schema failure after parsing preserves `parse_status = "success"` and sets `extraction_status = "failed"`.
+- [x] Every fallback job includes all `JobPostExtract` default fields and all score fields are `None`.
+- [x] Observability fields are present as provider values or explicit `None`.
+- [x] Public entrypoints are async, importable, and free of persistence/scoring side effects.
+- [x] Focused Phase 2 tests and the full backend test suite pass.
+- [x] No SQLite rows are inserted and no Qdrant collections are created by Phase 2.
+- [x] Implementation code is clean, idiomatic, typed where appropriate, and easy to understand.
+- [x] No scoring, persistence, deduplication, Qdrant, Tavily search, route, seed, or frontend scope was added.
 
 ## Progress Tracker
 
 ### Batches
 
-- [ ] Batch01 - Extraction Contracts and Shared Utilities
-- [ ] Batch02 - Input Preparation and URL Fallback
-- [ ] Batch03 - Structured Extraction Graph and Service API
-- [ ] Batch04 - Contract and Phase Verification
+- [x] Batch01 - Extraction Contracts and Shared Utilities
+- [x] Batch02 - Input Preparation and URL Fallback
+- [x] Batch03 - Structured Extraction Graph and Service API
+- [x] Batch04 - Contract and Phase Verification
 
 ### Task IDs
 

@@ -286,6 +286,22 @@ async def test_classify_jd():
 
 
 @pytest.mark.asyncio
+async def test_classify_jd_rejects_status_outside_phase_one_constants():
+    state: JobAgentState = {
+        "batch_id": "b1",
+        "role_profile_id": "rp1",
+        "input_source": "manual_text",
+        "extracted_job": {
+            "jd_status": "invalid_jd_status",
+            "should_score_similarity": False,
+        },
+    }
+
+    with pytest.raises(ValueError, match="jd_status must be one of"):
+        await classify_jd(state)
+
+
+@pytest.mark.asyncio
 async def test_mark_unclear():
     state: JobAgentState = {
         "batch_id": "b1",

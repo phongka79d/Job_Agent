@@ -12,6 +12,7 @@ from app.services import (
     LLMValidationError,
     LLMProviderError,
 )
+from app.agents.graph import route_after_prepare, route_after_extract, route_after_repair
 from app.core.config import settings
 
 
@@ -34,6 +35,17 @@ async def test_run_extraction_graph_success():
     assert final_state["extracted_job"]["title"] == "Fake Software Engineer"
     assert len(client.extract_calls) == 1
     assert len(client.repair_calls) == 0
+
+
+def test_graph_routes_reject_statuses_outside_phase_one_constants():
+    with pytest.raises(ValueError, match="parse_status must be one of"):
+        route_after_prepare({"parse_status": "invalid_parse_status"})  # type: ignore
+
+    with pytest.raises(ValueError, match="extraction_status must be one of"):
+        route_after_extract({"extraction_status": "invalid_extraction_status"})  # type: ignore
+
+    with pytest.raises(ValueError, match="extraction_status must be one of"):
+        route_after_repair({"extraction_status": "invalid_extraction_status"})  # type: ignore
 
 
 @pytest.mark.asyncio

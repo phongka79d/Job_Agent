@@ -1,7 +1,11 @@
 """LangGraph extraction workflow graph compilation."""
 
 from langgraph.graph import StateGraph, END
-from app.agents.schemas import JobAgentState
+from app.agents.schemas import (
+    JobAgentState,
+    validate_extraction_status,
+    validate_parse_status,
+)
 from app.agents.nodes import (
     prepare_content,
     extract_job,
@@ -13,14 +17,14 @@ from app.agents.nodes import (
 
 def route_after_prepare(state: JobAgentState) -> str:
     """Route after prepare content node."""
-    if state.get("parse_status") == "success":
+    if validate_parse_status(state.get("parse_status")) == "success":
         return "extract_job"
     return END
 
 
 def route_after_extract(state: JobAgentState) -> str:
     """Route after initial extract node."""
-    status = state.get("extraction_status")
+    status = validate_extraction_status(state.get("extraction_status"))
     if status == "success":
         return "classify_jd"
     elif status == "failed":
@@ -31,7 +35,7 @@ def route_after_extract(state: JobAgentState) -> str:
 
 def route_after_repair(state: JobAgentState) -> str:
     """Route after repair attempt node."""
-    status = state.get("extraction_status")
+    status = validate_extraction_status(state.get("extraction_status"))
     if status in ("success", "retried"):
         return "classify_jd"
     return "mark_unclear"

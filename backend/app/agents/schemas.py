@@ -15,11 +15,73 @@ _SOURCE_PLATFORM_BY_INPUT_SOURCE = {
 }
 
 
+def _validate_constant_value(
+    value: str | None,
+    allowed_values: tuple[str, ...],
+    field_name: str,
+    *,
+    allow_none: bool = False,
+) -> str | None:
+    if value is None and allow_none:
+        return None
+    if value not in allowed_values:
+        raise ValueError(f"{field_name} must be one of {allowed_values}")
+    return value
+
+
+def validate_input_source(input_source: str | None) -> str:
+    value = _validate_constant_value(
+        input_source,
+        constants.INPUT_SOURCES,
+        "input_source",
+    )
+    assert value is not None
+    return value
+
+
+def validate_source_platform_value(source_platform: str | None) -> str:
+    value = _validate_constant_value(
+        source_platform,
+        constants.SOURCE_PLATFORMS,
+        "source_platform",
+    )
+    assert value is not None
+    return value
+
+
+def validate_parse_status(parse_status: str | None) -> str:
+    value = _validate_constant_value(
+        parse_status,
+        constants.PARSE_STATUSES,
+        "parse_status",
+    )
+    assert value is not None
+    return value
+
+
+def validate_extraction_status(extraction_status: str | None) -> str | None:
+    return _validate_constant_value(
+        extraction_status,
+        constants.EXTRACTION_STATUSES,
+        "extraction_status",
+        allow_none=True,
+    )
+
+
+def validate_jd_status(jd_status: str | None) -> str:
+    value = _validate_constant_value(
+        jd_status,
+        constants.JD_STATUSES,
+        "jd_status",
+    )
+    assert value is not None
+    return value
+
+
 def map_input_source_to_source_platform(input_source: str) -> str:
     """Return the approved Plan 2 source platform for an input source."""
 
-    if input_source not in constants.INPUT_SOURCES:
-        raise ValueError(f"input_source must be one of {constants.INPUT_SOURCES}")
+    validate_input_source(input_source)
 
     try:
         source_platform = _SOURCE_PLATFORM_BY_INPUT_SOURCE[input_source]
@@ -28,10 +90,7 @@ def map_input_source_to_source_platform(input_source: str) -> str:
             f"input_source has no approved source platform mapping: {input_source}"
         ) from exc
 
-    if source_platform not in constants.SOURCE_PLATFORMS:
-        raise ValueError(
-            f"mapped source_platform must be one of {constants.SOURCE_PLATFORMS}"
-        )
+    validate_source_platform_value(source_platform)
     return source_platform
 
 
@@ -142,18 +201,14 @@ class JobPostExtract(BaseModel):
     def validate_source_platform(cls, value: str) -> str:
         """Reject source platforms outside the Phase 1 shared contract."""
 
-        if value not in constants.SOURCE_PLATFORMS:
-            raise ValueError(f"source_platform must be one of {constants.SOURCE_PLATFORMS}")
-        return value
+        return validate_source_platform_value(value)
 
     @field_validator("jd_status")
     @classmethod
     def validate_jd_status(cls, value: str) -> str:
         """Reject JD statuses outside the Phase 1 shared contract."""
 
-        if value not in constants.JD_STATUSES:
-            raise ValueError(f"jd_status must be one of {constants.JD_STATUSES}")
-        return value
+        return validate_jd_status(value)
 
 
 def build_unclear_job(

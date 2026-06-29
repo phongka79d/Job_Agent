@@ -9,6 +9,7 @@ from app.agents.schemas import (
     score_placeholder_update,
     map_input_source_to_source_platform,
     build_unclear_extraction_failure_update,
+    validate_jd_status,
 )
 from app.services.extraction_service import (
     prepare_manual_text,
@@ -259,7 +260,7 @@ async def classify_jd(state: JobAgentState, config: RunnableConfig = None) -> Jo
         jd_status = "unclear"
         should_score = False
     else:
-        jd_status = extracted_job.get("jd_status")
+        jd_status = validate_jd_status(extracted_job.get("jd_status"))
         if jd_status not in ("full_jd", "partial_jd"):
             should_score = False
         else:
