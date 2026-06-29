@@ -34,7 +34,7 @@ The system uses a durable SQL database (SQLite) as the primary source of truth, 
 
 ## Directory Structure
 
-The project layout including Batch02 configuration and shared contracts is established as follows:
+The project layout including Batch03 database models, indexes, and session configuration is established as follows:
 
 ```text
 Job_Agent/
@@ -51,8 +51,10 @@ Job_Agent/
 |   |   |   `-- logging.py            # Basic backend logging configuration
 |   |   |-- db/
 |   |   |   |-- __init__.py
-|   |   |   `-- migrations/
-|   |   |       `-- .gitkeep
+|   |   |   |-- migrations/
+|   |   |   |   `-- .gitkeep
+|   |   |   |-- models.py             # SQLite ORM models and indexes (Batch03)
+|   |   |   `-- session.py            # Async database session and initialization (Batch03)
 |   |   |-- services/
 |   |   |   `-- __init__.py
 |   |-- data/
@@ -113,3 +115,9 @@ docker compose up -d qdrant
    ```bash
    pytest tests/test_constants_contract.py
    ```
+
+### 5. Database Initialization
+Verify that the database can be initialized and that SQLite connection PRAGMAs (foreign keys enabled and WAL mode) are active:
+```bash
+python -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"
+```

@@ -433,7 +433,7 @@ Plan 1's primary contract is the durable SQLite schema consumed by later extract
 
 ### Tasks
 
-- [ ] (03A): Add SQLAlchemy model base and storage conventions
+- [x] (03A): Add SQLAlchemy model base and storage conventions
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### SQLite Rules`; `docs/plans/Master_Plan.md` > `## 20. SQLite Database Design`
   - Source Requirements:
     - Use SQLAlchemy async engine with `sqlite+aiosqlite`.
@@ -458,7 +458,7 @@ Plan 1's primary contract is the durable SQLite schema consumed by later extract
   - Blocked Condition: None
   - Files: `backend/app/db/models.py`
 
-- [ ] (03B): Define `role_profiles` model exactly
+- [x] (03B): Define `role_profiles` model exactly
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Table: role_profiles`; `docs/plans/Master_Plan.md` > `## 21. Table: role_profiles`
   - Source Requirements:
     - Required columns are `id`, `target_role`, `level`, `location`, `accept_remote`, `skills`, `resume_text`, `created_at`, and `updated_at`.
@@ -481,7 +481,7 @@ Plan 1's primary contract is the durable SQLite schema consumed by later extract
   - Blocked Condition: None
   - Files: `backend/app/db/models.py`
 
-- [ ] (03C): Define `job_posts` model exactly
+- [x] (03C): Define `job_posts` model exactly
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Table: job_posts`; `docs/plans/Master_Plan.md` > `## 22. Table: job_posts`; `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`
   - Source Requirements:
     - Required columns include all Plan 1 identifiers, extracted fields, source fields, status fields, dedup fields, score fields, token/cost fields, and timestamps.
@@ -508,7 +508,7 @@ Plan 1's primary contract is the durable SQLite schema consumed by later extract
   - Blocked Condition: None
   - Files: `backend/app/db/models.py`
 
-- [ ] (03D): Define `applications` model and delete behavior
+- [x] (03D): Define `applications` model and delete behavior
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Table: applications`; `docs/plans/Master_Plan.md` > `## 23. Table: applications`
   - Source Requirements:
     - Required columns are `id`, `job_post_id`, `status`, `cv_version`, `notes`, `applied_at`, and `updated_at`.
@@ -531,7 +531,7 @@ Plan 1's primary contract is the durable SQLite schema consumed by later extract
   - Blocked Condition: None
   - Files: `backend/app/db/models.py`
 
-- [ ] (03E): Add exact indexes and constraints
+- [x] (03E): Add exact indexes and constraints
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Required Indexes`; `docs/plans/Master_Plan.md` > `## 24. SQLite Indexes`
   - Source Requirements:
     - Create the eight required indexes exactly.
@@ -556,7 +556,7 @@ Plan 1's primary contract is the durable SQLite schema consumed by later extract
   - Blocked Condition: None
   - Files: `backend/app/db/models.py`
 
-- [ ] (03F): Implement async session, database initialization, and SQLite PRAGMAs
+- [x] (03F): Implement async session, database initialization, and SQLite PRAGMAs
   - Source of Truth: `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### SQLite Rules`; `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### MVP Table Boundary`; `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`; `docs/plans/Master_Plan.md` > `## 20. SQLite Database Design`
   - Source Requirements:
     - Use SQLAlchemy async engine with `sqlite+aiosqlite`.
@@ -852,7 +852,7 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 - [x] Batch01 - Repository Foundation and Local Infrastructure
 - [x] Batch02 - Backend Configuration and Shared Contracts
-- [ ] Batch03 - SQLite Models, Indexes, and Session
+- [x] Batch03 - SQLite Models, Indexes, and Session
 - [ ] Batch04 - App Bootstrap and Verification
 
 ### Task IDs
@@ -874,12 +874,12 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 #### Batch03
 
-- [ ] (03A): Add SQLAlchemy model base and storage conventions
-- [ ] (03B): Define `role_profiles` model exactly
-- [ ] (03C): Define `job_posts` model exactly
-- [ ] (03D): Define `applications` model and delete behavior
-- [ ] (03E): Add exact indexes and constraints
-- [ ] (03F): Implement async session, database initialization, and SQLite PRAGMAs
+- [x] (03A): Add SQLAlchemy model base and storage conventions
+- [x] (03B): Define `role_profiles` model exactly
+- [x] (03C): Define `job_posts` model exactly
+- [x] (03D): Define `applications` model and delete behavior
+- [x] (03E): Add exact indexes and constraints
+- [x] (03F): Implement async session, database initialization, and SQLite PRAGMAs
 
 #### Batch04
 

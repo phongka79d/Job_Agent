@@ -883,3 +883,497 @@ complete
 - can proceed: yes
 - handoff notes: Core configuration, logging, constants, and the contract test (Batch02) are fully complete and verified. The next batch (Batch03) can proceed with SQLite Models, Indexes, and session utilities.
 
+---
+
+# Task Execution Report - (03A)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch03 - SQLite Models, Indexes, and Session
+
+## Task
+(03A) - Add SQLAlchemy model base and storage conventions
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### SQLite Rules`
+- `docs/plans/Master_Plan.md` > `## 20. SQLite Database Design`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - SQLite Models, Indexes, and Session
+- Task ID: (03A)
+- Task title: Add SQLAlchemy model base and storage conventions
+
+## Completed Work
+- Status: complete.
+- Created `backend/app/db/models.py` with SQLAlchemy `DeclarativeBase` base metadata using SQLAlchemy 2.x conventions.
+- Established canonical storage helpers: `generate_uuid()` for generating UUID4 strings and `utc_now()` for consistently generating UTC timestamps.
+- Defined reusable column type annotations (`uuid_pk`, `created_timestamp`, and `updated_timestamp`) to enforce consistent storage of primary keys and timestamps across MVP models.
+- Verified that the `backend/app/db/models.py` module imports successfully in the local virtual environment.
+
+## Files Created or Modified
+- `backend/app/db/models.py` (Created)
+
+## Tests or Validations Run
+- command/check: `.venv\Scripts\python.exe -c "import app.db.models; print('Import app.db.models successful!')"`
+  - status: Passed
+  - evidence or reason: Executed successfully and printed "Import app.db.models successful!".
+
+## Acceptance Check
+- Task acceptance condition: Model metadata exists and is ready for exactly three MVP application tables.
+- Status: satisfied
+- Evidence: SQLAlchemy `Base` declarative class metadata is created and importable, ready to act as the base class for the three MVP models.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2 for review as this is an orchestrated execution.
+
+## Key Implementation Decisions
+- Used modern SQLAlchemy 2.x declarative style with `DeclarativeBase` instead of the legacy `declarative_base()`.
+- Utilized PEP 593 `Annotated` type decorators (`uuid_pk`, `created_timestamp`, `updated_timestamp`) to enforce DRY (Don't Repeat Yourself) principle and ensure consistent SQLite column properties.
+- Strictly followed constraints for SQLite compatibility: storing UUIDs as 36-character strings and timestamps as timezone-aware UTC DateTime.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- Fixed syntax error in `uuid_pk` column mapping (`primary key=True` corrected to `primary_key=True`).
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (03B)
+- can proceed: yes
+- handoff notes: The declarative base and storage conventions are fully set up. Sibling task (03B) can now proceed to define the `role_profiles` model extending this `Base`.
+
+---
+
+# Task Execution Report - (03B)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch03 - SQLite Models, Indexes, and Session
+
+## Task
+(03B) - Define role_profiles model exactly
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Table: role_profiles`
+- `docs/plans/Master_Plan.md` > `## 21. Table: role_profiles`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - SQLite Models, Indexes, and Session
+- Task ID: (03B)
+- Task title: Define role_profiles model exactly
+
+## Completed Work
+- Status: complete.
+- Defined `RoleProfile` ORM model class in `backend/app/db/models.py` inheriting from `Base`.
+- Created all required columns: `id`, `target_role`, `level`, `location`, `accept_remote`, `skills`, `resume_text`, `created_at`, `updated_at` with exact types matching specifications (`uuid_pk` for id, `Text` for target_role, level, location, skills, resume_text, `Boolean` for accept_remote, `created_timestamp` and `updated_timestamp` for timestamps).
+- Marked `target_role` as not nullable (`nullable=False`).
+- Ensured `matching_text` column is completely absent.
+- Successfully verified the schema structure using a temporary SQLite database initialized with SQLAlchemy.
+
+## Files Created or Modified
+- `backend/app/db/models.py` (Modified)
+
+## Tests or Validations Run
+- command/check: Run temporary database initialization and inspect `PRAGMA table_info(role_profiles)`
+- status: Passed
+- evidence or reason: All columns mapped successfully to SQLite types, `target_role` is not nullable, and `matching_text` is verified absent.
+
+## Acceptance Check
+- Task acceptance condition: `role_profiles` schema matches Plan 1 and has no `matching_text` column.
+- Status: satisfied
+- Evidence: Verified via running a temporary SQLite table creation script, proving that only expected columns are created and `matching_text` is absent.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2/A3 for review and audit as this is an orchestrated flow.
+
+## Key Implementation Decisions
+- Used `uuid_pk` for the `id` field to leverage automatic canonical UUID generation.
+- Used `Text` for text columns instead of `String` except for UUID to follow the `Use Text for JSON-encoded skill arrays` rule and standard SQLite conventions.
+- Did not add any relationship declarations to `JobPost` as it is not defined yet and to strictly isolate the current task scope.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (03C)
+- can proceed: yes
+- handoff notes: `RoleProfile` model is defined and verified. The next task (03C) is to define the `job_posts` model, which will reference `role_profiles.id` as a foreign key.
+
+
+---
+
+# Task Execution Report - (03C)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch03 - SQLite Models, Indexes, and Session
+
+## Task
+(03C) - Define job_posts model exactly
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Table: job_posts`
+- `docs/plans/Master_Plan.md` > `## 22. Table: job_posts`
+- `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - SQLite Models, Indexes, and Session
+- Task ID: (03C)
+- Task title: Define job_posts model exactly
+
+## Completed Work
+- Status: complete.
+- Defined `JobPost` ORM model class in `backend/app/db/models.py` inheriting from `Base`.
+- Created all 40 required columns: `id`, `batch_id`, `role_profile_id`, `title`, `company`, `location`, `work_mode`, `level`, `employment_type`, `salary`, `responsibilities`, `requirements`, `skills`, `source_url`, `source_platform`, `parse_status`, `raw_content_hash`, `dedup_key`, `duplicate_of_job_id`, `jd_status`, `extraction_status`, `error_reason`, `should_score_similarity`, `embedding_text`, `embedding_similarity`, `skill_overlap_score`, `location_match_score`, `level_match_score`, `base_score`, `jd_confidence_multiplier`, `final_score`, `final_score_percent`, `status`, `input_tokens`, `output_tokens`, `estimated_cost_usd`, `extraction_time_ms`, `discovered_at`, `created_at`, `updated_at` with exact types matching specifications.
+- Added foreign key to `role_profiles.id` on `role_profile_id`.
+- Added self-referential foreign key to `job_posts.id` on `duplicate_of_job_id`.
+- Successfully validated the schema structure via a temporary database initialization check and `PRAGMA table_info(job_posts)`.
+
+## Files Created or Modified
+- `backend/app/db/models.py` (Modified)
+
+## Tests or Validations Run
+- command/check: Run temporary database initialization and inspect `PRAGMA table_info(job_posts)`
+  - status: Passed
+  - evidence or reason: 40 columns successfully created with SQLite datatypes matching specifications, foreign keys configured correctly, and validated via direct SQL inspect.
+- command/check: `pytest` backend tests execution
+  - status: Passed
+  - evidence or reason: All 4 contract tests passed without regression.
+
+## Acceptance Check
+- Task acceptance condition: `job_posts` schema matches Plan 1 and includes all status, dedup, score, token, cost, and timestamp fields.
+- Status: satisfied
+- Evidence: Verified via running a temporary SQLite table creation script, proving that exactly 40 columns are created with the correct types and foreign key relationships.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2/A3 for review and audit as this is an orchestrated flow.
+
+## Key Implementation Decisions
+- Used `Text` for `skills` storage (JSON array) and `embedding_text` to strictly follow the specification rules.
+- Used `Float` or equivalent for scores and cost fields, and `Integer` for tokens.
+- Explicitly configured `duplicate_of_job_id` as a nullable self-referential foreign key using `ForeignKey("job_posts.id")`.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (03D)
+- can proceed: yes
+- handoff notes: `JobPost` model is defined and verified. The next task (03D) is to define the `applications` model and delete behavior.
+
+
+---
+
+# Task Execution Report - (03D)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch03 - SQLite Models, Indexes, and Session
+
+## Task
+(03D) - Define applications model and delete behavior
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Table: applications`
+- `docs/plans/Master_Plan.md` > `## 23. Table: applications`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - SQLite Models, Indexes, and Session
+- Task ID: (03D)
+- Task title: Define applications model and delete behavior
+
+## Completed Work
+- Status: complete.
+- Defined the `Application` ORM model class in `backend/app/db/models.py` inheriting from `Base`.
+- Created all 7 required columns: `id`, `job_post_id`, `status`, `cv_version`, `notes`, `applied_at`, and `updated_at` with exact types matching specifications.
+- Configured `job_post_id` as a foreign key to `job_posts.id` with an explicit `ondelete="CASCADE"` behavior.
+- Aligned allowed application statuses with `APPLICATION_STATUSES`.
+- Successfully validated the schema structure and cascade delete configuration using a temporary SQLite database initialization script.
+
+## Files Created or Modified
+- `backend/app/db/models.py` (Modified)
+
+## Tests or Validations Run
+- command/check: Run temporary database initialization and inspect `PRAGMA table_info(applications)` and `PRAGMA foreign_key_list(applications)`
+  - status: Passed
+  - evidence or reason: 7 columns successfully created, with correct data types and nullability constraints. The foreign key on `job_post_id` targeting `job_posts.id` was verified with an `on_delete` value of `CASCADE`.
+- command/check: `pytest backend/tests/`
+  - status: Passed
+  - evidence or reason: All 4 contract tests passed without regression.
+
+## Acceptance Check
+- Task acceptance condition: `applications` schema matches Plan 1 and foreign key delete behavior is inspectable.
+- Status: satisfied
+- Evidence: Verified via running a temporary SQLite table creation script, proving that all expected columns are created with the correct types and that `on_delete` is `CASCADE` in the foreign key list check.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2/A3 for review and audit as this is an orchestrated flow.
+
+## Key Implementation Decisions
+- Chose `ondelete="CASCADE"` for the `job_post_id` relationship because it simplifies demo resets (automatically cleaning up dependencies in SQLite) and ensures database referential integrity.
+- Used `updated_timestamp` helper to automatically manage timezone-aware UTC datetime tracking for `updated_at`.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (03E)
+- can proceed: yes
+- handoff notes: `Application` model is defined and verified with explicit delete cascade. The next task (03E) is to add exact indexes and constraints, which includes the `idx_applications_job_post_id` index on `applications(job_post_id)`.
+
+---
+
+# Task Execution Report - (03E)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch03 - SQLite Models, Indexes, and Session
+
+## Task
+(03E) - Add exact indexes and constraints
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Required Indexes`
+- `docs/plans/Master_Plan.md` > `## 24. SQLite Indexes`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - SQLite Models, Indexes, and Session
+- Task ID: (03E)
+- Task title: Add exact indexes and constraints
+
+## Completed Work
+- Status: complete.
+- Added SQLAlchemy index declarations (`__table_args__`) on `JobPost` model for the 7 indexes: `idx_job_posts_status` on `status`, `idx_job_posts_final_score` on `final_score DESC`, `idx_job_posts_jd_status` on `jd_status`, `idx_job_posts_batch_id` on `batch_id`, `idx_job_posts_role_profile_status_score` on `(role_profile_id, status, final_score DESC)`, `idx_job_posts_raw_content_hash` as unique index on `raw_content_hash` where not null, and `idx_job_posts_dedup_key` on `dedup_key`.
+- Added SQLAlchemy index declaration (`__table_args__`) on `Application` model for `idx_applications_job_post_id` on `job_post_id`.
+- Verified correct generation of all SQLite indexes by creating a temporary in-memory database using `Base.metadata.create_all()` and querying `sqlite_master` in `C:\Users\ACER\.gemini\antigravity\brain\2b6f75f5-6ca1-4c19-9d54-a8a23f50a801\scratch\test_indexes.py`.
+
+## Files Created or Modified
+- `backend/app/db/models.py` (Modified)
+
+## Tests or Validations Run
+- command/check: Run temporary in-memory database creation and query `sqlite_master` for indexes.
+  - status: Passed
+  - evidence or reason: All 8 required indexes were generated successfully with exact names, columns, order, and partial constraints as verified via the test script.
+- command/check: `pytest` backend tests execution
+  - status: Passed
+  - evidence or reason: All 4 contract tests passed without regression.
+
+## Acceptance Check
+- Task acceptance condition: SQLite database contains all required index names after `init_db()`.
+- Status: satisfied
+- Evidence: In-memory test db initialization verified that SQLite successfully parsed and created all 8 required indexes, matching exact specifications.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2/A3 for review and audit as this is an orchestrated flow.
+
+## Key Implementation Decisions
+- Used `text("final_score DESC")` within `Index` declaration to enforce descending order indexing in SQLite.
+- Implemented partial unique index `idx_job_posts_raw_content_hash` using `unique=True` and `sqlite_where=text("raw_content_hash IS NOT NULL")` to comply with partial index support in SQLite.
+- Declared indexes inside `__table_args__` of the declarative classes (`JobPost` and `Application`) as it is the standard and clean way to declare table-level constraints and multi-column indexes in SQLAlchemy.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: (03F)
+- can proceed: yes
+- handoff notes: Exact indexes are configured on SQLAlchemy models and verified. The next task (03F) is to implement async session, database initialization (`init_db()`), and SQLite connection PRAGMAs (WAL mode, foreign keys).
+
+
+---
+
+# Task Execution Report - (03F)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch03 - SQLite Models, Indexes, and Session
+
+## Task
+(03F) - Implement async session, database initialization, and SQLite PRAGMAs
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### SQLite Rules`
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### MVP Table Boundary`
+- `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`
+- `docs/plans/Master_Plan.md` > `## 20. SQLite Database Design`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - SQLite Models, Indexes, and Session
+- Task ID: (03F)
+- Task title: Implement async session, database initialization, and SQLite PRAGMAs
+
+## Completed Work
+- Status: complete.
+- Created `backend/app/db/session.py` with SQLAlchemy async engine using `settings.DATABASE_URL`.
+- Created async session maker `async_session_maker` using `async_sessionmaker` and `AsyncSession`.
+- Added SQLAlchemy connection event listener (`connect` hook on `engine.sync_engine`) to run `PRAGMA foreign_keys=ON` and `PRAGMA journal_mode=WAL` for all connections.
+- Implemented `init_db()` function to initialize the database with metadata creation.
+- Added a metadata table names verification guard to ensure exactly three tables (`applications`, `job_posts`, and `role_profiles`) are defined in the schema metadata.
+- Added local data directory creation guard for the SQLite database file parent directory (`backend/data/`).
+- Verified successfully that calling `init_db()` creates the local database and the exact tables, columns, indexes, and cascades.
+- Verified that active connections correctly execute connection PRAGMAs (foreign keys enabled and journal mode is WAL).
+
+## Files Created or Modified
+- `backend/app/db/session.py` (Created)
+
+## Tests or Validations Run
+- command/check: `python -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"`
+  - status: Passed
+  - evidence or reason: Executed successfully without error and initialized the database file at `backend/data/job_matching.db`.
+- command/check: SQLite schema, index, columns, and foreign key verification script
+  - status: Passed
+  - evidence or reason: Checked table set equals exactly `['applications', 'job_posts', 'role_profiles']`. No missing tables or indexes. `matching_text` is verified absent from `role_profiles`. Cascading delete is verified active on `applications`.
+- command/check: App-session PRAGMA verification script
+  - status: Passed
+  - evidence or reason: Verified active connection settings return `foreign_keys 1` and `journal_mode wal` exactly as expected.
+
+## Acceptance Check
+- Task acceptance condition: `asyncio.run(init_db())` creates the local database and only the three MVP tables.
+- Status: satisfied
+- Evidence: Verified via SQLite inspect command showing that only the 3 MVP tables are created and both WAL and foreign keys are enabled on SQLAlchemy connections.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Handed off to A2/A3 for review and audit as this is an orchestrated flow.
+
+## Key Implementation Decisions
+- Used `engine.sync_engine` to register the `connect` event listener, which is the correct way to intercept DBAPI connection establishment when using `create_async_engine` in SQLAlchemy.
+- Checked `settings.DATABASE_URL` prefix to apply directory guard selectively for SQLite connections.
+- Asserted `Base.metadata.tables.keys()` strictly matching expected 3 tables prior to actual SQL execution in `init_db()` to serve as a strong static guard.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified.
+
+## Notes for Next Task
+- next task ID: Batch04 - (04A)
+- can proceed: yes
+- handoff notes: SQLite Models, Indexes, and async database session management are fully implemented and verified. The next task (04A) is to implement the minimal FastAPI application bootstrap.
+
