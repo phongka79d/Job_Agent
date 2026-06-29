@@ -640,7 +640,7 @@ Plan 1 is complete only when the backend foundation can import, initialize the d
 
 ### Tasks
 
-- [ ] (04A): Add minimal FastAPI application entrypoint
+- [x] (04A): Add minimal FastAPI application entrypoint
   - Source of Truth: `docs/plans/Plan_1.md` > `## 4. Scope`; `docs/plans/Plan_1.md` > `## 8. Implementation Steps`; `docs/plans/Plan_1.md` > `## 5. Out of Scope`
   - Source Requirements:
     - Add a minimal FastAPI app entrypoint that can initialize the database.
@@ -663,7 +663,7 @@ Plan 1 is complete only when the backend foundation can import, initialize the d
   - Blocked Condition: None
   - Files: `backend/app/main.py`
 
-- [ ] (04B): Run automated backend setup and import validations
+- [x] (04B): Run automated backend setup and import validations
   - Source of Truth: `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`; `docs/plans/Master_Plan.md` > `## 31. Environment Setup`
   - Source Requirements:
     - Installing `backend/requirements-dev.txt` succeeds and provides pytest, pytest-asyncio, and respx.
@@ -688,7 +688,7 @@ Plan 1 is complete only when the backend foundation can import, initialize the d
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` if Python 3.11+ is unavailable or local environment setup is not permitted by the user environment.
   - Files: Execution report only; no new source files expected beyond prior tasks.
 
-- [ ] (04C): Run SQLite schema, index, foreign key, and PRAGMA validations
+- [x] (04C): Run SQLite schema, index, foreign key, and PRAGMA validations
   - Source of Truth: `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`; `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### MVP Table Boundary`; `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Required Indexes`
   - Source Requirements:
     - Exactly three MVP application tables exist.
@@ -715,7 +715,7 @@ Plan 1 is complete only when the backend foundation can import, initialize the d
   - Blocked Condition: None
   - Files: Generated `backend/data/job_matching.db` during validation only; must remain ignored.
 
-- [ ] (04D): Run repository ignore and Qdrant infrastructure validations
+- [x] (04D): Run repository ignore and Qdrant infrastructure validations
   - Source of Truth: `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`; `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Repository Ignore Rules`; `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Qdrant Infrastructure`
   - Source Requirements:
     - `.env`, local SQLite files, virtual environments, frontend `node_modules`, and frontend build output are ignored by git.
@@ -738,7 +738,7 @@ Plan 1 is complete only when the backend foundation can import, initialize the d
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` if Docker is unavailable or not running.
   - Files: No new source files expected beyond prior tasks.
 
-- [ ] (04E): Perform final Plan 1 scope audit and handoff notes
+- [x] (04E): Perform final Plan 1 scope audit and handoff notes
   - Source of Truth: `docs/plans/Plan_1.md` > `## 5. Out of Scope`; `docs/plans/Plan_1.md` > `## 10. Handoff Notes for Phase 2`; `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
   - Source Requirements:
     - Confirm no extraction, scoring, frontend, or Qdrant service behavior was implemented.
@@ -853,7 +853,7 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 - [x] Batch01 - Repository Foundation and Local Infrastructure
 - [x] Batch02 - Backend Configuration and Shared Contracts
 - [x] Batch03 - SQLite Models, Indexes, and Session
-- [ ] Batch04 - App Bootstrap and Verification
+- [x] Batch04 - App Bootstrap and Verification
 
 ### Task IDs
 
@@ -883,11 +883,11 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 #### Batch04
 
-- [ ] (04A): Add minimal FastAPI application entrypoint
-- [ ] (04B): Run automated backend setup and import validations
-- [ ] (04C): Run SQLite schema, index, foreign key, and PRAGMA validations
-- [ ] (04D): Run repository ignore and Qdrant infrastructure validations
-- [ ] (04E): Perform final Plan 1 scope audit and handoff notes
+- [x] (04A): Add minimal FastAPI application entrypoint
+- [x] (04B): Run automated backend setup and import validations
+- [x] (04C): Run SQLite schema, index, foreign key, and PRAGMA validations
+- [x] (04D): Run repository ignore and Qdrant infrastructure validations
+- [x] (04E): Perform final Plan 1 scope audit and handoff notes
 
 ## Completion Reporting Rules for Future Execution Agents
 

@@ -34,7 +34,7 @@ The system uses a durable SQL database (SQLite) as the primary source of truth, 
 
 ## Directory Structure
 
-The project layout including Batch03 database models, indexes, and session configuration is established as follows:
+The project layout including Batch04 app bootstrap, database models, indexes, and session configuration is established as follows:
 
 ```text
 Job_Agent/
@@ -55,6 +55,7 @@ Job_Agent/
 |   |   |   |   `-- .gitkeep
 |   |   |   |-- models.py             # SQLite ORM models and indexes (Batch03)
 |   |   |   `-- session.py            # Async database session and initialization (Batch03)
+|   |   |-- main.py                   # Minimal FastAPI app bootstrap with DB startup initialization
 |   |   |-- services/
 |   |   |   `-- __init__.py
 |   |-- data/
@@ -120,4 +121,11 @@ docker compose up -d qdrant
 Verify that the database can be initialized and that SQLite connection PRAGMAs (foreign keys enabled and WAL mode) are active:
 ```bash
 python -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"
+```
+
+### 6. FastAPI App Bootstrap
+From the `backend` directory, verify that the minimal FastAPI app imports and can run local startup database initialization:
+```bash
+python -c "from app.main import app; print(app.title)"
+uvicorn app.main:app --reload --port 8000
 ```

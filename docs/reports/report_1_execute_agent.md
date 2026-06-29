@@ -1377,3 +1377,492 @@ complete
 - can proceed: yes
 - handoff notes: SQLite Models, Indexes, and async database session management are fully implemented and verified. The next task (04A) is to implement the minimal FastAPI application bootstrap.
 
+
+---
+
+# Task Execution Report - (04A)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch04 - App Bootstrap and Verification
+
+## Task
+(04A) - Add minimal FastAPI application entrypoint
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 4. Scope`
+- `docs/plans/Plan_1.md` > `## 8. Implementation Steps`
+- `docs/plans/Plan_1.md` > `## 5. Out of Scope`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - App Bootstrap and Verification
+- Task ID: (04A)
+- Task title: Add minimal FastAPI application entrypoint
+
+## Completed Work
+- Status: complete.
+- Created the minimal FastAPI application entrypoint in `backend/app/main.py`.
+- Instantiated `FastAPI` with title `Agentic Job Matching System`.
+- Called the existing backend logging setup during module import.
+- Registered lifespan startup behavior that runs `init_db()`.
+- Added a minimal root endpoint returning `{"status": "ok"}` for bootstrap sanity only.
+- Did not add route modules, request/response schemas, CORS, frontend integration, extraction, scoring, LangGraph, Tavily, trafilatura, or Qdrant service code.
+
+## Files Created or Modified
+- `backend/app/main.py`
+
+## Tests or Validations Run
+- command/check: `cmd /c ".venv\Scripts\activate.bat && python -c ""from app.main import app; print(app.title)"""` from `backend`
+  - status: Passed
+  - evidence or reason: Printed `Agentic Job Matching System`.
+- command/check: `.\.venv\Scripts\python.exe -c "from fastapi.testclient import TestClient; from app.main import app; import pathlib; with TestClient(app) as client: response = client.get('/'); print(response.status_code, response.json(), pathlib.Path('data/job_matching.db').exists())"` from `backend`
+  - status: Passed
+  - evidence or reason: Startup lifespan ran `init_db()`, root endpoint returned `200 {'status': 'ok'}`, and `data/job_matching.db` existed. A Starlette deprecation warning from the installed FastAPI/TestClient stack was emitted but did not block validation.
+- command/check: `python -c "from app.main import app; print(app.title)"` from `backend` using the unactivated global Python interpreter
+  - status: Failed
+  - evidence or reason: The global interpreter lacked `sqlalchemy`; validation passed after activating the existing project `backend/.venv`.
+
+## Acceptance Check
+- Task acceptance condition: `uvicorn app.main:app --reload --port 8000` can import the app and trigger database initialization locally.
+- Status: satisfied
+- Evidence: The app imported successfully in the project backend environment, printed the app title, and the FastAPI lifespan startup path successfully ran `init_db()` during the TestClient smoke check.
+
+## Artifacts Produced
+- Minimal FastAPI app entrypoint at `backend/app/main.py`.
+- Generated local SQLite validation artifact `backend/data/job_matching.db` may exist and is expected to remain ignored by git.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch status updates are left to A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Used FastAPI lifespan startup instead of public route modules so database initialization happens during app startup while keeping the bootstrap minimal.
+- Reused existing `setup_logging()` and `init_db()` helpers from prior completed tasks.
+- Added only a root health-style endpoint for bootstrap sanity.
+
+## Risks or Open Issues
+- The unactivated global Python 3.13 interpreter cannot import SQLAlchemy; validation requires using or activating `backend/.venv` where backend requirements are installed.
+- The installed FastAPI/TestClient stack emits a Starlette deprecation warning about `httpx`, but the smoke check passes.
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Dependencies `(02A)`, `(02B)`, and `(03F)` are checked complete in `docs/tasks/task_1.md`.
+- No missing source-of-truth fields, dependency issues, or architecture concerns identified.
+- Scope remained limited to `backend/app/main.py`.
+
+## Notes for Next Task
+- next task ID: Batch04 - (04B)
+- can proceed: yes
+- handoff notes: Minimal FastAPI bootstrap exists and imports successfully in the project backend environment. Use `backend/.venv` or activate it before running subsequent backend validation commands.
+---
+
+# Task Execution Report - (04B)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch04 - App Bootstrap and Verification
+
+## Task
+(04B) - Run automated backend setup and import validations
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_1.md` selected task block for `(04B)`
+- `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`
+- `docs/plans/Master_Plan.md` > `## 31. Environment Setup` (cited by task; not separately read because Plan 1 and task requirements were sufficient)
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - App Bootstrap and Verification
+- Task ID: (04B)
+- Task title: Run automated backend setup and import validations
+
+## Completed Work
+- Status: complete.
+- Used the existing backend virtual environment at `backend/.venv` with Python 3.13.7, satisfying the Python 3.11+ requirement.
+- Installed/validated `backend/requirements-dev.txt`; required packages were already present and pip exited successfully.
+- Verified `pytest`, `pytest-asyncio`, and `respx` are importable in the backend virtual environment.
+- Ran the Plan 1 automated settings import, database initialization, ORM table import, and constants contract validations.
+
+## Files Created or Modified
+- `docs/reports/report_1_execute_agent.md`
+
+## Tests or Validations Run
+- command/check: `.\.venv\Scripts\python.exe --version` from `backend`
+  - status: Passed
+  - evidence or reason: Printed `Python 3.13.7`, which satisfies Python 3.11+.
+- command/check: `.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt` from `backend`
+  - status: Passed
+  - evidence or reason: Pip exited with code 0; runtime packages and `pytest`, `pytest-asyncio`, and `respx` were already satisfied.
+- command/check: `.\.venv\Scripts\python.exe -c "import pytest, pytest_asyncio, respx; print('test deps ok')"` from `backend`
+  - status: Passed
+  - evidence or reason: Printed `test deps ok`.
+- command/check: `.\.venv\Scripts\python.exe -c "from app.core.config import settings; print(settings.DATABASE_URL)"` from `backend`
+  - status: Passed
+  - evidence or reason: Printed `sqlite+aiosqlite:///./data/job_matching.db`.
+- command/check: `.\.venv\Scripts\python.exe -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"` from `backend`
+  - status: Passed
+  - evidence or reason: Command exited with code 0 and no error output.
+- command/check: `.\.venv\Scripts\python.exe -c "from app.db.models import RoleProfile, JobPost, Application; print(RoleProfile.__tablename__, JobPost.__tablename__, Application.__tablename__)"` from `backend`
+  - status: Passed
+  - evidence or reason: Printed `role_profiles job_posts applications`.
+- command/check: `.\.venv\Scripts\python.exe -m pytest tests/test_constants_contract.py` from `backend`
+  - status: Passed
+  - evidence or reason: Pytest collected 4 items and reported `4 passed in 0.02s`.
+
+## Acceptance Check
+- Task acceptance condition: All listed automated setup/import checks pass, or blocked conditions are reported with exact safe reasons.
+- Status: satisfied
+- Evidence: Requirements-dev installation exited successfully, test dependency imports succeeded, settings import succeeded, `init_db()` succeeded, ORM table classes imported with expected table names, and the constants contract test passed.
+
+## Artifacts Produced
+- Appended execution report entry in `docs/reports/report_1_execute_agent.md`.
+- Local ignored SQLite artifact `backend/data/job_matching.db` may exist from `init_db()` validation.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch status updates are left to A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Reused the existing `backend/.venv` instead of creating a second environment because it satisfies Python 3.11+ and already contains the required dependencies.
+- Ran validations with the venv interpreter directly to avoid relying on shell activation state.
+
+## Risks or Open Issues
+- None for `(04B)`.
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Dependencies `(01B)`, `(02A)`, `(02C)`, `(02D)`, `(03F)`, and `(04A)` were satisfied by prior task completion/review records before running `(04B)`.
+- No source-of-truth fields were missing.
+- No source files were modified for this validation-only task.
+
+## Notes for Next Task
+- next task ID: Batch04 - (04C)
+- can proceed: yes
+- handoff notes: Backend automated setup/import validations passed using `backend/.venv`. The initialized SQLite database is ready for the schema, index, foreign-key, and PRAGMA validations in `(04C)`.
+
+---
+
+# Task Execution Report - (04C)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch04 - App Bootstrap and Verification
+
+## Task
+(04C) - Run SQLite schema, index, foreign key, and PRAGMA validations
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 9. Verification & Testing Plan`
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### MVP Table Boundary`
+- `docs/plans/Plan_1.md` > `## 7. Technical Specifications` > `### Required Indexes`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - App Bootstrap and Verification
+- Task ID: (04C)
+- Task title: Run SQLite schema, index, foreign key, and PRAGMA validations
+
+## Completed Work
+- Status: complete.
+- Ran `init_db()` from the backend virtual environment before schema validation.
+- Executed the Plan 1 SQLite schema/index/foreign-key verification script against `backend/data/job_matching.db`.
+- Executed the Plan 1 app-session PRAGMA verification script.
+- Verified application foreign-key delete behavior with a rollback-scoped insert/delete check.
+- No source files were modified for this validation-only task.
+
+## Files Created or Modified
+- `docs/reports/report_1_execute_agent.md`
+- `backend/data/job_matching.db` (generated/updated ignored validation artifact)
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"`: Passed
+- Plan 1 SQLite verification script: Passed
+- Evidence: tables were `['applications', 'job_posts', 'role_profiles']`; `missing_tables []`; `unexpected_tables []`; `has matching_text False`; `missing_indexes []`; `applications_on_delete ['CASCADE']`.
+- Plan 1 app-session PRAGMA verification script: Passed
+- Evidence: `foreign_keys 1`; `journal_mode wal`.
+- Application foreign-key delete behavior check: Passed
+- Evidence: deleting a validation `job_posts` row removed its validation `applications` row; remaining child rows were `0`. The check ran inside a transaction and was rolled back.
+
+## Acceptance Check
+- Task acceptance condition: Schema/index/PRAGMA checks match Plan 1 expected outcomes.
+- Status: satisfied
+- Evidence: The initialized SQLite database contains exactly the three MVP tables, no `search_runs` table, no `matching_text` column on `role_profiles`, all required indexes, `applications.job_post_id` with `ON DELETE CASCADE`, app-managed `PRAGMA foreign_keys` set to `1`, and `PRAGMA journal_mode` set to `wal`.
+
+## Artifacts Produced
+- Appended execution report entry in `docs/reports/report_1_execute_agent.md`.
+- Local ignored SQLite database artifact at `backend/data/job_matching.db`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch status updates are left to A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Used the existing backend virtual environment interpreter at `backend/.venv/Scripts/python.exe`.
+- Added a transaction-scoped cascade verification because the selected task explicitly requires application foreign-key delete behavior to be verified, while the Plan 1 script only inspects `PRAGMA foreign_key_list(applications)`.
+
+## Risks or Open Issues
+- Existing workflow documentation inconsistency observed: `(04A)` and `(04B)` are checked in the Batch04 task list, but still unchecked in the Progress Tracker. This task did not edit progress state per orchestrated-run rules.
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Dependencies `(03F)` and `(04B)` were satisfied by checked task entries in the Batch03 and Batch04 task lists before running `(04C)`.
+- No source-of-truth fields were missing.
+- No architecture concerns identified for this validation-only task.
+
+## Notes for Next Task
+- next task ID: Batch04 - (04D)
+- can proceed: yes
+- handoff notes: SQLite schema, required indexes, foreign-key configuration, WAL mode, and application delete cascade behavior all passed validation. Next task can proceed to repository ignore and Qdrant infrastructure validations.
+
+---
+
+# Task Execution Report - (04D)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch04 - App Bootstrap and Verification
+
+## Task
+(04D) - Run repository ignore and Qdrant infrastructure validations
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Plan_1.md > ## 9. Verification & Testing Plan
+- docs/plans/Plan_1.md > ## 7. Technical Specifications > ### Repository Ignore Rules
+- docs/plans/Plan_1.md > ## 7. Technical Specifications > ### Qdrant Infrastructure
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - App Bootstrap and Verification
+- Task ID: (04D)
+- Task title: Run repository ignore and Qdrant infrastructure validations
+
+## Completed Work
+- Status: complete.
+- Ran repository ignore validations for local secrets, SQLite database artifacts, backend virtual environment files, frontend node_modules, and frontend build output.
+- Confirmed `.env.example`, `backend/data/.gitkeep`, and `backend/app/db/migrations/.gitkeep` are not ignored and are tracked by git.
+- Verified Docker and Docker Compose availability, started the local Qdrant service, confirmed the running service and port mappings, then stopped and removed the compose resources.
+- No source files were modified.
+
+## Files Created or Modified
+- docs/reports/report_1_execute_agent.md
+
+## Tests or Validations Run
+- `git check-ignore .env`: Passed
+  - evidence or reason: output `.env`.
+- `git check-ignore backend/data/job_matching.db`: Passed
+  - evidence or reason: output `backend/data/job_matching.db`.
+- `git check-ignore backend/data/job_matching.db-wal`: Passed
+  - evidence or reason: output `backend/data/job_matching.db-wal`.
+- `git check-ignore backend/.venv/pyvenv.cfg`: Passed
+  - evidence or reason: output `backend/.venv/pyvenv.cfg`.
+- `git check-ignore frontend/job-agent-ui/node_modules/example`: Passed
+  - evidence or reason: output `frontend/job-agent-ui/node_modules/example`.
+- `git check-ignore frontend/job-agent-ui/dist/example`: Passed
+  - evidence or reason: output `frontend/job-agent-ui/dist/example`; this covers the selected task's frontend build-output ignore requirement.
+- `git check-ignore .env.example`: Passed
+  - evidence or reason: command exited 1 with no output, confirming the file is not ignored.
+- `git check-ignore backend/data/.gitkeep`: Passed
+  - evidence or reason: command exited 1 with no output, confirming the file is not ignored.
+- `git check-ignore backend/app/db/migrations/.gitkeep`: Passed
+  - evidence or reason: command exited 1 with no output, confirming the file is not ignored.
+- `git ls-files -- .env.example backend/data/.gitkeep backend/app/db/migrations/.gitkeep`: Passed
+  - evidence or reason: output listed all three required keep/example files as tracked.
+- `docker --version`: Passed
+  - evidence or reason: Docker version 29.3.1, build c2be9cc.
+- `docker compose version`: Passed
+  - evidence or reason: Docker Compose version v5.1.1.
+- `docker info`: Passed
+  - evidence or reason: Docker engine reachable using Docker Desktop `desktop-linux` context.
+- `docker compose up -d qdrant`: Passed
+  - evidence or reason: container `job_agent_qdrant_local` was created and started.
+- `docker compose ps`: Passed
+  - evidence or reason: `job_agent_qdrant_local` used `qdrant/qdrant:latest`, status `Up`, with `0.0.0.0:6333-6334->6333-6334/tcp` and `[::]:6333-6334->6333-6334/tcp` port mappings.
+- `docker compose down`: Passed
+  - evidence or reason: container was stopped and removed, and the compose network was removed.
+
+## Acceptance Check
+- Task acceptance condition: Ignore checks match expected output and Qdrant starts/stops locally when Docker is available.
+- Status: satisfied
+- Evidence: All required `git check-ignore` outputs matched Plan 1 expectations; required keep/example files are not ignored and tracked; Docker was available; Qdrant started on ports `6333` and `6334`, appeared in `docker compose ps`, and was stopped with `docker compose down`.
+
+## Artifacts Produced
+- Appended execution report at `docs/reports/report_1_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run instructions require leaving checkbox and batch updates to A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Treated Docker as available only after `docker --version`, `docker compose version`, and `docker info` succeeded.
+- Added `git check-ignore frontend/job-agent-ui/dist/example` beyond the exact Plan 1 command list because the selected task's source requirements explicitly include frontend build output.
+- Did not modify `docker-compose.yml`; the Compose `version` warning is non-blocking and the source-of-truth Qdrant specification includes the `version: "3.8"` line.
+
+## Risks or Open Issues
+- Docker Compose v5.1.1 warns that the `version` attribute in `docker-compose.yml` is obsolete and ignored. This did not block validation, and no repair was made because Plan 1's Qdrant infrastructure source explicitly includes `version: "3.8"`.
+- Existing workflow documentation inconsistency remains from prior state: `(04A)` and `(04B)` are checked in the Batch04 task list but still unchecked in the Progress Tracker. This task did not edit progress state per orchestrated-run rules.
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Dependencies `(01C)` and `(01D)` were satisfied by checked task entries before running `(04D)`.
+- No source-of-truth fields were missing.
+- No architecture concerns identified for this validation-only task.
+
+## Notes for Next Task
+- next task ID: Batch04 - (04E)
+- can proceed: yes
+- handoff notes: Repository ignore behavior and local Qdrant infrastructure validation passed. Docker is installed and running in this environment, and Qdrant successfully started, exposed ports `6333` and `6334`, and stopped cleanly.
+
+---
+
+# Task Execution Report - (04E)
+
+## Source Task File
+docs/tasks/task_1.md
+
+## Report File
+docs/reports/report_1_execute_agent.md
+
+## Batch
+Batch04 - App Bootstrap and Verification
+
+## Task
+(04E) - Perform final Plan 1 scope audit and handoff notes
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_1.md` > `## 5. Out of Scope`
+- `docs/plans/Plan_1.md` > `## 10. Handoff Notes for Phase 2`
+- `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
+
+## Supplemental Documents Used
+- `docs/plans/Master_Plan.md` (cited MVP scope alignment context)
+
+## Selected Scope
+- Batch: Batch04 - App Bootstrap and Verification
+- Task ID: (04E)
+- Task title: Perform final Plan 1 scope audit and handoff notes
+
+## Completed Work
+- Status: complete.
+- Audited the final changed-file list using `git status --short`, `git diff --name-status`, `git diff --stat`, and `git ls-files --others --exclude-standard`.
+- Confirmed the visible implementation artifact from Batch04 is the prior accepted Plan 1 app bootstrap file `backend/app/main.py`, with tracked documentation/report/review updates from orchestration and review flow.
+- Reviewed the repository file list and targeted text scan for Plan 1 out-of-scope runtime behavior.
+- Confirmed no extraction workflow, scoring service/formula implementation, frontend app, public API route module, CORS setup, request/response schema, LangGraph node, Tavily/trafilatura workflow, or Qdrant service/collection/upsert/query behavior was added.
+- Confirmed Docker Compose remains limited to the local Qdrant service and volume.
+- Confirmed the prior validation outputs for `(04A)`, `(04B)`, `(04C)`, and `(04D)` are recorded in `docs/reports/report_1_execute_agent.md`.
+- Documented Plan 2 handoff contracts from the stable Plan 1 package structure, config, async session utilities, models, constants, dependencies, and ignore rules.
+
+## Files Created or Modified
+- `docs/reports/report_1_execute_agent.md`
+
+## Tests or Validations Run
+- `git status --short`: Passed
+  - evidence or reason: Reported tracked changes in `docs/reports/report_1_execute_agent.md`, `docs/review/review_1_review_agent.md`, `docs/tasks/task_1.md`, and untracked `backend/app/main.py`.
+- `git diff --name-status`: Passed
+  - evidence or reason: Reported tracked modifications only in `docs/reports/report_1_execute_agent.md`, `docs/review/review_1_review_agent.md`, and `docs/tasks/task_1.md`; untracked files were checked separately.
+- `git diff --stat`: Passed
+  - evidence or reason: Tracked changes are documentation/report/task tracking changes; no tracked runtime source diff was present before this `(04E)` append.
+- `git ls-files --others --exclude-standard`: Passed
+  - evidence or reason: Reported only `backend/app/main.py` as an untracked non-ignored file, matching prior accepted `(04A)` app bootstrap work.
+- `rg --files -g '!backend/.venv/**' -g '!backend/data/*.db*' -g '!__pycache__/**' -g '!*.pyc'`: Passed
+  - evidence or reason: File list matches Plan 1 foundation files, plan/task/review/report docs, and prior accepted `backend/app/main.py`; no frontend project or out-of-scope service modules were present.
+- Targeted out-of-scope text scan with `rg` for `matching_text`, `search_runs`, extraction/scoring/Qdrant runtime/frontend/API/CORS/workflow indicators outside docs/plans/tasks/reports/review and ignored artifacts: Passed
+  - evidence or reason: Hits were limited to README descriptions, approved config/dependencies, approved Docker Qdrant infrastructure, approved model score columns from the Plan 1 schema, and minimal `backend/app/main.py`; no executable out-of-scope service/workflow modules were found.
+- Prior execution report review for `(04A)` through `(04D)`: Passed
+  - evidence or reason: `docs/reports/report_1_execute_agent.md` contains execution report entries for `(04A)`, `(04B)`, `(04C)`, and `(04D)`, each reporting `Status complete` and satisfied acceptance. `(04A)` records a failed global-interpreter import check but passed validation in `backend/.venv`; A2 accepted it as environment-specific and non-blocking.
+- Prior review report check for dependencies `(04A)` through `(04D)`: Passed
+  - evidence or reason: `docs/review/review_1_review_agent.md` contains `ACCEPTED` reviews for `(04A)`, `(04B)`, `(04C)`, and `(04D)`.
+- Root `.env` presence check: Passed
+  - evidence or reason: `.env` exists locally. It remains ignored by the repository contract and was not inspected or modified.
+
+## Acceptance Check
+- Task acceptance condition: Plan 1 is either fully validated or explicitly blocked only by user/environment setup.
+- Status: satisfied
+- Evidence: Prior Batch04 validation reports show app import/bootstrap, backend setup/import checks, SQLite schema/index/foreign-key/PRAGMA checks, repository ignore checks, and Qdrant Docker lifecycle checks passed in the local environment. No unresolved user/environment blocker remains for Plan 1 validation. Scope audit found no Plan 1 out-of-scope executable modules or services.
+
+## Artifacts Produced
+- Final Plan 1 scope audit and handoff notes appended to `docs/reports/report_1_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run instructions explicitly require A1 not to update task checkboxes; checkbox and batch status updates are left to A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Performed this as an audit/report-only task and did not modify runtime source files.
+- Treated `backend/app/main.py` as prior accepted `(04A)` work, not new `(04E)` implementation.
+- Treated docs/review/task tracking changes as orchestration/review artifacts, not application scope expansion.
+
+## Risks or Open Issues
+- Existing progress-tracking inconsistency remains: `(04A)` and `(04B)` are checked in the main Batch04 task list but remain unchecked in the Progress Tracker. The user explicitly instructed not to modify checkboxes; A2/A3 should decide whether to reconcile those duplicate tracker entries.
+- `backend/app/main.py` remains untracked before the orchestrator commit. This is expected from prior accepted `(04A)` work but must be included in the eventual batch commit.
+- Docker Compose v5.1.1 warns that the `version` attribute is obsolete and ignored; prior `(04D)` validation showed this is non-blocking and Qdrant starts/stops successfully.
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Dependencies `(04A)`, `(04B)`, `(04C)`, and `(04D)` have accepted A2 reviews and recorded complete execution reports.
+- No source-of-truth fields were missing for `(04E)`.
+- No source conflict was identified between the selected task, Plan 1 out-of-scope rules, Plan 1 Phase 2 handoff notes, and Master Plan MVP scope.
+- The duplicate Progress Tracker entries for `(04A)` and `(04B)` are a tracking/documentation consistency issue only; they did not block the scope audit because the primary task entries and A2 reviews show those dependencies accepted.
+
+## Notes for Next Task
+- next task ID: None for Plan 1 execution; Batch04 final review/audit may proceed through A2/A3.
+- can proceed: yes
+- handoff notes: Plan 2 can consume the stable backend package structure under `backend/app/`, root settings loader in `backend/app/core/config.py`, shared constants in `backend/app/core/constants.py`, async session and `init_db()` utilities in `backend/app/db/session.py`, stable SQLAlchemy table/field definitions in `backend/app/db/models.py`, backend dependency files, test dependencies, and root ignore rules. Later phases must not rename Plan 1 database columns, add `matching_text`, change status/source values without a migration plan, duplicate executable status/source constants, create unapproved tables, or implement Qdrant collection/vector behavior outside the approved later-plan scope.
