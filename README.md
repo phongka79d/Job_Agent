@@ -66,8 +66,9 @@ Job_Agent/
 |   |   |   |-- dedup_service.py      # Null-safe duplicate checking and key generation (Phase 3 Batch 02)
 |   |   |   |-- embedding_service.py  # Mockable OpenAI embedding provider boundary (Phase 3 Batch 01)
 |   |   |   |-- extraction_service.py # Bounded raw-text/URL prep and graph entrypoints (Batch02/Batch03)
-|   |   |   |-- job_processing_service.py # SQLite-first persistence and state-to-post mapping (Phase 3 Batch 02)
+|   |   |   |-- job_processing_service.py # SQLite-first processing, Qdrant scoring, and status mutation service (Phase 3 Batch 03)
 |   |   |   |-- llm_client.py         # Mockable OpenAI structured extraction client boundary (Batch03)
+|   |   |   |-- qdrant_service.py     # Local Qdrant collection, payload, filters, and point operations (Phase 3 Batch 03)
 |   |   |   `-- scoring_service.py    # Deterministic scoring and clean text builders (Phase 3 Batch 01)
 |   |-- data/
 |   |   `-- .gitkeep
@@ -77,7 +78,7 @@ Job_Agent/
 |   |   |-- test_embedding_service.py        # Unit tests for embedding provider and dimensions (Phase 3 Batch 01)
 |   |   |-- test_extraction_graph.py         # Integration tests for graph and entrypoints (Batch03)
 |   |   |-- test_extraction_schema.py        # Focused extraction schema and fallback contract tests (Batch04)
-|   |   |-- test_job_processing_service.py   # Integration tests for duplicate control and database persistence (Phase 3 Batch 02)
+|   |   |-- test_job_processing_service.py   # Integration tests for persistence, Qdrant scoring, and status sync (Phase 3 Batch 03)
 |   |   |-- test_llm_client.py               # Unit tests for mockable extraction client (Batch03)
 |   |   |-- test_manual_text_preparation.py   # Manual raw-text parser preparation tests (Batch02)
 |   |   |-- test_nodes.py                    # Unit tests for extraction graph nodes (Batch03)
@@ -205,5 +206,24 @@ Smoke-check the new service implementations and run tests:
 ```bash
 python -m compileall -q app
 python -c "from app.services.dedup_service import build_dedup_key; from app.services.job_processing_service import process_job_state; print('deduplication and persistence services import successfully')"
+pytest tests/test_job_processing_service.py
+```
+
+---
+
+## Qdrant Sync & Status Mutation Services (Phase 3 - Batch 03)
+
+Phase 3 Batch 03 completes the SQLite-first job processing pipeline with Qdrant-derived scoring and backend-owned status mutation behavior:
+
+- **Qdrant Derived Index Service (Batch 03 - Task 03A):** Adds `qdrant_service.py` to own local Qdrant collection initialization, approved payload indexes, role/status/job-specific filters, canonical UUID point IDs, scorable job upserts with write acknowledgement, current-job similarity queries with bounded retry, idempotent point deletion, and payload status updates.
+- **Scorable Job Integration (Batch 03 - Task 03B):** Extends `process_job_state` so scorable jobs commit to SQLite before embedding or Qdrant calls, then use the Qdrant cosine score as `embedding_similarity` before updating deterministic score fields. Embedding or Qdrant failures keep the committed `pending_review` row visible with null score fields and a safe error reason.
+- **Status and Application Sync (Batch 03 - Task 03C):** Adds importable `ALLOWED_STATUS_TRANSITIONS`, `InvalidStatusTransition`, `approve_job`, `reject_job`, and `update_job_status`. These service methods validate transitions before mutation, commit SQLite first, create or update exactly one `applications` row for tracked statuses, update Qdrant payloads for saved/applied/interview/rejected/offer, and delete Qdrant points only for review rejection to `ignored`.
+- **Verification and Testing:** The existing `test_job_processing_service.py` now includes narrow mocked coverage for SQLite-before-embedding ordering, Qdrant score update behavior, current-job similarity misses, approve/reject sync, invalid transition pre-mutation behavior, and application-row semantics.
+
+Smoke-check the service implementations and run tests:
+
+```bash
+python -m compileall -q app
+python -c "from app.services.qdrant_service import QdrantService; from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, approve_job, reject_job, update_job_status; print('qdrant and status services import successfully')"
 pytest tests/test_job_processing_service.py
 ```

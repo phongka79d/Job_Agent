@@ -507,3 +507,276 @@ complete
 - next task ID: (03A)
 - can proceed: yes
 - handoff notes: The deduplication and SQLite persistence pipeline is fully functional and tested. The next task (03A) can proceed to implement Qdrant local collection, payload indices, and filter services.
+
+---
+
+# Task Execution Report - (03A)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch03 - Qdrant Sync and Status Mutation Services
+
+## Task
+(03A) - Implement Qdrant collection, payload, and filter service
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema`
+- `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
+- `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Qdrant Collection` / `### Query Isolation` / `### Qdrant Failure Handling`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Qdrant Sync and Status Mutation Services
+- Task ID: (03A)
+- Task title: Implement Qdrant collection, payload, and filter service
+
+## Completed Work
+- Status: complete.
+- Created a focused Qdrant service module that configures `AsyncQdrantClient` from backend settings, initializes the `job_posts` collection with cosine distance and `settings.EMBEDDING_DIMENSION`, and creates approved payload indexes for `role_profile_id`, `status`, `jd_status`, `batch_id`, and `source_platform`.
+- Added lightweight `JobPost` payload serialization, canonical UUID point ID validation, pending-review/saved/status/job-specific filter builders, scorable-job upsert with `wait=True`, current-job-only similarity query with bounded retry and score clamping, idempotent delete, and payload status update helpers.
+- Added safe Qdrant error logging through typed `QdrantServiceError` boundaries without logging secrets or full payload dumps.
+
+## Files Created or Modified
+- `backend/app/services/qdrant_service.py`
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app\services\qdrant_service.py`: Passed
+  - evidence or reason: New service module compiled successfully.
+- `cd backend; .\.venv\Scripts\python.exe -c "from app.services.qdrant_service import ..."`: Passed
+  - evidence or reason: Imported `QdrantService`, collection constants, and filter builders; built pending-review, saved, and job-specific filters successfully.
+- Fake-client Qdrant service smoke check through backend venv: Passed
+  - evidence or reason: Exercised idempotent collection/index setup, scorable upsert with `wait=True`, current-job similarity extraction and clamping, status payload update, and delete helper without live Qdrant.
+- `cd backend; .\.venv\Scripts\pytest.exe tests\test_job_processing_service.py`: Passed
+  - evidence or reason: 5 passed.
+- `cd backend; .\.venv\Scripts\pytest.exe tests\test_scoring_service.py tests\test_embedding_service.py`: Passed
+  - evidence or reason: 17 passed.
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app`: Passed
+  - evidence or reason: Backend app compiled successfully.
+- Live Qdrant verification: Not run
+  - evidence or reason: Optional manual validation only; automated acceptance used fake-client checks per task instructions.
+
+## Acceptance Check
+- Task acceptance condition: Qdrant operations are importable, fakeable in tests, idempotent where required, and use approved collection/payload/filter contracts.
+- Status: satisfied
+- Evidence: `backend/app/services/qdrant_service.py` exposes a fakeable `QdrantService`, typed service error, startup-ready `ensure_collection()`, approved collection/index constants, canonical UUID point IDs, lightweight payload serialization, role/status/job-specific filters, write-acknowledged scorable upsert, current-job similarity query and score extraction, idempotent delete, and idempotent payload status update helpers. Compile, import, fake-client smoke, and narrow existing service tests passed.
+
+## Artifacts Produced
+- `backend/app/services/qdrant_service.py`
+- Appended execution report in `docs/reports/report_3_execute_agent.md`
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated A1 execution; checkbox and batch status updates are left to A2 after accepted review.
+
+## Key Implementation Decisions
+- Used `AsyncQdrantClient` lazily so tests can inject fakes and imports do not require live Qdrant.
+- Kept Qdrant as a derived-index boundary: helpers raise `QdrantServiceError` after safe logging so later persistence/status services can keep SQLite as the source of truth and convert failures into sync flags.
+- Added both payload `job_id` and Qdrant `HasIdCondition` to the scoring filter so another pending job cannot supply the current job's similarity score.
+- Kept `backend/app/services/__init__.py` unchanged because the service is importable by module path and no public package export was required for this task.
+
+## Risks or Open Issues
+- Dedicated mocked Qdrant unit tests are still scheduled for Batch04, as specified by the task file.
+- Live local Qdrant was not started because it is optional/manual for this task.
+
+## Minor Issues Fixed During Execution
+- Re-ran import validation with the backend virtual environment after the global Python interpreter lacked `langchain_openai` through the existing `app.services` package imports.
+
+## Workflow Integrity Check
+- No missing source-of-truth fields, dependency issues, or architecture concerns identified.
+- Scope stayed within `(03A)`; no sibling `(03B)`/`(03C)` implementation, API routes, frontend code, schema changes, seed data, or Batch04 tests were added.
+
+## Notes for Next Task
+- next task ID: (03B)
+- can proceed: yes
+- handoff notes: Qdrant collection initialization, payload/index contracts, filter builders, point upsert/query/delete, and status payload update helpers are available for the scorable-job pipeline integration.
+---
+
+# Task Execution Report - (03B)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch03 - Qdrant Sync and Status Mutation Services
+
+## Task
+(03B) - Integrate scorable job embedding, Qdrant scoring, and SQLite score update
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Master_Plan.md > ## 4. Architecture
+- docs/plans/Master_Plan.md > ## 8. JD Status Rules
+- docs/plans/Master_Plan.md > ## 9. Scoring Formula
+- docs/plans/Master_Plan.md > ## 17. Smart Embedding Strategy
+- docs/plans/Plan_3.md > ## 7. Technical Specifications > ### Embedding and Semantic Similarity / ### Qdrant Write/Read Consistency Guard / ### Processing Pipeline Order
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Qdrant Sync and Status Mutation Services
+- Task ID: (03B)
+- Task title: Integrate scorable job embedding, Qdrant scoring, and SQLite score update
+
+## Completed Work
+- Status: complete.
+- Updated the scorable branch in `backend/app/services/job_processing_service.py` so non-duplicate scorable jobs are inserted and committed to SQLite first, then role/job embeddings are generated, the job vector is upserted to Qdrant, the current-job-only Qdrant similarity query is used as `embedding_similarity`, and the same SQLite row is updated with deterministic score fields.
+- Preserved non-scorable, duplicate-skip, and duplicate-metadata behavior so those paths do not call embedding or Qdrant.
+- Added safe failure handling for embedding/Qdrant failures and Qdrant visibility misses: committed rows remain `pending_review`, `embedding_text` is preserved when available, score fields remain null, `error_reason` is safely set/appended, and `qdrant_synced` returns false.
+- Added narrow mocked coverage in the existing job processing service test file for SQLite-before-embedding ordering, Qdrant score update, and current-job similarity unavailable behavior.
+
+## Files Created or Modified
+- backend/app/services/job_processing_service.py
+- backend/tests/test_job_processing_service.py
+- docs/reports/report_3_execute_agent.md
+
+## Tests or Validations Run
+- `python -m compileall -q app` from `backend`: Passed; system Python compile check completed successfully.
+- `pytest tests/test_job_processing_service.py` from `backend` using system Python: Blocked; system interpreter lacked `sqlalchemy`, so collection could not proceed.
+- `.\.venv\Scripts\python.exe -m compileall -q app` from `backend`: Passed.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_job_processing_service.py tests/test_scoring_service.py tests/test_embedding_service.py` from `backend`: Passed; 23 tests passed.
+- `.\.venv\Scripts\python.exe -c "from app.services.job_processing_service import process_job_state, JobProcessingResult; print('job_processing_import_ok')"` from `backend`: Passed; import printed `job_processing_import_ok`.
+
+## Acceptance Check
+- Task acceptance condition: Scorable jobs can be inserted first, embedded, upserted, scored from Qdrant, and updated in SQLite; all failure paths keep the row visible.
+- Status: satisfied.
+- Evidence: The implementation commits the row before `_score_committed_job` is invoked, uses injected/default embedding and Qdrant services after commit, uses `query_job_similarity()` for the persisted job ID, updates score fields only after similarity is available, and has a mocked test proving the row exists before the first embedding call plus a mocked Qdrant-miss test proving the committed row remains visible with null scores and `qdrant_synced = false`.
+
+## Artifacts Produced
+- Appended execution report in `docs/reports/report_3_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated A1 run; checkbox and batch status updates are deferred to A2 after accepted review.
+
+## Key Implementation Decisions
+- Reused `EmbeddingService`, `QdrantService`, and scoring-service functions instead of duplicating provider calls, Qdrant query logic, or score formulas.
+- Added optional service injection parameters to `process_job_state` so tests and future callers can use fakes without changing production defaults.
+- Treated Qdrant current-job query returning `None` separately from provider/Qdrant exceptions so successful upsert counts can be reported while score fields remain null.
+
+## Risks or Open Issues
+- Live OpenAI/Qdrant end-to-end validation was not run; the task marks real credentials and running Qdrant as optional/manual.
+- Broader Batch04 mocked integration coverage remains scheduled for Batch04 and was not implemented here.
+
+## Minor Issues Fixed During Execution
+- Existing job-processing tests were updated to pass fake embedding/Qdrant services because scorable jobs now correctly invoke external-service boundaries after SQLite commit.
+
+## Workflow Integrity Check
+- No missing source-of-truth fields, dependency blockers, or architecture conflicts identified.
+- Scope stayed within `(03B)` service integration and narrow directly relevant tests; `(03C)` status transitions, routes, frontend, schema changes, seed data, and broad Batch04 suites were not implemented.
+
+## Notes for Next Task
+- next task ID: (03C)
+- can proceed: yes
+- handoff notes: `process_job_state` now performs SQLite-first scorable job embedding, Qdrant upsert/query scoring, SQLite score update, and safe null-score failure handling. Status transition/application-row/Qdrant status-sync work remains for `(03C)`.
+---
+
+# Task Execution Report - (03C)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch03 - Qdrant Sync and Status Mutation Services
+
+## Task
+(03C) - Implement status transitions, application rows, and Qdrant status sync
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
+- `docs/plans/Master_Plan.md` > `## 23. Table: applications`
+- `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema` > `### SQLite -> Qdrant Status Sync Rules`
+- `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Service-Owned Status Transitions` / `### Applications Row Semantics` / `### Qdrant Status Sync`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Qdrant Sync and Status Mutation Services
+- Task ID: (03C)
+- Task title: Implement status transitions, application rows, and Qdrant status sync
+
+## Completed Work
+- Status: complete.
+- Added `InvalidStatusTransition` and importable `ALLOWED_STATUS_TRANSITIONS` to `job_processing_service.py`, with import-time validation against `JOB_STATUSES`, `TRACKED_JOB_STATUSES`, and `APPLICATION_STATUSES`.
+- Added service-owned current-status loading and transition validation before any SQLite or Qdrant mutation.
+- Implemented `approve_job(session, job_id, qdrant_service=None)` for `pending_review -> saved`, committing SQLite first and then updating the Qdrant status payload.
+- Implemented `reject_job(session, job_id, qdrant_service=None)` for `pending_review -> ignored`, committing SQLite first and then deleting the Qdrant point idempotently.
+- Implemented `update_job_status(session, job_id, status, qdrant_service=None)` for manual `applied`, `interview`, `rejected`, and `offer` transitions only; `ignored` is rejected from this API.
+- Added application-row creation/update semantics: `applied` creates one row with `applied_at = now`; `interview`, `rejected`, and `offer` update an existing row while preserving `applied_at`; direct `saved -> rejected` creates one row with `applied_at = null`; no rows are created by approve/reject review actions.
+- Reused `QdrantService.update_job_status_payload()` and `QdrantService.delete_point_if_exists()` rather than duplicating Qdrant logic.
+- Added narrow service tests for transition map import, approve/reject Qdrant sync, invalid-transition pre-mutation behavior, application-row uniqueness through service logic, `applied_at` preservation, and manual rejected payload update without delete.
+
+## Files Created or Modified
+- backend/app/services/job_processing_service.py
+- backend/tests/test_job_processing_service.py
+- docs/reports/report_3_execute_agent.md
+
+## Tests or Validations Run
+- `pytest tests/test_job_processing_service.py`: Failed
+- evidence or reason: system Python could not import project dependencies: `ModuleNotFoundError: No module named 'sqlalchemy'`.
+- `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_job_processing_service.py`: Passed
+- evidence or reason: 12 tests passed, including the new `(03C)` status/application/Qdrant-sync service tests.
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app\services\job_processing_service.py`: Passed
+- evidence or reason: command exited 0.
+- `cd backend; .\.venv\Scripts\python.exe -c "from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, approve_job, reject_job, update_job_status, InvalidStatusTransition; print(ALLOWED_STATUS_TRANSITIONS['pending_review'])"`: Passed
+- evidence or reason: import succeeded and printed `frozenset({'saved', 'ignored'})`.
+
+## Acceptance Check
+- Task acceptance condition: Invalid transitions fail before SQLite or Qdrant mutation, valid transitions update SQLite/applications and synchronize Qdrant as specified.
+- Status: satisfied
+- Evidence: `test_invalid_status_transition_fails_before_mutation` verifies the job remains `pending_review`, no application row is created, and fake Qdrant receives no update/delete call after an invalid `pending_review -> applied` request. `test_approve_job_updates_sqlite_then_qdrant_payload` verifies `pending_review -> saved` plus Qdrant payload update. `test_reject_job_updates_sqlite_then_deletes_qdrant_point` verifies `pending_review -> ignored` plus Qdrant point delete. `test_update_job_status_creates_one_application_and_preserves_applied_at` verifies one application row across `saved -> applied -> interview` and preserves `applied_at`. `test_saved_to_rejected_creates_application_without_applied_at` verifies manual `saved -> rejected` creates one application row with `applied_at = null` and updates Qdrant payload instead of deleting.
+
+## Artifacts Produced
+- Appended execution report in `docs/reports/report_3_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated A1 run; checkbox and batch status updates are deferred to A2 after accepted review.
+
+## Key Implementation Decisions
+- Kept status mutation ownership in `job_processing_service.py` so future Plan 4 routes can call one backend service owner.
+- Accepted an optional injected Qdrant service on each mutation method to preserve production defaults while keeping tests fakeable.
+- Limited `update_job_status` targets to application statuses only, which enforces the Plan 4 rule that `ignored` must only be set by `reject_job`.
+- Used service logic to query an existing application row and update it rather than adding a second row for later tracked statuses.
+
+## Risks or Open Issues
+- No live Qdrant validation was run; this task relies on the accepted `qdrant_service.py` boundary and fake Qdrant tests. Live Qdrant remains optional/manual per the phase plan.
+- Broader Batch04 status/Qdrant integration coverage remains scheduled for Batch04 and was not implemented here.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Dependencies `(02C)` and `(03A)` were marked complete in `docs/tasks/task_3.md`; accepted uncommitted `(03A)` and `(03B)` changes were preserved.
+- No source-of-truth conflict, required user action, or blocker was identified.
+- Scope stayed within `(03C)` service API, narrow directly relevant tests, and the execution report; no API routes, frontend code, schema changes, seed data, contract export script, or broad Batch04 test suite was added.
+
+## Notes for Next Task
+- next task ID: A2 review for `(03C)`, then Batch04 `(04A)` after acceptance.
+- can proceed: yes, after A2 review accepts `(03C)`.
+- handoff notes: `job_processing_service.py` now exposes `ALLOWED_STATUS_TRANSITIONS`, `InvalidStatusTransition`, `approve_job`, `reject_job`, and `update_job_status` for Plan 4 route consumption. Manual status updates create/update exactly one application row through service logic and synchronize Qdrant payloads; review rejection deletes the Qdrant point.

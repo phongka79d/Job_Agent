@@ -832,3 +832,528 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - (03A)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch03 - Qdrant Sync and Status Mutation Services
+- Task ID: (03A)
+- Task title: Implement Qdrant collection, payload, and filter service
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema`; `docs/plans/Master_Plan.md` > `## 32. Single Root .env`; `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Qdrant Collection` / `### Query Isolation` / `### Qdrant Failure Handling`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03A)
+- Reviewed task ID: (03A)
+- Correct selection: yes
+- Notes: The latest matching execution report entry is for `(03A)` and was reviewed exactly; sibling `(03B)` and `(03C)` were not accepted or reviewed as complete.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `docs/reports/report_3_execute_agent.md`
+  - `backend/app/services/qdrant_service.py` (untracked; reviewed via `git diff --no-index -- NUL backend/app/services/qdrant_service.py`)
+- untracked files:
+  - `backend/app/services/qdrant_service.py`
+
+## Files Reviewed
+- `docs/tasks/task_3.md`: in scope - selected task source, dependencies, acceptance, and progress tracking checked; only `(03A)` checkboxes updated after acceptance.
+- `docs/reports/report_3_execute_agent.md`: in scope - latest `(03A)` execution report entry reviewed and matched to repository evidence.
+- `backend/app/services/qdrant_service.py`: in scope - new Qdrant service implementation reviewed in full.
+- `docs/plans/Plan_3.md`: in scope - cited Qdrant collection, query isolation, and failure handling requirements checked.
+- `docs/plans/Master_Plan.md`: in scope - cited Qdrant collection schema, point ID, payload, status sync, query isolation, and index recommendations checked.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/qdrant_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The file implements collection initialization, payload indexes, lightweight payload serialization, filters, upsert, current-job similarity query, idempotent delete, and payload update helpers required by `(03A)`.
+
+## Dependency Review
+- Required dependencies: (01A), (01B) per task entry; Batch03 inputs also rely on prior scoring/embedding and persistence foundation.
+- Dependency status: satisfied; prior Batch01 and Batch02 task entries are accepted in `docs/tasks/task_3.md`.
+- Missing or invalid dependency: None found.
+
+## Architecture Alignment
+- Passed: Qdrant remains a derived-index service boundary; SQLite mutation logic was not added here; no routes, frontend, seed data, schema changes, or sibling task integrations were introduced.
+- Passed: Collection name `job_posts`, cosine vector config, `settings.EMBEDDING_DIMENSION`, canonical UUID point IDs, approved payload indexes, role/status filters, current-job filter guard, `wait=True` writes, delete, and payload update helpers are present.
+- Failed: None.
+- Uncertain: Live Qdrant behavior was not verified because live Qdrant is optional/manual for this task; installed client signatures and fake-client smoke test support the implementation contract.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: `QdrantService` calls the installed `AsyncQdrantClient` methods with matching signatures, creates collection/indexes, validates UUIDs and vector dimensions, builds real Qdrant model filters, performs upsert/query/delete/set_payload operations, and exposes startup `ensure_collection()`.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: Required fixed contracts such as collection name, approved payload index fields, `pending_review`, `saved`, and scorable JD statuses match the source plans; dynamic config is read from backend settings.
+
+## Validations Reviewed
+- Command/check: `git status --short --untracked-files=all`
+  - Reported result: Not reported by executor
+  - Rerun result: showed modified execution report and untracked `backend/app/services/qdrant_service.py`
+  - Status: passed
+  - Notes: Scope matched `(03A)` plus reporting artifacts.
+- Command/check: `git diff --stat` and `git diff`
+  - Reported result: Not reported by executor
+  - Rerun result: execution report append reviewed; untracked service reviewed with `git diff --no-index -- NUL backend/app/services/qdrant_service.py`
+  - Status: passed
+  - Notes: No unrelated implementation files were changed.
+- Command/check: installed Qdrant client signature inspection
+  - Reported result: Not reported by executor
+  - Rerun result: `collection_exists`, `create_collection`, `create_payload_index`, `upsert`, `query_points`, `delete`, and `set_payload` signatures match implementation usage
+  - Status: passed
+  - Notes: Confirms the service is aligned with the installed client API.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -m compileall -q app\services\qdrant_service.py`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: passed
+  - Notes: New service module compiles.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -c "from app.services.qdrant_service import ..."`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: passed
+  - Notes: Imported constants/service/filter builders and built pending, saved, and job-specific filters.
+- Command/check: reviewer fake-client Qdrant service smoke check
+  - Reported result: Passed by executor using a fake client
+  - Rerun result: Passed (`fake-client qdrant smoke passed`)
+  - Status: passed
+  - Notes: Exercised collection/index setup, scorable upsert with `wait=True`, current-job filter and score clamping, payload status update, and delete helper.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\pytest.exe tests\test_job_processing_service.py`
+  - Reported result: 5 passed
+  - Rerun result: 5 passed
+  - Status: passed
+  - Notes: Existing processing tests still pass.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\pytest.exe tests\test_scoring_service.py tests\test_embedding_service.py`
+  - Reported result: 17 passed
+  - Rerun result: 17 passed
+  - Status: passed
+  - Notes: Existing scoring and embedding tests still pass.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -m compileall -q app`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: passed
+  - Notes: Backend app compiles.
+- Command/check: Live Qdrant verification
+  - Reported result: Not run; optional manual validation only
+  - Rerun result: Not run
+  - Status: not required
+  - Notes: Mocked/fake-client automated validation is sufficient for `(03A)` per task instructions.
+
+## Acceptance Review
+- Task acceptance: Qdrant operations are importable, fakeable in tests, idempotent where required, and use approved collection/payload/filter contracts.
+- Status: satisfied
+- Evidence: The service module exposes real Qdrant operation wrappers and filter builders, validates point/vector contracts, matches installed client signatures, passes compile/import checks, and passes a reviewer fake-client smoke test covering the required operations.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the task entry and `[ ]` in the progress tracker
+- Checkbox updated by reviewer: yes
+- Batch status: Batch03 remains unchecked/incomplete because `(03B)` and `(03C)` are still unchecked
+- Execution report entry: appended successfully before review
+- Review report entry: appended successfully
+- Other: Sibling and future task checkboxes were not changed.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor's fake-client smoke check was not committed as a test file, which is acceptable because dedicated Qdrant tests are scheduled for Batch04 and the smoke behavior was rerun by the reviewer.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Dedicated mocked Qdrant unit tests remain scheduled for Batch04, so lack of committed `test_qdrant_service.py` is not a `(03A)` defect.
+- Live Qdrant was not run and is optional/manual for this task.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete; `(03B)` and `(03C)` remain unchecked
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (03B)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch03 - Qdrant Sync and Status Mutation Services
+- Task ID: (03B)
+- Task title: Integrate scorable job embedding, Qdrant scoring, and SQLite score update
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 4. Architecture`; `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`; `docs/plans/Master_Plan.md` > `## 9. Scoring Formula`; `docs/plans/Master_Plan.md` > `## 17. Smart Embedding Strategy`; `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Embedding and Semantic Similarity` / `### Qdrant Write/Read Consistency Guard` / `### Processing Pipeline Order`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03B)
+- Reviewed task ID: (03B)
+- Correct selection: yes
+- Notes: The latest execution report entry is for `(03B)`. Accepted uncommitted `(03A)` changes were treated as dependencies, not as new `(03B)` scope.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `backend/app/services/job_processing_service.py`
+  - `backend/tests/test_job_processing_service.py`
+  - `docs/reports/report_3_execute_agent.md`
+  - `docs/review/review_3_review_agent.md`
+  - `docs/tasks/task_3.md`
+  - `backend/app/services/qdrant_service.py` (untracked accepted `(03A)` dependency)
+- untracked files:
+  - `backend/app/services/qdrant_service.py` (accepted `(03A)` dependency)
+
+## Files Reviewed
+- `docs/tasks/task_3.md`: in scope - selected `(03B)` task entry, dependencies, acceptance criteria, and progress tracker reviewed; only `(03B)` checkboxes were updated after acceptance.
+- `docs/reports/report_3_execute_agent.md`: in scope - latest `(03B)` execution report reviewed and matched to repository evidence.
+- `backend/app/services/job_processing_service.py`: in scope - scorable branch integration, ordering, failure handling, score calculation, and result fields reviewed.
+- `backend/tests/test_job_processing_service.py`: in scope - directly relevant mocked integration coverage reviewed.
+- `backend/app/services/qdrant_service.py`: in scope as accepted dependency - verified current-job-only query boundary used by `(03B)`; this file belongs to accepted uncommitted `(03A)`.
+- `docs/plans/Plan_3.md`: in scope - cited embedding, Qdrant consistency guard, and processing-order requirements reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited SQLite-first architecture, JD status, scoring formula, smart embedding, and Qdrant collection rules reviewed.
+- `docs/review/review_3_review_agent.md`: in scope - prior EOF inspected and this review appended.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/job_processing_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Implements post-commit embedding/Qdrant scoring and safe null-score failure handling for scorable jobs.
+- file from execution report: `backend/tests/test_job_processing_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Adds narrow mocked coverage for SQLite-before-embedding, Qdrant score update, and current-job similarity unavailable behavior.
+- file from execution report: `docs/reports/report_3_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains the appended `(03B)` execution report entry.
+
+## Dependency Review
+- Required dependencies: (01B), (01C), (02C), (03A).
+- Dependency status: satisfied; `(01B)`, `(01C)`, `(02C)`, and `(03A)` are checked/accepted in the task file, and `qdrant_service.py` from `(03A)` is present in the working tree.
+- Missing or invalid dependency: None found.
+
+## Architecture Alignment
+- Passed: SQLite insert/commit occurs before `_score_committed_job()` performs embedding or Qdrant calls.
+- Passed: Non-scorable, exact-duplicate, dedup-key skip, and duplicate-metadata paths return without embedding or Qdrant calls.
+- Passed: Scorable jobs use persisted/rebuilt clean `embedding_text`, dynamic role query text, `EmbeddingService`, `QdrantService`, and deterministic scoring-service functions instead of local cosine fallback or duplicated formulas.
+- Passed: Qdrant scoring is requested through `query_job_similarity(role_vector, role_profile.id, job_post.id)`, relying on the accepted `(03A)` job-specific pending-review filter and clamped score extraction.
+- Passed: Qdrant visibility miss leaves score fields null, appends the required safe error reason, and returns `qdrant_synced = false`.
+- Failed: None.
+- Uncertain: Live OpenAI/local Qdrant end-to-end behavior was not verified; this is optional/manual for `(03B)` and not required for automated acceptance.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: `process_job_state()` now commits the new SQLite row, then calls `_score_committed_job()` for scorable jobs only. `_score_committed_job()` embeds role/job text, upserts the job vector, queries Qdrant for the current job, calculates all score fields after similarity is available, commits the score update, and commits null-score error states on failures.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: Fixed strings are required status/error contracts from the task/plan. Provider, Qdrant, scoring formulas, and embedding text are delegated to existing services and settings-backed boundaries.
+
+## Validations Reviewed
+- Command/check: `git status --short`
+  - Reported result: Not reported by executor
+  - Rerun result: reviewed; showed `(03B)` service/test/report changes plus accepted uncommitted `(03A)` artifacts and this review progress update
+  - Status: passed
+  - Notes: No unrelated implementation scope was found.
+- Command/check: `git diff --stat` and `git diff`
+  - Reported result: Not reported by executor
+  - Rerun result: reviewed
+  - Status: passed
+  - Notes: Diff matches the task's service/test/report scope, with `qdrant_service.py` classified as accepted `(03A)` dependency.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -m pytest tests/test_job_processing_service.py tests/test_scoring_service.py tests/test_embedding_service.py`
+  - Reported result: Passed; 23 tests passed
+  - Rerun result: Passed; 23 tests passed
+  - Status: passed
+  - Notes: Covers direct job processing integration plus existing scoring/embedding service tests.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -m compileall -q app`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: passed
+  - Notes: Backend app compiles.
+- Command/check: `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -c "from app.services.job_processing_service import process_job_state, JobProcessingResult; print('job_processing_import_ok')"`
+  - Reported result: Passed; printed `job_processing_import_ok`
+  - Rerun result: Passed; printed `job_processing_import_ok`
+  - Status: passed
+  - Notes: Import smoke check passed.
+- Command/check: reviewer in-memory SQLite smoke check for non-scorable no-call and embedding-failure behavior
+  - Reported result: Not reported by executor
+  - Rerun result: Passed; printed `review smoke checks passed`
+  - Status: passed
+  - Notes: Confirmed non-scorable jobs make zero embedding/Qdrant calls and embedding failure keeps a committed pending-review row with null scores and safe `error_reason`.
+- Command/check: system Python `pytest tests/test_job_processing_service.py`
+  - Reported result: Blocked due to missing `sqlalchemy`
+  - Rerun result: Not rerun with system Python
+  - Status: blocked but non-blocking
+  - Notes: Backend virtualenv validation passed and is the appropriate project environment.
+- Command/check: Live OpenAI/Qdrant validation
+  - Reported result: Not run; optional/manual
+  - Rerun result: Not run
+  - Status: not required
+  - Notes: Mocked/fake automated validation is sufficient for `(03B)` per task instructions.
+
+## Acceptance Review
+- Task acceptance: Scorable jobs can be inserted first, embedded, upserted, scored from Qdrant, and updated in SQLite; all failure paths keep the row visible.
+- Status: satisfied
+- Evidence: Code review and tests show SQLite-first commit before provider/Qdrant calls, Qdrant-only similarity scoring, current-job-only query usage, null-score Qdrant miss behavior, non-scorable no-call behavior, and embedding-failure durability.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the main task entry and `[ ]` in the progress tracker
+- Checkbox updated by reviewer: yes
+- Batch status: Batch03 remains unchecked/incomplete because `(03C)` is still unchecked
+- Execution report entry: appended successfully before review
+- Review report entry: appended successfully
+- Other: Sibling `(03C)` and future task checkboxes were not changed; accepted uncommitted `(03A)` checkboxes were preserved.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor correctly reported the system-Python pytest block and the successful backend-venv validations.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Broader Qdrant/status coverage remains scheduled for Batch04; the narrow `(03B)` tests are adequate for this task's implementation slice.
+- Live OpenAI/Qdrant validation remains optional/manual and was not required for acceptance.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete; `(03C)` remains unchecked
+
+## Repair Instructions
+- None
+---
+
+# Task Review Report - (03C)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch03 - Qdrant Sync and Status Mutation Services
+- Task ID: (03C)
+- Task title: Implement status transitions, application rows, and Qdrant status sync
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`; `docs/plans/Master_Plan.md` > `## 23. Table: applications`; `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema` > `### SQLite -> Qdrant Status Sync Rules`; `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Service-Owned Status Transitions` / `### Applications Row Semantics` / `### Qdrant Status Sync`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03C)
+- Reviewed task ID: (03C)
+- Correct selection: yes
+- Notes: The latest execution report entry is for `(03C)`. Accepted uncommitted `(03A)` and `(03B)` changes were treated as prior accepted dependencies, not as new review scope.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `backend/app/services/job_processing_service.py`
+  - `backend/tests/test_job_processing_service.py`
+  - `docs/reports/report_3_execute_agent.md`
+  - `docs/review/review_3_review_agent.md`
+  - `docs/tasks/task_3.md`
+  - `backend/app/services/qdrant_service.py` (untracked accepted `(03A)` dependency)
+- untracked files:
+  - `backend/app/services/qdrant_service.py` (accepted `(03A)` dependency)
+
+## Files Reviewed
+- `docs/tasks/task_3.md`: in scope - selected `(03C)` task entry, dependencies, acceptance criteria, and progress tracker reviewed; only `(03C)` checkboxes were updated after acceptance.
+- `docs/reports/report_3_execute_agent.md`: in scope - latest `(03C)` execution report reviewed and matched to repository evidence.
+- `backend/app/services/job_processing_service.py`: in scope - transition map, domain error, status mutation methods, application-row sync, and Qdrant status sync reviewed.
+- `backend/tests/test_job_processing_service.py`: in scope - directly relevant service tests reviewed.
+- `backend/app/services/qdrant_service.py`: in scope as accepted dependency - status payload update and delete helpers used by `(03C)` reviewed; this file belongs to accepted uncommitted `(03A)`.
+- `backend/app/core/constants.py`: in scope - shared status and application constants verified.
+- `backend/app/db/models.py`: in scope - `JobPost` and `Application` status/application fields verified.
+- `docs/plans/Plan_3.md`: in scope - cited service-owned transitions, application row semantics, and Qdrant status sync sections reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited human-in-the-loop status flow and Qdrant status sync rules reviewed.
+- `docs/review/review_3_review_agent.md`: in scope - prior EOF inspected and this review appended.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/job_processing_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Implements importable `ALLOWED_STATUS_TRANSITIONS`, `InvalidStatusTransition`, `approve_job`, `reject_job`, `update_job_status`, pre-mutation validation, application-row service logic, and Qdrant payload/delete sync.
+- file from execution report: `backend/tests/test_job_processing_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Adds narrow mocked coverage for transition map importability, approve/reject Qdrant sync, invalid transition pre-mutation behavior, single application-row semantics, `applied_at` preservation, and manual rejected payload update without delete.
+- file from execution report: `docs/reports/report_3_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains the appended `(03C)` execution report entry.
+
+## Dependency Review
+- Required dependencies: (02C), (03A); `(03B)` is also accepted in the same batch and preserved as prior uncommitted work.
+- Dependency status: satisfied; `(02C)`, `(03A)`, and `(03B)` are checked/accepted in `docs/tasks/task_3.md`, and `qdrant_service.py` from `(03A)` is present in the working tree.
+- Missing or invalid dependency: None found.
+
+## Architecture Alignment
+- Passed: `job_processing_service.py` is the single backend owner for review approval, review rejection, and manual tracked status mutation before Plan 4 routes exist.
+- Passed: `ALLOWED_STATUS_TRANSITIONS` matches the approved transition map and validates sources/targets against `JOB_STATUSES`, `TRACKED_JOB_STATUSES`, and `APPLICATION_STATUSES` at import time.
+- Passed: Invalid transitions are validated before status assignment, application-row mutation, SQLite commit, or Qdrant update/delete calls.
+- Passed: `approve_job` performs `pending_review -> saved`, commits SQLite, then updates Qdrant payload to `saved`.
+- Passed: `reject_job` performs `pending_review -> ignored`, commits SQLite, then deletes the Qdrant point through the idempotent helper.
+- Passed: `update_job_status` only accepts `applied`, `interview`, `rejected`, and `offer`; `ignored` is excluded from the manual API path.
+- Passed: Application-row service logic creates one row for first `applied`, updates existing rows for later tracked statuses while preserving `applied_at`, and creates `saved -> rejected` rows with `applied_at = null`.
+- Passed: Manual tracked `rejected` calls Qdrant payload update and does not delete the point.
+- Failed: None.
+- Uncertain: Live Qdrant status sync was not verified because live Qdrant is optional/manual for this phase; fake service tests cover the service contract.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Status methods load real `JobPost` rows, validate the current/next transition, mutate SQLAlchemy ORM objects, create or update `Application` rows through the active async session, commit SQLite before Qdrant sync, and call the accepted Qdrant service helpers for status payload updates and deletes.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: The transition map uses the exact approved status strings and validates them against shared constants. Qdrant behavior is delegated to `QdrantService`; application statuses are restricted by the shared application/tracked constants.
+
+## Validations Reviewed
+- Command/check: `git status --short`
+  - Reported result: Not reported by executor
+  - Rerun result: reviewed; showed `(03C)` service/test/report changes plus accepted uncommitted `(03A)`/`(03B)` artifacts and review/task progress updates
+  - Status: passed
+  - Notes: No unrelated implementation scope was found.
+- Command/check: `git diff --stat` and `git diff`
+  - Reported result: Not reported by executor
+  - Rerun result: reviewed
+  - Status: passed
+  - Notes: Diff matches Batch03 service/test/report scope; `qdrant_service.py` is accepted `(03A)` dependency and not new `(03C)` work.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_job_processing_service.py`
+  - Reported result: Passed; 12 tests passed
+  - Rerun result: Passed; 12 tests passed
+  - Status: passed
+  - Notes: Covers the new `(03C)` status transition, application-row, and Qdrant sync service behavior plus existing job-processing coverage.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app\services\job_processing_service.py`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: passed
+  - Notes: Touched service module compiles.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -c "from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, approve_job, reject_job, update_job_status, InvalidStatusTransition; print(ALLOWED_STATUS_TRANSITIONS['pending_review'])"`
+  - Reported result: Passed; printed `frozenset({'saved', 'ignored'})`
+  - Rerun result: Passed; printed the pending-review transition set
+  - Status: passed
+  - Notes: Transition map and status service API are importable for Plan 4 consumption.
+- Command/check: system Python `pytest tests/test_job_processing_service.py`
+  - Reported result: Failed/blocked due to missing `sqlalchemy`
+  - Rerun result: Not rerun with system Python
+  - Status: blocked but non-blocking
+  - Notes: Backend virtualenv validation passed and is the appropriate project environment.
+- Command/check: Live Qdrant validation
+  - Reported result: Not run; optional/manual
+  - Rerun result: Not run
+  - Status: not required
+  - Notes: Mocked/fake automated validation is sufficient for `(03C)` per task instructions.
+
+## Acceptance Review
+- Task acceptance: Invalid transitions fail before SQLite or Qdrant mutation, valid transitions update SQLite/applications and synchronize Qdrant as specified.
+- Status: satisfied
+- Evidence: Code review and tests show approved transition validation, `approve_job` saved payload update, `reject_job` ignored delete, manual status target restriction excluding `ignored`, one-row application behavior with `applied_at` preservation/null semantics, and manual `rejected` payload update without delete.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the main task entry and `[ ]` in the progress tracker
+- Checkbox updated by reviewer: yes
+- Batch status: Batch03 batch checkbox remains unchecked/not updated by A2; all Batch03 task IDs are now checked after accepting `(03C)`.
+- Execution report entry: appended successfully before review
+- Review report entry: appended successfully
+- Other: No Batch04 or sibling/future task checkbox was changed; accepted uncommitted `(03A)` and `(03B)` checkboxes were preserved.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor correctly reported the system-Python pytest dependency block and the successful backend-venv validations.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Broader Qdrant/status integration coverage remains scheduled for Batch04; the narrow `(03C)` tests are adequate for this implementation slice.
+- Live Qdrant validation remains optional/manual and was not required for acceptance.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? yes, all Batch03 task IDs are checked after acceptance; A3 batch audit and orchestrator commit are still not performed by this review.
+
+## Repair Instructions
+- None

@@ -7,7 +7,9 @@ the conversion lifecycle without external OpenAI or Qdrant calls.
 """
 
 import json
+import logging
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
@@ -15,10 +17,71 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import constants
-from app.db.models import JobPost, RoleProfile
+from app.db.models import Application, JobPost, RoleProfile
 from app.services.dedup_service import build_dedup_key, decide_duplicate_action
-from app.services.scoring_service import build_embedding_text
+from app.services.embedding_service import EmbeddingService
+from app.services.qdrant_service import QdrantService
+from app.services.scoring_service import (
+    build_embedding_text,
+    build_role_query_text,
+    calculate_base_score,
+    calculate_final_scores,
+    calculate_level_score,
+    calculate_location_score,
+    calculate_skill_overlap_score,
+    get_jd_confidence_multiplier,
+)
 from app.agents.schemas import JobAgentState
+
+logger = logging.getLogger(__name__)
+SCORING_FAILURE_REASON = "Scoring unavailable after SQLite persistence"
+QDRANT_SIMILARITY_UNAVAILABLE_REASON = "Qdrant similarity unavailable for newly upserted job"
+MANUAL_TRACKED_STATUS_TARGETS = (
+    "applied",
+    "interview",
+    "rejected",
+    "offer",
+)
+
+
+class InvalidStatusTransition(ValueError):
+    """Raised when a job status mutation is not allowed."""
+
+
+def _build_allowed_status_transitions() -> dict[str, frozenset[str]]:
+    job_statuses = set(constants.JOB_STATUSES)
+    application_statuses = set(constants.APPLICATION_STATUSES)
+    tracked_statuses = set(constants.TRACKED_JOB_STATUSES)
+
+    transitions = {
+        "pending_review": frozenset({"saved", "ignored"}),
+        "saved": frozenset({"applied", "rejected"}),
+        "applied": frozenset({"interview", "rejected"}),
+        "interview": frozenset({"rejected", "offer"}),
+        "rejected": frozenset(),
+        "offer": frozenset(),
+        "ignored": frozenset(),
+    }
+
+    unknown_sources = set(transitions) - job_statuses
+    unknown_targets = set().union(*transitions.values()) - job_statuses
+    if unknown_sources or unknown_targets:
+        raise ValueError(
+            "ALLOWED_STATUS_TRANSITIONS contains statuses outside JOB_STATUSES"
+        )
+
+    manual_targets = set(MANUAL_TRACKED_STATUS_TARGETS)
+    if not manual_targets <= application_statuses:
+        raise ValueError("Manual status targets must be APPLICATION_STATUSES")
+    if not manual_targets <= tracked_statuses:
+        raise ValueError("Manual status targets must be TRACKED_JOB_STATUSES")
+    if not application_statuses <= job_statuses:
+        raise ValueError("APPLICATION_STATUSES must be valid JOB_STATUSES")
+
+    return transitions
+
+
+ALLOWED_STATUS_TRANSITIONS = _build_allowed_status_transitions()
 
 
 @dataclass
@@ -35,6 +98,123 @@ class JobProcessingResult:
     qdrant_synced: bool = True
     job_ids: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+
+
+def _reset_score_fields(job_post: JobPost) -> None:
+    job_post.embedding_similarity = None
+    job_post.skill_overlap_score = None
+    job_post.location_match_score = None
+    job_post.level_match_score = None
+    job_post.base_score = None
+    job_post.jd_confidence_multiplier = None
+    job_post.final_score = None
+    job_post.final_score_percent = None
+
+
+def _append_error_reason(existing: str | None, reason: str) -> str:
+    if not existing:
+        return reason
+    if reason in existing:
+        return existing
+    return f"{existing}; {reason}"
+
+
+def _parse_json_list(value: Any) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return []
+        try:
+            parsed = json.loads(raw)
+        except ValueError:
+            return [item.strip() for item in raw.split(",") if item.strip()]
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()]
+    return []
+
+
+async def _score_committed_job(
+    session: AsyncSession,
+    job_post: JobPost,
+    role_profile: RoleProfile,
+    embedding_service: Any,
+    qdrant_service: Any,
+) -> tuple[int, bool]:
+    role_query_text = build_role_query_text(role_profile)
+    job_embedding_text = job_post.embedding_text or build_embedding_text(job_post)
+    job_post.embedding_text = job_embedding_text
+
+    try:
+        role_vector = await embedding_service.embed_text(role_query_text)
+        job_vector = await embedding_service.embed_text(job_embedding_text)
+        upserted = await qdrant_service.upsert_scorable_job(job_post, job_vector)
+        if not upserted:
+            raise RuntimeError("Qdrant skipped scorable job upsert")
+
+        embedding_similarity = await qdrant_service.query_job_similarity(
+            role_vector,
+            role_profile.id,
+            job_post.id,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Scorable job scoring failed after SQLite commit",
+            extra={"job_id": job_post.id, "error_type": exc.__class__.__name__},
+        )
+        _reset_score_fields(job_post)
+        job_post.error_reason = _append_error_reason(
+            job_post.error_reason,
+            SCORING_FAILURE_REASON,
+        )
+        await session.commit()
+        return 0, False
+
+    if embedding_similarity is None:
+        _reset_score_fields(job_post)
+        job_post.error_reason = _append_error_reason(
+            job_post.error_reason,
+            QDRANT_SIMILARITY_UNAVAILABLE_REASON,
+        )
+        await session.commit()
+        return 1, False
+
+    skill_overlap_score = calculate_skill_overlap_score(
+        _parse_json_list(role_profile.skills),
+        _parse_json_list(job_post.skills),
+    )
+    location_match_score = calculate_location_score(
+        role_profile.location,
+        job_post.location,
+        role_profile.accept_remote,
+        job_post.work_mode,
+    )
+    level_match_score = calculate_level_score(role_profile.level, job_post.level)
+    jd_confidence_multiplier = get_jd_confidence_multiplier(job_post.jd_status)
+    base_score = calculate_base_score(
+        embedding_similarity,
+        skill_overlap_score,
+        location_match_score,
+        level_match_score,
+    )
+    final_score, final_score_percent = calculate_final_scores(
+        base_score,
+        jd_confidence_multiplier,
+    )
+
+    job_post.embedding_similarity = embedding_similarity
+    job_post.skill_overlap_score = skill_overlap_score
+    job_post.location_match_score = location_match_score
+    job_post.level_match_score = level_match_score
+    job_post.base_score = base_score
+    job_post.jd_confidence_multiplier = jd_confidence_multiplier
+    job_post.final_score = final_score
+    job_post.final_score_percent = final_score_percent
+    await session.commit()
+    return 1, True
 
 
 def validate_extraction_state(state: Dict[str, Any]) -> None:
@@ -67,6 +247,108 @@ async def load_role_profile(db: AsyncSession, role_profile_id: str) -> RoleProfi
     if not role_profile:
         raise ValueError(f"RoleProfile with id {role_profile_id} does not exist.")
     return role_profile
+
+
+async def load_job_post(session: AsyncSession, job_id: str) -> JobPost:
+    """Load a JobPost row by ID."""
+    stmt = select(JobPost).where(JobPost.id == job_id)
+    result = await session.execute(stmt)
+    job_post = result.scalar_one_or_none()
+    if not job_post:
+        raise ValueError(f"JobPost with id {job_id} does not exist.")
+    return job_post
+
+
+def _validate_status_transition(current_status: str | None, next_status: str) -> None:
+    if current_status not in ALLOWED_STATUS_TRANSITIONS:
+        raise InvalidStatusTransition(
+            f"Cannot transition from unknown status {current_status!r} to {next_status!r}."
+        )
+    if next_status not in ALLOWED_STATUS_TRANSITIONS[current_status]:
+        raise InvalidStatusTransition(
+            f"Cannot transition job status from {current_status!r} to {next_status!r}."
+        )
+
+
+async def _load_application_for_job(
+    session: AsyncSession,
+    job_id: str,
+) -> Application | None:
+    stmt = select(Application).where(Application.job_post_id == job_id).limit(1)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def _sync_application_row(
+    session: AsyncSession,
+    job_id: str,
+    status: str,
+) -> None:
+    application = await _load_application_for_job(session, job_id)
+    if application:
+        application.status = status
+        return
+
+    applied_at = datetime.now(timezone.utc) if status == "applied" else None
+    session.add(
+        Application(
+            job_post_id=job_id,
+            status=status,
+            applied_at=applied_at,
+        )
+    )
+
+
+async def approve_job(
+    session: AsyncSession,
+    job_id: str,
+    qdrant_service: Any | None = None,
+) -> JobPost:
+    """Validate pending_review -> saved, update SQLite, then update Qdrant payload."""
+    job_post = await load_job_post(session, job_id)
+    _validate_status_transition(job_post.status, "saved")
+
+    job_post.status = "saved"
+    await session.commit()
+    await (qdrant_service or QdrantService()).update_job_status_payload(job_id, "saved")
+    return job_post
+
+
+async def reject_job(
+    session: AsyncSession,
+    job_id: str,
+    qdrant_service: Any | None = None,
+) -> JobPost:
+    """Validate pending_review -> ignored, update SQLite, then delete the Qdrant point."""
+    job_post = await load_job_post(session, job_id)
+    _validate_status_transition(job_post.status, "ignored")
+
+    job_post.status = "ignored"
+    await session.commit()
+    await (qdrant_service or QdrantService()).delete_point_if_exists(job_id)
+    return job_post
+
+
+async def update_job_status(
+    session: AsyncSession,
+    job_id: str,
+    status: str,
+    qdrant_service: Any | None = None,
+) -> JobPost:
+    """Validate manual tracked transitions, update SQLite/applications, then update Qdrant."""
+    if status not in MANUAL_TRACKED_STATUS_TARGETS:
+        raise InvalidStatusTransition(
+            f"Manual status update target must be one of {MANUAL_TRACKED_STATUS_TARGETS!r}."
+        )
+
+    job_post = await load_job_post(session, job_id)
+    _validate_status_transition(job_post.status, status)
+
+    job_post.status = status
+    await _sync_application_row(session, job_id, status)
+    await session.commit()
+    await (qdrant_service or QdrantService()).update_job_status_payload(job_id, status)
+    return job_post
 
 
 def map_state_to_job_post(state: Dict[str, Any], role_profile: RoleProfile) -> JobPost:
@@ -177,14 +459,17 @@ def map_state_to_job_post(state: Dict[str, Any], role_profile: RoleProfile) -> J
 
 
 async def process_job_state(
-    session: AsyncSession, state: JobAgentState
+    session: AsyncSession,
+    state: JobAgentState,
+    embedding_service: Any | None = None,
+    qdrant_service: Any | None = None,
 ) -> JobProcessingResult:
     """
     Orchestrate the SQLite-first persistence and deduplication pipeline.
 
     Validates state, maps to a JobPost ORM model, checks for exact and dedup-key duplicates,
     handles duplicate metadata rows according to policy, catches IntegrityErrors,
-    and returns a JobProcessingResult without Qdrant/embedding integration.
+    and runs scorable embedding/Qdrant scoring only after the SQLite row commits.
     """
     # 2.a. Validate the extraction state
     validate_extraction_state(state)
@@ -242,16 +527,7 @@ async def process_job_state(
                 job_post.duplicate_of_job_id = existing_job.id
                 job_post.should_score_similarity = False
                 job_post.embedding_text = None
-
-                # Reset scoring/score fields to None
-                job_post.embedding_similarity = None
-                job_post.skill_overlap_score = None
-                job_post.location_match_score = None
-                job_post.level_match_score = None
-                job_post.base_score = None
-                job_post.jd_confidence_multiplier = None
-                job_post.final_score = None
-                job_post.final_score_percent = None
+                _reset_score_fields(job_post)
 
                 try:
                     session.add(job_post)
@@ -304,6 +580,21 @@ async def process_job_state(
             warnings=warnings,
         )
 
+    qdrant_upserted = 0
+    qdrant_synced = True
+    if job_post.should_score_similarity:
+        qdrant_upserted, qdrant_synced = await _score_committed_job(
+            session,
+            job_post,
+            role_profile,
+            embedding_service or EmbeddingService(),
+            qdrant_service or QdrantService(),
+        )
+
     return JobProcessingResult(
-        inserted_jobs=1, job_ids=[job_post.id], warnings=warnings
+        inserted_jobs=1,
+        qdrant_upserted=qdrant_upserted,
+        qdrant_synced=qdrant_synced,
+        job_ids=[job_post.id],
+        warnings=warnings,
     )

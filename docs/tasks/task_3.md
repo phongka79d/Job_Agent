@@ -417,7 +417,7 @@ Qdrant is a derived index and must stay synchronized with SQLite without becomin
 
 ### Tasks
 
-- [ ] (03A): Implement Qdrant collection, payload, and filter service
+- [x] (03A): Implement Qdrant collection, payload, and filter service
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema`
     - `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
@@ -451,7 +451,7 @@ Qdrant is a derived index and must stay synchronized with SQLite without becomin
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only for optional manual Qdrant verification if Docker/Qdrant is not running; mocked automated acceptance remains available.
   - Files: `backend/app/services/qdrant_service.py`.
 
-- [ ] (03B): Integrate scorable job embedding, Qdrant scoring, and SQLite score update
+- [x] (03B): Integrate scorable job embedding, Qdrant scoring, and SQLite score update
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4. Architecture`
     - `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
@@ -488,7 +488,7 @@ Qdrant is a derived index and must stay synchronized with SQLite without becomin
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only for optional live-provider/manual-Qdrant validation when credentials or local Qdrant are absent; mocked automated acceptance remains available.
   - Files: `backend/app/services/job_processing_service.py`.
 
-- [ ] (03C): Implement status transitions, application rows, and Qdrant status sync
+- [x] (03C): Implement status transitions, application rows, and Qdrant status sync
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
     - `docs/plans/Master_Plan.md` > `## 23. Table: applications`
@@ -839,9 +839,9 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch03
 
-- [ ] (03A): Implement Qdrant collection, payload, and filter service
-- [ ] (03B): Integrate scorable job embedding, Qdrant scoring, and SQLite score update
-- [ ] (03C): Implement status transitions, application rows, and Qdrant status sync
+- [x] (03A): Implement Qdrant collection, payload, and filter service
+- [x] (03B): Integrate scorable job embedding, Qdrant scoring, and SQLite score update
+- [x] (03C): Implement status transitions, application rows, and Qdrant status sync
 
 #### Batch04
 
