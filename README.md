@@ -71,6 +71,7 @@ Job_Agent/
 |   |   |-- __init__.py
 |   |   |-- test_constants_contract.py        # Shared constants contract test
 |   |   |-- test_extraction_graph.py         # Integration tests for graph and entrypoints (Batch03)
+|   |   |-- test_extraction_schema.py        # Focused extraction schema and fallback contract tests (Batch04)
 |   |   |-- test_llm_client.py               # Unit tests for mockable extraction client (Batch03)
 |   |   |-- test_manual_text_preparation.py   # Manual raw-text parser preparation tests (Batch02)
 |   |   |-- test_nodes.py                    # Unit tests for extraction graph nodes (Batch03)

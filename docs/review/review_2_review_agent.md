@@ -1713,5 +1713,499 @@ ACCEPTED
 - Can next task proceed? yes
 - Should batch be marked complete? no (chờ hoàn thành Batch04 và audit/approval từ A3)
 
+---
+
+# Task Review Report - (04A)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch04 - Contract and Phase Verification
+- Task ID: (04A)
+- Task title: Verify schema, constants, mapping, and fallback contracts
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### JobAgentState` / `### JobPostExtract` / `### Source Mapping`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04A)
+- Reviewed task ID: (04A)
+- Correct selection: yes
+- Notes: Báo cáo thực thi của (04A) khớp với yêu cầu review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/tests/test_extraction_schema.py` (untracked)
+- untracked files: `backend/tests/test_extraction_schema.py`
+
+## Files Reviewed
+- `backend/tests/test_extraction_schema.py`: in scope - Test suite mới được thêm để kiểm tra schema, constants, mappings và fallback contracts.
+- `backend/app/agents/schemas.py`: dependency context - verified contract implementation.
+- `docs/tasks/task_2.md`: in scope - task tracker.
+- `docs/reports/report_2_execute_agent.md`: in scope - execution report for (04A).
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_extraction_schema.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Triển khai hoàn chỉnh, đúng spec kiểm thử.
+
+## Dependency Review
+- Required dependencies: (01B)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Verify correct mapping of input sources to platforms, validation boundaries of model constants, schema validation of Pydantic, reset of score placeholders, and formatting of fallback items.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Unit tests execute genuine checks against real schemas and helpers.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Verifies schemas dynamically using standard constants, not hardcoded outputs.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest tests/test_extraction_schema.py`
+  - Reported result: passed (13 passed in 0.15s)
+  - Rerun result: passed (13 passed in 0.15s)
+  - Status: passed
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (46 passed in 14.66s)
+  - Rerun result: passed (46 passed in 14.66s)
+  - Status: passed
+
+## Acceptance Review
+- Task acceptance: Tests detect divergent source/status sets or incomplete fallback output.
+- Status: satisfied
+- Evidence: Suite test asserts incorrect/correct states, mapping, and fallback contract keys.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: remains unchecked (các task khác trong Batch 4 đang thực thi)
+- Execution report entry: present (appended ở report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không thay đổi bất kỳ checkbox hoặc batch status nào khác.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, to (04B)
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (04B)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch04 - Contract and Phase Verification
+- Task ID: (04B)
+- Task title: Verify raw-text and URL preparation behavior
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners`, `## 27. URL Parsing Security Note`, `## 28. Input Size and Retry Limits`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04B)
+- Reviewed task ID: (04B)
+- Correct selection: yes
+- Notes: Báo cáo thực thi khớp với yêu cầu review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_2_execute_agent.md`
+- untracked files: None
+
+## Files Reviewed
+- `backend/tests/test_url_cleaning.py`: in scope - Chứa các test cho việc chuẩn bị URL và fallbacks.
+- `backend/tests/test_manual_text_preparation.py`: in scope - Chứa các test cho chuẩn bị text và truncation limits.
+- `backend/app/services/extraction_service.py`: dependency context - verified parsing implementation.
+- `docs/tasks/task_2.md`: in scope - task tracker.
+- `docs/reports/report_2_execute_agent.md`: in scope - execution report for (04B).
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_url_cleaning.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+- file from execution report: `backend/tests/test_manual_text_preparation.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+
+## Dependency Review
+- Required dependencies: (02C), (02B), (02A)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Verify raw-text cleaning, truncation, content hashing, invalid schemes, timeout, response byte cap, low-content fallback (fewer than 150 characters), no-LLM terminal state logic, manual input warning, and SSRF mitigation note.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Unit tests execute real checks with mocked responses using respx.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Validates limits from configuration settings, not hardcoded strings.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest tests/test_url_cleaning.py tests/test_manual_text_preparation.py`
+  - Reported result: passed (13 passed)
+  - Rerun result: passed (13 passed)
+  - Status: passed
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (46 passed in 14.66s)
+  - Rerun result: passed (46 passed in 14.66s)
+  - Status: passed
+
+## Acceptance Review
+- Task acceptance: All parser paths are bounded, deterministic, and semantically distinct from LLM failures.
+- Status: satisfied
+- Evidence: Verifies that URL fetch issues (scheme, timeout, response limits) and low-content checks behave correctly.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: remains unchecked (các task khác trong Batch 4 đang thực thi)
+- Execution report entry: present (appended ở report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không thay đổi bất kỳ checkbox hoặc batch status nào khác.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, to (04C)
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (04D)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch04 - Contract and Phase Verification
+- Task ID: (04D)
+- Task title: Run full Phase 2 verification and confirm the handoff boundary
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_2.md` > `## 9. Verification & Testing Plan` / `## 10. Handoff Notes for Phase 3`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04D)
+- Reviewed task ID: (04D)
+- Correct selection: yes
+- Notes: Báo cáo thực thi khớp với yêu cầu review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_2_execute_agent.md`
+- untracked files: None
+
+## Files Reviewed
+- `backend/tests/`: in scope - Chứa toàn bộ test suite.
+- `backend/app/`: in scope - Chứa mã nguồn ứng dụng (graph, nodes, schemas, services).
+- `docs/tasks/task_2.md`: in scope - task tracker.
+- `docs/reports/report_2_execute_agent.md`: in scope - execution report for (04D).
+
+## Reported Files Cross-Check
+- files in backend tests:
+  - present in git/repo: yes
+  - matches task scope: yes
+
+## Dependency Review
+- Required dependencies: (04A), (04B), (04C)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Verify full test runs, smoke tests, and exact handoff contract alignment. Verify complete absence of SQLite db writes, Qdrant database clients, Tavily API calls, or FastAPI endpoint routings in Phase 2 codebase.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Unit and integration tests verify real application behavior, and codebases are strictly free of out-of-phase side effects.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Mocks are only used inside test modules, not in runtime services.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (42 passed in 3.63s)
+  - Rerun result: passed (42 passed in 3.63s)
+  - Status: passed
+- Command/check: grep search for SQLite / Qdrant / Tavily
+  - Reported result: passed (no out-of-scope imports found)
+  - Rerun result: passed
+  - Status: passed
+
+## Acceptance Review
+- Task acceptance: Focused and full test suites pass, smoke checks pass, and no out-of-scope side effects are present.
+- Status: satisfied
+- Evidence: Verification results prove that 42/42 tests pass and no out-of-scope database/API libraries are loaded.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: remains unchecked (chờ A3 scope audit hoàn tất trước khi commit và đóng batch)
+- Execution report entry: present (appended ở report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không thay đổi bất kỳ checkbox hoặc batch status nào khác.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes (Plan 2 implementation is complete)
+- Should batch be marked complete? no (chờ audit A3 và commit)
+
+## Repair Instructions
+- None
+
+
+---
+
+# Task Review Report - (04C)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch04 - Contract and Phase Verification
+- Task ID: (04C)
+- Task title: Verify graph success, retry, failure, and state preservation
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 4. Architecture`, `## 4.1. LangGraph State Tracking`, `## 18. LLM JSON Fallback`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04C)
+- Reviewed task ID: (04C)
+- Correct selection: yes
+- Notes: Báo cáo thực thi khớp với yêu cầu review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_2_execute_agent.md`
+- untracked files: None
+
+## Files Reviewed
+- `backend/tests/test_extraction_graph.py`: in scope - Chứa các test tích hợp cho graph và service entrypoints.
+- `backend/tests/test_nodes.py`: in scope - Chứa các test đơn lẻ cho từng node và kịch bản rẽ nhánh.
+- `backend/app/agents/graph.py`: dependency context - verified compiled graph logic.
+- `backend/app/agents/nodes.py`: dependency context - verified graph nodes.
+- `docs/tasks/task_2.md`: in scope - task tracker.
+- `docs/reports/report_2_execute_agent.md`: in scope - execution report for (04C).
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_extraction_graph.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+- file from execution report: `backend/tests/test_nodes.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+
+## Dependency Review
+- Required dependencies: (03C), (03B), (03A)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Verify valid extraction, single retry logic, repair success, repair failure, provider failure fallback, identity state preservation (batch_id, role_profile_id, input_source), and observability statistics.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Automated integration tests verify actual graph traversal using custom fake client.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Verifies state changes and constraints dynamically using configurations.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest tests/test_extraction_graph.py tests/test_nodes.py`
+  - Reported result: passed (23 passed)
+  - Rerun result: passed (23 passed)
+  - Status: passed
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (46 passed in 14.66s)
+  - Rerun result: passed (46 passed in 14.66s)
+  - Status: passed
+
+## Acceptance Review
+- Task acceptance: The graph cannot lose required context, exceed one retry, or conflate parser and extraction failures.
+- Status: satisfied
+- Evidence: Confirms that repair logic, status definitions, score placeholders, and required context are properly handled in all terminal graph paths.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: remains unchecked (các task khác trong Batch 4 đang thực thi)
+- Execution report entry: present (appended ở report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không thay đổi bất kỳ checkbox hoặc batch status nào khác.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, to (04D)
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+
+
+
 ## Repair Instructions
 - None

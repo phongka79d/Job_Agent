@@ -541,7 +541,7 @@ Phase 3 depends on exact state and fallback contracts. Verification must catch s
 
 ### Tasks
 
-- [ ] (04A): Verify schema, constants, mapping, and fallback contracts
+- [x] (04A): Verify schema, constants, mapping, and fallback contracts
   - Source of Truth:
     - `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### JobAgentState` / `### JobPostExtract` / `### Source Mapping`
     - `docs/plans/Plan_2.md` > `## 9. Verification & Testing Plan`
@@ -565,7 +565,7 @@ Phase 3 depends on exact state and fallback contracts. Verification must catch s
   - Blocked Condition: None.
   - Files: `backend/tests/test_extraction_schema.py`.
 
-- [ ] (04B): Verify raw-text and URL preparation behavior
+- [x] (04B): Verify raw-text and URL preparation behavior
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners`
     - `docs/plans/Master_Plan.md` > `## 27. URL Parsing Security Note`
@@ -591,7 +591,7 @@ Phase 3 depends on exact state and fallback contracts. Verification must catch s
   - Blocked Condition: None.
   - Files: `backend/tests/test_url_cleaning.py`.
 
-- [ ] (04C): Verify graph success, retry, failure, and state preservation
+- [x] (04C): Verify graph success, retry, failure, and state preservation
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4. Architecture`
     - `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking`
@@ -620,7 +620,7 @@ Phase 3 depends on exact state and fallback contracts. Verification must catch s
   - Blocked Condition: None.
   - Files: `backend/tests/test_extraction_graph.py`.
 
-- [ ] (04D): Run full Phase 2 verification and confirm the handoff boundary
+- [x] (04D): Run full Phase 2 verification and confirm the handoff boundary
   - Source of Truth:
     - `docs/plans/Plan_2.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Plan_2.md` > `## 10. Handoff Notes for Phase 3`
@@ -758,10 +758,10 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch04
 
-- [ ] (04A): Verify schema, constants, mapping, and fallback contracts
-- [ ] (04B): Verify raw-text and URL preparation behavior
-- [ ] (04C): Verify graph success, retry, failure, and state preservation
-- [ ] (04D): Run full Phase 2 verification and confirm the handoff boundary
+- [x] (04A): Verify schema, constants, mapping, and fallback contracts
+- [x] (04B): Verify raw-text and URL preparation behavior
+- [x] (04C): Verify graph success, retry, failure, and state preservation
+- [x] (04D): Run full Phase 2 verification and confirm the handoff boundary
 
 ## Completion Reporting Rules for Future Execution Agents
 
