@@ -74,7 +74,7 @@ class EmbeddingService:
             vector = await client.aembed_query(text)
         except Exception as e:
             logger.error("Error generating text embedding from provider")
-            raise EmbeddingServiceError(f"Provider failed to generate embedding: {str(e)}") from e
+            raise EmbeddingServiceError("Provider failed to generate embedding.") from e
 
         expected_dim = settings.EMBEDDING_DIMENSION
         if len(vector) != expected_dim:

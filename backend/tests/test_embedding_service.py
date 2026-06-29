@@ -57,14 +57,18 @@ async def test_embed_text_dimension_mismatch():
 @pytest.mark.asyncio
 async def test_embed_text_provider_error():
     """Verify that OpenAI API errors are wrapped in EmbeddingServiceError without leaking secrets."""
+    secret_value = "sk-test-secret-value"
+
     with patch("app.services.embedding_service.OpenAIEmbeddings") as mock_embeddings_class:
         mock_instance = MagicMock()
-        mock_instance.aembed_query = AsyncMock(side_effect=Exception("OpenAI API Rate Limit Exceeded"))
+        mock_instance.aembed_query = AsyncMock(side_effect=Exception(f"provider failed for {secret_value}"))
         mock_embeddings_class.return_value = mock_instance
         
-        with patch.object(settings.OPENAI_API_KEY, "get_secret_value", return_value="test-api-key"):
-            with pytest.raises(EmbeddingServiceError, match="Provider failed to generate embedding"):
+        with patch.object(settings.OPENAI_API_KEY, "get_secret_value", return_value=secret_value):
+            with pytest.raises(EmbeddingServiceError, match="Provider failed to generate embedding") as exc_info:
                 await embed_text("Valid JD text")
+
+            assert secret_value not in str(exc_info.value)
 
 
 @pytest.mark.asyncio

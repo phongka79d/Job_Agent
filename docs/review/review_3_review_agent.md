@@ -1357,3 +1357,591 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - (04A)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04A)
+- Task title: Verify scoring and embedding foundations
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected scoring test cases`; `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected embedding/scoring pipeline tests`; `docs/plans/Master_Plan.md` > `## 9. Scoring Formula`; `docs/plans/Master_Plan.md` > `## 13. Skill Alias Normalization`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04A)
+- Reviewed task ID: (04A)
+- Correct selection: yes
+- Notes: The latest matching execution report entry is for `(04A)` and matches the user-requested task ID.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/services/embedding_service.py`, `backend/tests/test_embedding_service.py`, `backend/tests/test_scoring_service.py`, `docs/reports/report_3_execute_agent.md`
+- untracked files: None
+
+## Files Reviewed
+- `backend/app/services/embedding_service.py`: in scope - Provider exception wrapping was narrowly changed to remove raw provider exception text from the public service error.
+- `backend/tests/test_embedding_service.py`: in scope - Covers blank input, success, dimension mismatch, missing key behavior, and provider failure sanitization with fakes/mocks.
+- `backend/tests/test_scoring_service.py`: in scope - Covers formula, JD confidence/null scores, skill alias/overlap, location, level, and clamping behavior.
+- `backend/app/services/scoring_service.py`: in scope - Existing deterministic scoring implementation and `clamp_score` helper reviewed as the test target.
+- `backend/app/services/qdrant_service.py`: in scope - Reviewed to confirm Qdrant score extraction uses the shared `clamp_score` helper.
+- `docs/reports/report_3_execute_agent.md`: in scope - Latest execution report entry for `(04A)` was appended and matches git evidence.
+- `docs/plans/Plan_3.md`: in scope - Cited verification requirements reviewed.
+- `docs/plans/Master_Plan.md`: in scope - Cited scoring formula and skill alias requirements reviewed.
+- `docs/tasks/task_3.md`: in scope - Selected task entry and progress tracker reviewed; `(04A)` checkbox updated after acceptance only.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_scoring_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Focused scoring coverage was extended for non-scorable null score behavior and score clamping.
+- file from execution report: `backend/tests/test_embedding_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Provider failure coverage now checks the public `EmbeddingServiceError` does not include a secret-like API key value.
+- file from execution report: `backend/app/services/embedding_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Runtime change is justified by the `(04A)` provider failure/no-secret acceptance path and does not change success, blank input, missing key, or dimension mismatch behavior.
+- file from execution report: `docs/reports/report_3_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Execution report was appended for this task.
+
+## Dependency Review
+- Required dependencies: Batch01 scoring and embedding foundations.
+- Dependency status: satisfied for `(04A)` review; relevant scoring and embedding services exist and are tested.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Tests use mocks/fakes and do not require live OpenAI or Qdrant. Scoring remains deterministic. Embedding provider behavior remains isolated behind `EmbeddingServiceError`. No route, frontend, schema, Tavily, seed, or sibling Batch04 implementation was introduced.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The provider failure path now raises a typed service error with a sanitized public message while preserving exception chaining. Tests exercise real scoring helpers and fake only the external embedding provider.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Test constants are direct plan examples or sentinel secret-like values for leakage detection; production logic does not special-case fixture strings.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests\test_scoring_service.py tests\test_embedding_service.py`
+- Reported result: Passed; executor reported 21 collected tests with 15 scoring and 6 embedding tests passing.
+- Rerun result: Passed; 21 passed in 3.23s.
+- Status: satisfied
+- Notes: Safe mocked validation only; live provider/Qdrant checks are not required for `(04A)`.
+
+## Acceptance Review
+- Task acceptance: Verify JD confidence, base/final score, skill overlap, alias normalization, location match, level match, embedding dimension success/mismatch, provider failure safe path without secrets, and Qdrant score clamping.
+- Status: satisfied
+- Evidence: `test_scoring_service.py` covers the required scoring examples and clamping; `test_embedding_service.py` covers fake embedding success, dimension mismatch, and sanitized provider failure. `qdrant_service.py` imports and uses `clamp_score` when returning query scores.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the main `(04A)` task entry and `[ ]` in the progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 batch checkbox remains unchecked/not updated.
+- Execution report entry: appended successfully before review.
+- Review report entry: appended successfully.
+- Other: No sibling or future task checkboxes were updated.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- The narrow `embedding_service.py` runtime edit is in scope because the selected task explicitly requires provider failure paths to be safe and no-secret; the change removes raw provider exception text from the public error message without altering unrelated behavior.
+- Live OpenAI and live Qdrant validation were not run and are not required for this mocked `(04A)` acceptance path.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, Batch04 still has `(04B)`, `(04C)`, and `(04D)` unchecked.
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (04B)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04B)
+- Task title: Verify deduplication and SQLite persistence behavior
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected dedup test cases`; `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected persistence/Qdrant tests`; `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`; `docs/plans/Master_Plan.md` > `## 24. SQLite Indexes`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04B)
+- Reviewed task ID: (04B)
+- Correct selection: yes
+- Notes: The latest execution report entry is for `(04B)` and matches the user-requested task ID.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/services/embedding_service.py`, `backend/tests/test_embedding_service.py`, `backend/tests/test_job_processing_service.py`, `backend/tests/test_scoring_service.py`, `docs/reports/report_3_execute_agent.md`, `docs/review/review_3_review_agent.md`, `docs/tasks/task_3.md`
+- untracked files: `backend/tests/conftest.py`, `backend/tests/test_dedup_service.py`, `backend/tests/test_job_persistence.py`
+
+## Files Reviewed
+- `backend/tests/conftest.py`: in scope - Extracts the shared in-memory SQLite fixtures and fake embedding/Qdrant services used by existing and new Batch04 tests.
+- `backend/tests/test_dedup_service.py`: in scope - Covers normalization, stable dedup-key generation, null-key policy, and pending/tracked/ignored duplicate actions.
+- `backend/tests/test_job_persistence.py`: in scope - Adds SQLite-backed coverage for exact duplicates, dedup-key policies, null dedup keys, SQLite-first ordering, non-scorable no-call behavior, embedding failure after commit, Qdrant similarity unavailable, and warning propagation.
+- `backend/tests/test_job_processing_service.py`: in scope - Reuses extracted fixtures and tightens the raw-hash `IntegrityError` rollback test to assert no embedding or Qdrant calls occur.
+- `backend/app/services/dedup_service.py`: in scope - Existing runtime implementation reviewed as the dedup test target.
+- `backend/app/services/job_processing_service.py`: in scope - Existing runtime implementation reviewed as the persistence/Qdrant-call-exclusion test target.
+- `backend/app/services/embedding_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04A)` runtime change, not part of new `(04B)` work.
+- `backend/tests/test_embedding_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04A)` test change, not part of new `(04B)` work.
+- `backend/tests/test_scoring_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04A)` test change, not part of new `(04B)` work.
+- `docs/reports/report_3_execute_agent.md`: in scope - Latest `(04B)` execution report was appended and matches the changed files and validation evidence.
+- `docs/review/review_3_review_agent.md`: in scope - Existing `(04A)` accepted review was present; this `(04B)` review was appended at EOF.
+- `docs/tasks/task_3.md`: in scope - `(04A)` was already checked; `(04B)` was checked only after this accepted review, and no sibling/future tasks or batch checkbox were updated.
+- `docs/plans/Plan_3.md`: in scope - Cited verification requirements reviewed.
+- `docs/plans/Master_Plan.md`: in scope - Cited dedup and SQLite index requirements reviewed.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/conftest.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains reusable SQLite fixture and fake services; this removes duplicated helper logic from `test_job_processing_service.py`.
+- file from execution report: `backend/tests/test_dedup_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Focused dedup service coverage matches the null-safe key and duplicate-action policy requirements.
+- file from execution report: `backend/tests/test_job_persistence.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: SQLite-backed integration coverage matches the selected task requirements.
+- file from execution report: `backend/tests/test_job_processing_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Existing processing tests now reuse shared fakes and assert no provider/Qdrant calls after raw-hash collision rollback.
+- file from execution report: `docs/reports/report_3_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Execution report was appended for `(04B)`.
+
+## Dependency Review
+- Required dependencies: Batch02 and Batch03, with Qdrant call exclusion asserted where needed.
+- Dependency status: satisfied for `(04B)` review; the required services exist, prior task blocks are checked, and accepted uncommitted `(04A)` changes remain separate.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Work is test-only for `(04B)`, uses SQLite-backed tests and fakes for external services, keeps SQLite as source of truth, verifies raw-hash before dedup-key behavior, verifies null-safe dedup keys, verifies duplicate metadata remains ignored and does not call Qdrant, and does not add routes, frontend, schema changes, seed data, live provider dependencies, or sibling `(04C)/(04D)` implementation.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Tests exercise real `dedup_service` and `job_processing_service` behavior against an in-memory SQLite schema. Fakes are limited to the approved embedding and Qdrant external boundaries.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Test constants are ordinary fixture data used to drive real duplicate and persistence rules; production code does not special-case those strings.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_dedup_service.py tests/test_job_persistence.py tests/test_job_processing_service.py`
+- Reported result: Passed; executor reported 26 tests collected and 26 passed.
+- Rerun result: Passed; 26 passed in 2.89s.
+- Status: satisfied
+- Notes: Safe mocked/SQLite validation only; live OpenAI and live Qdrant checks are not required for `(04B)`.
+
+## Acceptance Review
+- Task acceptance: Verify exact duplicate skips, dedup-key policy for pending/tracked/ignored jobs, null dedup keys, SQLite commit before embedding/Qdrant calls, duplicate metadata ignored/no Qdrant upsert, embedding failure after commit, raw-hash `IntegrityError` rollback without provider calls, and warning propagation.
+- Status: satisfied
+- Evidence: `test_dedup_service.py` covers the policy helper directly. `test_job_persistence.py` covers exact duplicate skips, pending/tracked/ignored key duplicates, null keys, SQLite-first ordering before embedding and Qdrant upsert, non-scorable no-call behavior, embedding failure after commit with safe error reason, Qdrant similarity unavailable row preservation, and warning propagation. `test_job_processing_service.py` covers raw-hash collision rollback and no provider/Qdrant calls.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the main `(04B)` task entry and `[ ]` in the progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 batch checkbox remains unchecked/not updated.
+- Execution report entry: appended successfully before review.
+- Review report entry: appended successfully.
+- Other: No sibling `(04C)/(04D)` task checkboxes and no batch checkbox were updated.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Accepted `(04A)` changes remain dirty in the shared workspace and are intentionally separate from the new `(04B)` review scope.
+- Importing fake helper classes from `tests.conftest` is acceptable here because the task explicitly called for fixture/helper extraction into `conftest.py`, and the targeted suite passes.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, Batch04 still has `(04C)` and `(04D)` unchecked.
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (04C)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04C)
+- Task title: Verify Qdrant service, scorable pipeline, and status sync behavior
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected Qdrant test cases`; `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected persistence/Qdrant tests`; `docs/plans/Master_Plan.md` > `## 25. Qdrant Local Collection Schema`; `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Service-Owned Status Transitions` / `### Applications Row Semantics`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04C)
+- Reviewed task ID: (04C)
+- Correct selection: yes
+- Notes: The latest execution report entry is for `(04C)` and matches the user-requested task ID.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/services/embedding_service.py`, `backend/tests/test_embedding_service.py`, `backend/tests/test_job_processing_service.py`, `backend/tests/test_scoring_service.py`, `docs/reports/report_3_execute_agent.md`, `docs/review/review_3_review_agent.md`, `docs/tasks/task_3.md`
+- untracked files: `backend/tests/conftest.py`, `backend/tests/test_dedup_service.py`, `backend/tests/test_job_persistence.py`, `backend/tests/test_qdrant_service.py`
+
+## Files Reviewed
+- `backend/tests/test_qdrant_service.py`: in scope - Adds mocked Qdrant coverage for collection creation, payload indexes, canonical UUID point IDs, wait-enabled upsert, pending-review filters, job-specific scoring filters, current-job score use, and bounded retry/no-borrow behavior.
+- `backend/tests/test_job_processing_service.py`: in scope - Adds Qdrant upsert/query failure durability coverage and applied-to-rejected application-row preservation; existing accepted tests cover Qdrant score use and status/application sync cases required by `(04C)`.
+- `backend/tests/conftest.py`: in scope for dirty-tree context - Accepted uncommitted `(04B)` shared SQLite fixture and fake service extraction reused by `(04C)` tests.
+- `backend/tests/test_dedup_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04B)` test file, not part of new `(04C)` work.
+- `backend/tests/test_job_persistence.py`: in scope for dirty-tree context only - Accepted uncommitted `(04B)` test file, not part of new `(04C)` work.
+- `backend/app/services/qdrant_service.py`: in scope - Existing runtime implementation reviewed as the Qdrant test target.
+- `backend/app/services/job_processing_service.py`: in scope - Existing runtime implementation reviewed as the scorable pipeline/status-sync test target.
+- `backend/app/services/embedding_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04A)` runtime change, not part of new `(04C)` work.
+- `backend/tests/test_embedding_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04A)` test change, not part of new `(04C)` work.
+- `backend/tests/test_scoring_service.py`: in scope for dirty-tree context only - Accepted uncommitted `(04A)` test change, not part of new `(04C)` work.
+- `docs/reports/report_3_execute_agent.md`: in scope - Latest `(04C)` execution report was appended and matches repository evidence.
+- `docs/review/review_3_review_agent.md`: in scope - Prior `(04A)` and `(04B)` accepted reviews were present; this `(04C)` review was appended at EOF.
+- `docs/tasks/task_3.md`: in scope - `(04A)` and `(04B)` were already checked; `(04C)` was checked only after this accepted review, and no batch or future task checkbox was updated.
+- `docs/plans/Plan_3.md`: in scope - Cited verification, status transition, and application-row requirements reviewed.
+- `docs/plans/Master_Plan.md`: in scope - Cited Qdrant collection schema requirements reviewed.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_qdrant_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Provides focused mocked Qdrant service coverage for the selected task.
+- file from execution report: `backend/tests/test_job_processing_service.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Adds scorable-pipeline Qdrant failure durability and applied-to-rejected application-row preservation coverage, while existing accepted tests cover status sync paths.
+- file from execution report: `docs/reports/report_3_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Execution report was appended for `(04C)`.
+
+## Dependency Review
+- Required dependencies: Batch03 implementation plus accepted `(04A)` and `(04B)` Batch04 test foundations.
+- Dependency status: satisfied; Batch03 task blocks are checked, `(04A)` and `(04B)` are accepted and checked, and the shared fixtures from `(04B)` are present.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Work is test-only for `(04C)`, uses mocked Qdrant clients and SQLite-backed integration tests, preserves SQLite as source of truth through Qdrant failures, verifies Qdrant as a derived index, keeps status mutations service-owned, and does not add routes, frontend, schema changes, seed data, live provider dependencies, or `(04D)` phase-boundary verification.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Tests exercise the real `qdrant_service.py` helpers/service and real `job_processing_service.py` pipeline/status methods. Fakes are limited to approved external Qdrant/embedding boundaries.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Test UUIDs, statuses, and fixture job data drive general service behavior; production logic does not special-case fixture strings or expected answers.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_qdrant_service.py tests/test_job_processing_service.py`
+- Reported result: Passed; executor reported 22 tests collected and 22 passed.
+- Rerun result: Passed; 22 passed in 4.45s.
+- Status: satisfied
+- Notes: Safe mocked/SQLite validation only; live Qdrant and live OpenAI checks are optional/manual and not required for `(04C)`.
+
+## Acceptance Review
+- Task acceptance: collection creation, payload indexes, UUID point IDs, wait=True upsert, pending review filter, current job scoring filter, Qdrant score use, bounded retry null-score behavior, Qdrant failure durability, approve/reject/manual rejected sync, invalid pre-mutation behavior, saved-to-rejected application row, and applied-to-interview/rejected `applied_at` preservation.
+- Status: satisfied
+- Evidence: `test_qdrant_service.py` covers collection creation, payload indexes, UUID point IDs, wait=True upsert, pending-review filters, current-job filters, current-job score extraction/clamping, and bounded retry no-borrow behavior. `test_job_processing_service.py` covers Qdrant score use, Qdrant upsert/query failure durability, approve payload sync, review reject delete sync, manual rejected payload sync, invalid transition pre-mutation behavior, saved-to-rejected application-row creation, and applied-to-interview/rejected `applied_at` preservation.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the main `(04C)` task entry and `[ ]` in the progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 batch checkbox remains unchecked/not updated.
+- Execution report entry: appended successfully before review.
+- Review report entry: appended successfully.
+- Other: No sibling `(04D)` task checkbox and no batch checkbox were updated.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Accepted `(04A)` and `(04B)` changes remain dirty in the shared workspace and are intentionally separate from the new `(04C)` scope.
+- `(04C)` legitimately relies on existing accepted status-sync tests in `test_job_processing_service.py` while adding the missing Qdrant service, failure durability, and applied-to-rejected coverage.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, Batch04 still has `(04D)` unchecked.
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (04D)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04D)
+- Task title: Run full Phase 3 verification and confirm handoff boundary
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan`; `docs/plans/Plan_3.md` > `## 10. Handoff Notes for Phase 4`; `README.md` > `## Setup and Running Instructions`
+- Supplemental documents: `docs/plans/Master_Plan.md` provided but not needed beyond boundary context already covered by Plan 3 and git evidence.
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04D)
+- Reviewed task ID: (04D)
+- Correct selection: yes
+- Notes: The latest execution report entry is for `(04D)` and matches the user-requested task ID.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/services/embedding_service.py`, `backend/tests/test_embedding_service.py`, `backend/tests/test_job_processing_service.py`, `backend/tests/test_scoring_service.py`, `docs/reports/report_3_execute_agent.md`, `docs/review/review_3_review_agent.md`, `docs/tasks/task_3.md`
+- untracked files: `backend/tests/conftest.py`, `backend/tests/test_dedup_service.py`, `backend/tests/test_job_persistence.py`, `backend/tests/test_qdrant_service.py`
+
+## Files Reviewed
+- `docs/reports/report_3_execute_agent.md`: in scope - Latest `(04D)` execution report was appended and contains the required verification, boundary, and handoff evidence.
+- `docs/tasks/task_3.md`: in scope - `(04A)`, `(04B)`, and `(04C)` were already accepted and checked; `(04D)` was checked only after this accepted review in both selected checkbox locations; Batch04 was not marked complete.
+- `docs/review/review_3_review_agent.md`: in scope - Prior reviews were present; this `(04D)` review was appended at physical EOF.
+- `docs/plans/Plan_3.md`: in scope - Cited verification and Phase 4 handoff requirements reviewed.
+- `README.md`: in scope - Setup/verification workflow is consistent with backend venv pytest and compile/import checks.
+- `backend/app/api`: in scope for boundary inspection - no tracked diff; directory contains only `__init__.py` plus ignored `__pycache__`, with no route handlers added.
+- `backend/app/db/models.py`: in scope for boundary inspection - no diff, confirming no schema/model/index change in `(04D)`.
+- `backend/app/db/session.py`: in scope for boundary inspection - no diff.
+- `docker-compose.yml`: in scope for boundary inspection - no diff.
+- `.env.example`: in scope for boundary inspection - no diff.
+- `README.md`: in scope for boundary inspection - no diff.
+- `backend/app/services/embedding_service.py`: accepted prior `(04A)` context only - dirty from prior accepted work, not new `(04D)` scope.
+- `backend/tests/test_embedding_service.py`: accepted prior `(04A)` context only - dirty from prior accepted work, not new `(04D)` scope.
+- `backend/tests/test_scoring_service.py`: accepted prior `(04A)` context only - dirty from prior accepted work, not new `(04D)` scope.
+- `backend/tests/conftest.py`: accepted prior `(04B)` context only - untracked from prior accepted work, not new `(04D)` scope.
+- `backend/tests/test_dedup_service.py`: accepted prior `(04B)` context only - untracked from prior accepted work, not new `(04D)` scope.
+- `backend/tests/test_job_persistence.py`: accepted prior `(04B)` context only - untracked from prior accepted work, not new `(04D)` scope.
+- `backend/tests/test_job_processing_service.py`: accepted prior `(04B)/(04C)` context only - dirty from prior accepted work, not new `(04D)` scope.
+- `backend/tests/test_qdrant_service.py`: accepted prior `(04C)` context only - untracked from prior accepted work, not new `(04D)` scope.
+
+## Reported Files Cross-Check
+- file from execution report: `docs/reports/report_3_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: `(04D)` was verification/reporting only; the execution report append is the only reported file change for the selected task.
+
+## Dependency Review
+- Required dependencies: Accepted `(04A)`, `(04B)`, and `(04C)` verification tasks; completed Batch01 through Batch03 implementation.
+- Dependency status: satisfied for this review. `(04A)`, `(04B)`, and `(04C)` are checked in both the main Batch04 task block and the progress tracker, and their accepted uncommitted changes remain separate from `(04D)`.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: `(04D)` stayed within verification and reporting; focused and full backend tests passed; compile/import smoke passed; Phase 4 handoff symbols are importable; boundary inspection found no route handlers, Tavily orchestration, seed demo data, mock JSON, React/frontend files, schema/model/index changes, compose/env/README changes, or other Phase 4/5 runtime scope additions.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: `(04D)` introduced no implementation. Verification ran against the real service modules and accepted Batch04 tests. External OpenAI and Qdrant behavior remains mocked/faked as approved for automated Phase 3 validation.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: `(04D)` added no production or test logic. Prior accepted test fixtures exercise service behavior and were not expanded by this task.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_scoring_service.py tests/test_embedding_service.py tests/test_dedup_service.py tests/test_job_processing_service.py tests/test_job_persistence.py tests/test_qdrant_service.py`
+- Reported result: Passed; executor reported 57 passed in 2.59s.
+- Rerun result: Passed; 57 passed in 2.59s.
+- Status: satisfied
+- Notes: Covers the focused Plan 3 verification suite.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest`
+- Reported result: Passed; executor reported 130 passed in 4.05s.
+- Rerun result: Passed; 130 passed in 3.86s.
+- Status: satisfied
+- Notes: Covers the full backend regression suite.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app`
+- Reported result: Passed; executor reported exit 0.
+- Rerun result: Passed; exit 0 with no output.
+- Status: satisfied
+- Notes: Backend service layer compiles/imports cleanly.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -c "from app.services import scoring_service, embedding_service, dedup_service, qdrant_service, job_processing_service; print('service imports ok')"`
+- Reported result: Passed; printed `service imports ok`.
+- Rerun result: Passed; printed `service imports ok`.
+- Status: satisfied
+- Notes: Phase 3 service module import smoke passed.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -c "from app.services.qdrant_service import QdrantService; from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, JobProcessingResult, approve_job, reject_job, update_job_status, process_job_state; from app.services.scoring_service import calculate_final_scores; from app.services.dedup_service import build_dedup_key; print('phase 4 handoff symbols ok')"`
+- Reported result: Passed; printed `phase 4 handoff symbols ok`.
+- Rerun result: Passed; printed `phase 4 handoff symbols ok`.
+- Status: satisfied
+- Notes: Confirms Plan 4 can consume processing services, Qdrant initialization type, status methods, warnings result type, and transition map.
+- Command/check: Boundary inspection with `git diff`, `git ls-files --others --exclude-standard`, no-diff checks for `backend/app/api`, `backend/app/db/models.py`, `backend/app/db/session.py`, `docker-compose.yml`, `.env.example`, `README.md`, and filesystem scans for frontend/scripts/mock JSON.
+- Reported result: Passed.
+- Rerun result: Passed.
+- Status: satisfied
+- Notes: `backend/app/api` contains only `__init__.py` plus ignored `__pycache__`; no frontend files, seed/mock-data scripts, tracked JSON files, model/schema diffs, or route files were found.
+- Command/check: Optional live provider/local Qdrant smoke checks.
+- Reported result: Blocked / not run.
+- Rerun result: Not run.
+- Status: not required
+- Notes: Optional manual validation requires real provider credentials and a confirmed running local Qdrant service. This is not an automated Phase 3 acceptance blocker.
+
+## Acceptance Review
+- Task acceptance: Focused Plan 3 tests pass, full backend `pytest` passes, backend compile/import smoke passes, no Phase 4/UI/reference-data leakage is present, and Phase 4 handoff services/symbols are consumable.
+- Status: satisfied
+- Evidence: Reviewer reran focused tests, full tests, compileall, service import smoke, Phase 4 handoff symbol import smoke, and boundary inspections successfully. The only `(04D)` file change reported is the execution report append; prior accepted `(04A)-(04C)` dirty files remain distinguishable from this verification task.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]` in the main `(04D)` task entry and `[ ]` in the progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 batch checkbox remains unchecked/not updated, per user instruction.
+- Execution report entry: appended successfully before review.
+- Review report entry: appended successfully.
+- Other: No sibling/future task checkbox was updated by this review.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Optional live OpenAI/provider and local Qdrant smoke validation remains not run, as expected and non-blocking for Phase 3 automated acceptance.
+- Accepted `(04A)`, `(04B)`, and `(04C)` changes remain dirty in the shared workspace and are intentionally separate from `(04D)`.
+- `compileall` leaves ignored `__pycache__` artifacts under `backend/app/api`, which do not affect tracked scope.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, per user instruction; Batch04 scope audit/coordination remains separate.
+
+## Repair Instructions
+- None

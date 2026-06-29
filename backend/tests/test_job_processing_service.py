@@ -1,9 +1,8 @@
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy import event, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
-from app.db.models import Application, Base, RoleProfile, JobPost
+from app.db.models import Application, RoleProfile, JobPost
 from app.agents.schemas import JobAgentState
 from app.services.job_processing_service import (
     ALLOWED_STATUS_TRANSITIONS,
@@ -13,34 +12,18 @@ from app.services.job_processing_service import (
     reject_job,
     update_job_status,
 )
+from tests.conftest import FakeEmbeddingService, FakeQdrantService
 
 
-class FakeEmbeddingService:
-    def __init__(self, db_session: AsyncSession | None = None):
-        self.calls: list[str] = []
-        self.db_session = db_session
-        self.row_count_at_first_call: int | None = None
-
-    async def embed_text(self, text: str) -> list[float]:
-        self.calls.append(text)
-        if self.db_session and self.row_count_at_first_call is None:
-            result = await self.db_session.execute(select(JobPost))
-            self.row_count_at_first_call = len(result.scalars().all())
-        return [1.0, 0.0, 0.0]
-
-
-class FakeQdrantService:
-    def __init__(self, similarity: float | None = 0.8):
-        self.similarity = similarity
-        self.upserted_job_ids: list[str] = []
-        self.queried_job_ids: list[str] = []
-        self.status_payload_updates: list[tuple[str, str]] = []
-        self.deleted_job_ids: list[str] = []
+class FailingQdrantService(FakeQdrantService):
+    def __init__(self, *, fail_on: str):
+        super().__init__()
+        self.fail_on = fail_on
 
     async def upsert_scorable_job(self, job: JobPost, vector: list[float]) -> bool:
-        self.upserted_job_ids.append(job.id)
-        assert job.status == "pending_review"
-        return True
+        if self.fail_on == "upsert":
+            raise RuntimeError("fake qdrant upsert failure")
+        return await super().upsert_scorable_job(job, vector)
 
     async def query_job_similarity(
         self,
@@ -48,57 +31,14 @@ class FakeQdrantService:
         role_profile_id: str,
         job_id: str,
     ) -> float | None:
-        self.queried_job_ids.append(job_id)
-        return self.similarity
-
-    async def update_job_status_payload(self, job_id: str, status: str) -> None:
-        self.status_payload_updates.append((job_id, status))
-
-    async def delete_point_if_exists(self, job_id: str) -> None:
-        self.deleted_job_ids.append(job_id)
-
-
-@pytest_asyncio.fixture
-async def db_session():
-    # Use in-memory SQLite for isolated test environment
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-
-    @event.listens_for(engine.sync_engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    async_session_maker = async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-
-    async with async_session_maker() as session:
-        yield session
-
-    await engine.dispose()
-
-
-@pytest_asyncio.fixture
-async def test_role_profile(db_session: AsyncSession):
-    # Insert a dummy RoleProfile
-    profile = RoleProfile(
-        id="rp-test-id",
-        target_role="Software Engineer",
-        level="junior",
-        location="San Francisco",
-        accept_remote=True,
-        skills='["python", "fastapi"]',
-        resume_text="Experienced developer",
-    )
-    db_session.add(profile)
-    await db_session.commit()
-    return profile
+        if self.fail_on == "query":
+            self.queried_job_ids.append(job_id)
+            raise RuntimeError("fake qdrant query failure")
+        return await super().query_job_similarity(
+            query_vector,
+            role_profile_id,
+            job_id,
+        )
 
 
 async def create_job_post(
@@ -374,12 +314,17 @@ async def test_process_job_state_integrity_error_rollback(db_session: AsyncSessi
 
     db_session.execute = mock_execute
     
+    embedding_service = FakeEmbeddingService()
+    qdrant_service = FakeQdrantService()
     res2 = await process_job_state(
-        db_session, state1, FakeEmbeddingService(), FakeQdrantService()
+        db_session, state1, embedding_service, qdrant_service
     )
     assert res2.inserted_jobs == 0
     assert res2.skipped_exact_duplicates == 1
     assert res2.job_ids == res1.job_ids
+    assert embedding_service.calls == []
+    assert qdrant_service.upserted_job_ids == []
+    assert qdrant_service.queried_job_ids == []
 
 
 @pytest.mark.asyncio
@@ -425,6 +370,57 @@ async def test_process_job_state_qdrant_similarity_unavailable_keeps_committed_r
     assert job.embedding_similarity is None
     assert job.final_score is None
     assert "Qdrant similarity unavailable for newly upserted job" in job.error_reason
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fail_on", ["upsert", "query"])
+async def test_qdrant_failure_keeps_committed_sqlite_row_with_null_scores(
+    db_session: AsyncSession,
+    test_role_profile,
+    fail_on: str,
+):
+    state: JobAgentState = {
+        "batch_id": f"batch-qdrant-{fail_on}",
+        "role_profile_id": test_role_profile.id,
+        "input_source": "manual_text",
+        "parse_status": "success",
+        "raw_content_hash": f"hash-qdrant-{fail_on}-failure",
+        "jd_status": "full_jd",
+        "extracted_job": {
+            "title": "Backend Engineer",
+            "company": f"Acme {fail_on}",
+            "location": "Remote",
+            "work_mode": "remote",
+            "level": "junior",
+            "responsibilities": "Build APIs",
+            "requirements": "Python and FastAPI",
+            "skills": ["python", "fastapi"],
+            "jd_status": "full_jd",
+        },
+    }
+
+    result = await process_job_state(
+        db_session,
+        state,
+        FakeEmbeddingService(),
+        FailingQdrantService(fail_on=fail_on),
+    )
+
+    job = await db_session.get(JobPost, result.job_ids[0])
+    assert result.inserted_jobs == 1
+    assert result.qdrant_upserted == 0
+    assert result.qdrant_synced is False
+    assert job.status == "pending_review"
+    assert job.embedding_text is not None
+    assert job.embedding_similarity is None
+    assert job.skill_overlap_score is None
+    assert job.location_match_score is None
+    assert job.level_match_score is None
+    assert job.base_score is None
+    assert job.jd_confidence_multiplier is None
+    assert job.final_score is None
+    assert job.final_score_percent is None
+    assert job.error_reason == "Scoring unavailable after SQLite persistence"
 
 
 def test_allowed_status_transitions_are_importable():
@@ -514,6 +510,36 @@ async def test_update_job_status_creates_one_application_and_preserves_applied_a
         (job.id, "applied"),
         (job.id, "interview"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_applied_to_rejected_updates_existing_application_and_preserves_applied_at(
+    db_session: AsyncSession, test_role_profile
+):
+    job = await create_job_post(db_session, test_role_profile, "saved")
+    qdrant_service = FakeQdrantService()
+
+    await update_job_status(db_session, job.id, "applied", qdrant_service)
+    result = await db_session.execute(
+        select(Application).where(Application.job_post_id == job.id)
+    )
+    application = result.scalar_one()
+    applied_at = application.applied_at
+
+    await update_job_status(db_session, job.id, "rejected", qdrant_service)
+    result = await db_session.execute(
+        select(Application).where(Application.job_post_id == job.id)
+    )
+    applications = result.scalars().all()
+
+    assert len(applications) == 1
+    assert applications[0].status == "rejected"
+    assert applications[0].applied_at == applied_at
+    assert qdrant_service.status_payload_updates == [
+        (job.id, "applied"),
+        (job.id, "rejected"),
+    ]
+    assert qdrant_service.deleted_job_ids == []
 
 
 @pytest.mark.asyncio

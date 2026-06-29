@@ -582,7 +582,7 @@ Plan 4 will depend on these backend services directly. Verification must catch s
 
 ### Tasks
 
-- [ ] (04A): Verify scoring and embedding foundations
+- [x] (04A): Verify scoring and embedding foundations
   - Source of Truth:
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected scoring test cases`
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected embedding/scoring pipeline tests`
@@ -613,7 +613,7 @@ Plan 4 will depend on these backend services directly. Verification must catch s
   - Blocked Condition: None.
   - Files: `backend/tests/test_scoring_service.py`, `backend/tests/test_embedding_service.py`.
 
-- [ ] (04B): Verify deduplication and SQLite persistence behavior
+- [x] (04B): Verify deduplication and SQLite persistence behavior
   - Source of Truth:
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected dedup test cases`
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected persistence/Qdrant tests`
@@ -646,7 +646,7 @@ Plan 4 will depend on these backend services directly. Verification must catch s
   - Blocked Condition: None.
   - Files: `backend/tests/test_dedup_service.py`, `backend/tests/test_job_persistence.py`, `backend/tests/test_job_processing_service.py`.
 
-- [ ] (04C): Verify Qdrant service, scorable pipeline, and status sync behavior
+- [x] (04C): Verify Qdrant service, scorable pipeline, and status sync behavior
   - Source of Truth:
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected Qdrant test cases`
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan` > `Expected persistence/Qdrant tests`
@@ -683,7 +683,7 @@ Plan 4 will depend on these backend services directly. Verification must catch s
   - Blocked Condition: None.
   - Files: `backend/tests/test_qdrant_service.py`, `backend/tests/test_job_processing_service.py`.
 
-- [ ] (04D): Run full Phase 3 verification and confirm handoff boundary
+- [x] (04D): Run full Phase 3 verification and confirm handoff boundary
   - Source of Truth:
     - `docs/plans/Plan_3.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Plan_3.md` > `## 10. Handoff Notes for Phase 4`
@@ -845,10 +845,10 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch04
 
-- [ ] (04A): Verify scoring and embedding foundations
-- [ ] (04B): Verify deduplication and SQLite persistence behavior
-- [ ] (04C): Verify Qdrant service, scorable pipeline, and status sync behavior
-- [ ] (04D): Run full Phase 3 verification and confirm handoff boundary
+- [x] (04A): Verify scoring and embedding foundations
+- [x] (04B): Verify deduplication and SQLite persistence behavior
+- [x] (04C): Verify Qdrant service, scorable pipeline, and status sync behavior
+- [x] (04D): Run full Phase 3 verification and confirm handoff boundary
 
 ## Completion Reporting Rules for Future Execution Agents
 

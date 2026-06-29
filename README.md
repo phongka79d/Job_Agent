@@ -34,7 +34,7 @@ The system uses a durable SQL database (SQLite) as the primary source of truth, 
 
 ## Directory Structure
 
-The project layout including Batch04 app bootstrap, database models, indexes, and session configuration is established as follows:
+The project layout including FastAPI app bootstrap, database models, indexes, services, and Phase 3 verification tests is established as follows:
 
 ```text
 Job_Agent/
@@ -74,14 +74,18 @@ Job_Agent/
 |   |   `-- .gitkeep
 |   |-- tests/
 |   |   |-- __init__.py
+|   |   |-- conftest.py                    # Shared SQLite and fake provider fixtures (Phase 3 Batch 04)
 |   |   |-- test_constants_contract.py        # Shared constants contract test
+|   |   |-- test_dedup_service.py            # Focused deduplication policy tests (Phase 3 Batch 04)
 |   |   |-- test_embedding_service.py        # Unit tests for embedding provider and dimensions (Phase 3 Batch 01)
 |   |   |-- test_extraction_graph.py         # Integration tests for graph and entrypoints (Batch03)
 |   |   |-- test_extraction_schema.py        # Focused extraction schema and fallback contract tests (Batch04)
+|   |   |-- test_job_persistence.py          # SQLite-first persistence and dedup integration tests (Phase 3 Batch 04)
 |   |   |-- test_job_processing_service.py   # Integration tests for persistence, Qdrant scoring, and status sync (Phase 3 Batch 03)
 |   |   |-- test_llm_client.py               # Unit tests for mockable extraction client (Batch03)
 |   |   |-- test_manual_text_preparation.py   # Manual raw-text parser preparation tests (Batch02)
 |   |   |-- test_nodes.py                    # Unit tests for extraction graph nodes (Batch03)
+|   |   |-- test_qdrant_service.py           # Mocked Qdrant collection/filter/query tests (Phase 3 Batch 04)
 |   |   |-- test_scoring_service.py          # Unit tests for deterministic scoring and normalization (Phase 3 Batch 01)
 |   |   `-- test_url_cleaning.py             # Mocked URL extraction and fallback tests (Batch02)
 |   |-- requirements.txt          # Backend runtime dependencies
@@ -226,4 +230,24 @@ Smoke-check the service implementations and run tests:
 python -m compileall -q app
 python -c "from app.services.qdrant_service import QdrantService; from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, approve_job, reject_job, update_job_status; print('qdrant and status services import successfully')"
 pytest tests/test_job_processing_service.py
+```
+
+---
+
+## Phase 3 Verification & Handoff Boundary (Batch 04)
+
+Phase 3 Batch 04 adds focused automated verification around the completed scoring, embedding, deduplication, SQLite persistence, Qdrant synchronization, and status mutation services. The tests use SQLite-backed fixtures plus fake or mocked provider/Qdrant boundaries, so the automated suite does not require live OpenAI credentials or a running Qdrant container.
+
+- **Scoring and Embedding Verification (Task 04A):** Extends scoring and embedding tests for non-scorable JD status behavior, Qdrant score clamping, embedding dimension mismatch, and provider failure sanitization.
+- **Deduplication and Persistence Verification (Task 04B):** Adds focused dedup policy tests and SQLite-first integration coverage for exact duplicates, dedup-key duplicates, null dedup keys, duplicate metadata rows, provider-call exclusion, commit ordering, and warning propagation.
+- **Qdrant and Status Sync Verification (Task 04C):** Adds mocked Qdrant service tests for collection setup, payload indexes, canonical UUID point IDs, filters, write acknowledgement, current-job scoring, bounded retry behavior, and status payload/delete synchronization.
+- **Phase Boundary Verification (Task 04D):** Confirms the focused Plan 3 tests, full backend test suite, compile/import smoke checks, and Phase 4 handoff service symbols pass without adding route handlers, Tavily orchestration, seed demo data, mock JSON, React UI, or schema/model/index changes.
+
+From the `backend` directory, run the completed Phase 3 verification suite:
+
+```bash
+python -m compileall -q app
+python -c "from app.services.qdrant_service import QdrantService; from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, JobProcessingResult, approve_job, reject_job, update_job_status, process_job_state; print('phase 4 handoff symbols ok')"
+pytest tests/test_scoring_service.py tests/test_embedding_service.py tests/test_dedup_service.py tests/test_job_processing_service.py tests/test_job_persistence.py tests/test_qdrant_service.py
+pytest
 ```

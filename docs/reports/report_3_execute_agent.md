@@ -780,3 +780,354 @@ complete
 - next task ID: A2 review for `(03C)`, then Batch04 `(04A)` after acceptance.
 - can proceed: yes, after A2 review accepts `(03C)`.
 - handoff notes: `job_processing_service.py` now exposes `ALLOWED_STATUS_TRANSITIONS`, `InvalidStatusTransition`, `approve_job`, `reject_job`, and `update_job_status` for Plan 4 route consumption. Manual status updates create/update exactly one application row through service logic and synchronize Qdrant payloads; review rejection deletes the Qdrant point.
+
+---
+
+# Task Execution Report - (04A)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch04 - Verification and Phase Boundary Tests
+
+## Task
+(04A) - Verify scoring and embedding foundations
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan > Expected scoring test cases
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan > Expected embedding/scoring pipeline tests
+- docs/plans/Master_Plan.md > ## 9. Scoring Formula
+- docs/plans/Master_Plan.md > ## 13. Skill Alias Normalization
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04A)
+- Task title: Verify scoring and embedding foundations
+
+## Completed Work
+- Status: complete.
+- Extended focused scoring tests for non-scorable JD statuses returning null final score fields and the shared Qdrant score clamping helper.
+- Extended embedding provider failure coverage to assert provider exceptions are converted into `EmbeddingServiceError` without leaking a secret-like API key value.
+- Fixed the in-scope provider failure path by removing raw provider exception text from the public `EmbeddingServiceError` message.
+
+## Files Created or Modified
+- backend/tests/test_scoring_service.py
+- backend/tests/test_embedding_service.py
+- backend/app/services/embedding_service.py
+- docs/reports/report_3_execute_agent.md
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_scoring_service.py tests/test_embedding_service.py`: Passed.
+- Evidence: pytest collected 21 items; `tests/test_scoring_service.py` 15 passed and `tests/test_embedding_service.py` 6 passed.
+
+## Acceptance Check
+- Task acceptance condition: Tests fail on formula, alias, normalization, or embedding validation drift.
+- Status: satisfied.
+- Evidence: focused tests cover documented JD confidence/final score cases, non-scorable null score behavior, empty required-skill overlap, alias normalization, location and level scoring including `intern` versus `fresher`, embedding success and dimension mismatch with mocked provider calls, provider failure sanitization, and score clamping to `[0, 1]`.
+
+## Artifacts Produced
+- Focused scoring and embedding unit test coverage for `(04A)`.
+- Execution report appended to `docs/reports/report_3_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: orchestrated run; checkbox and batch updates are deferred to A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Reused existing `test_scoring_service.py` and `test_embedding_service.py` patterns instead of adding duplicate helper files.
+- Treated the provider-error secret leakage as a genuine in-scope defect exposed by `(04A)` and fixed only the public error message while preserving exception chaining for debugging.
+
+## Risks or Open Issues
+- No live OpenAI provider or live Qdrant validation was run; `(04A)` explicitly requires fakes/mocks only.
+- Existing task progress tracker sections in `docs/tasks/task_3.md` appear stale for Batch01, but the canonical Batch01 task blocks are checked and the user stated Batch03 is already committed, so `(04A)` proceeded.
+
+## Minor Issues Fixed During Execution
+- Sanitized `EmbeddingServiceError` for provider failures so raw provider exception text cannot expose secret-like values.
+
+## Workflow Integrity Check
+- Selected exactly one task ID: `(04A)`.
+- Dependency Batch01 was treated as satisfied based on checked Batch01 task blocks and user-provided Batch03 completion context.
+- No required user action was listed.
+- Scope stayed within scoring/embedding focused tests and the directly required embedding failure-path fix; no sibling Batch04 tasks, live provider calls, live Qdrant calls, routes, frontend code, schema changes, or broad phase-boundary verification were added.
+
+## Notes for Next Task
+- next task ID: A2 review for `(04A)`, then `(04B)` after acceptance.
+- can proceed: yes, after A2 review accepts `(04A)`.
+- handoff notes: `(04A)` validation passed with the project venv from `backend`; review should include the narrow runtime change in `embedding_service.py` because it was required for the no-secret provider failure acceptance path.
+
+---
+
+# Task Execution Report - (04B)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch04 - Verification and Phase Boundary Tests
+
+## Task
+(04B) - Verify deduplication and SQLite persistence behavior
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan > Expected dedup test cases
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan > Expected persistence/Qdrant tests
+- docs/plans/Master_Plan.md > ## 16. Simplified Deduplication Strategy
+- docs/plans/Master_Plan.md > ## 24. SQLite Indexes
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04B)
+- Task title: Verify deduplication and SQLite persistence behavior
+
+## Completed Work
+- Status: complete.
+- Added SQLite-backed integration coverage for exact duplicate skips, dedup-key skips, tracked duplicate metadata insertion, ignored duplicate skips, null dedup keys, SQLite-first ordering before embedding/Qdrant calls, non-scorable persistence without provider calls, embedding failure after commit, Qdrant similarity unavailable persistence, raw-hash IntegrityError duplicate rollback, and warning propagation.
+- Added focused dedup service coverage for normalization, stable dedup-key generation, null-key policy, and pending/tracked/ignored duplicate actions.
+- Extracted existing SQLite fixture and fake embedding/Qdrant services into backend/tests/conftest.py so the new test files reuse existing patterns without duplicating helper logic.
+
+## Files Created or Modified
+- backend/tests/conftest.py
+- backend/tests/test_dedup_service.py
+- backend/tests/test_job_persistence.py
+- backend/tests/test_job_processing_service.py
+- docs/reports/report_3_execute_agent.md
+
+## Tests or Validations Run
+- .\.venv\Scripts\python.exe -m pytest tests/test_dedup_service.py tests/test_job_persistence.py tests/test_job_processing_service.py: Passed
+- evidence or reason: 26 tests collected and 26 passed from backend with the project venv.
+
+## Acceptance Check
+- Task acceptance condition: Tests fail on duplicate policy drift, SQLite-first ordering drift, or accidental provider calls in skipped paths.
+- Status: satisfied
+- Evidence: Added assertions for duplicate skip counts/IDs, database row counts, ignored duplicate metadata fields, null dedup keys, row visibility before fake embedding/Qdrant calls, null score/error behavior after provider failure, and empty fake embedding/Qdrant call lists for skipped duplicate paths.
+
+## Artifacts Produced
+- Deduplication and persistence test coverage in backend/tests/test_dedup_service.py, backend/tests/test_job_persistence.py, and backend/tests/test_job_processing_service.py.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; A2 owns checkbox updates after ACCEPTED review.
+
+## Key Implementation Decisions
+- Reused the existing in-memory SQLite fixture and fake service pattern by moving them into conftest.py instead of duplicating setup in each new test file.
+- Kept changes test-only; no runtime service behavior was changed for (04B).
+
+## Risks or Open Issues
+- No issue identified for (04B). Existing accepted uncommitted (04A) changes remain present and were not reverted.
+
+## Minor Issues Fixed During Execution
+- Tightened the existing raw-content-hash IntegrityError rollback test to assert no embedding or Qdrant calls occur after the duplicate collision path.
+
+## Workflow Integrity Check
+- Selected exactly one task ID: (04B).
+- Dependencies Batch02 and Batch03 were treated as satisfied based on checked task blocks in docs/tasks/task_3.md and the user-provided orchestration context.
+- No required user action was listed.
+- Scope stayed within deduplication and SQLite persistence tests; no sibling (04C)/(04D), runtime service changes, live OpenAI calls, live Qdrant calls, routes, frontend code, schema changes, or broad phase-boundary verification were added.
+
+## Notes for Next Task
+- next task ID: A2 review for (04B), then (04C) after acceptance.
+- can proceed: yes
+- handoff notes: Required (04B) validation passed from backend using the project venv; test helpers now live in backend/tests/conftest.py for reuse by later Batch04 tests.
+---
+
+# Task Execution Report - (04C)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch04 - Verification and Phase Boundary Tests
+
+## Task
+(04C) - Verify Qdrant service, scorable pipeline, and status sync behavior
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan > Expected Qdrant test cases
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan > Expected persistence/Qdrant tests
+- docs/plans/Master_Plan.md > ## 25. Qdrant Local Collection Schema
+- docs/plans/Plan_3.md > ## 7. Technical Specifications > ### Service-Owned Status Transitions / ### Applications Row Semantics
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04C)
+- Task title: Verify Qdrant service, scorable pipeline, and status sync behavior
+
+## Completed Work
+- Status: complete.
+- Added mocked Qdrant service tests for collection creation, payload index requests, canonical UUID point IDs, write acknowledgement, pending-review filters, current-job scoring filters, Qdrant score use/clamping, and bounded retry behavior that does not borrow another job's score.
+- Extended SQLite-backed job processing tests for Qdrant upsert/query exception durability and applied-to-rejected application-row semantics.
+- Reused the existing shared fake embedding/Qdrant services and SQLite fixtures from backend/tests/conftest.py; no runtime service behavior was changed.
+
+## Files Created or Modified
+- backend/tests/test_qdrant_service.py
+- backend/tests/test_job_processing_service.py
+- docs/reports/report_3_execute_agent.md
+
+## Tests or Validations Run
+- .\.venv\Scripts\python.exe -m pytest tests/test_qdrant_service.py tests/test_job_processing_service.py: Passed
+- evidence or reason: 22 tests collected and 22 passed from backend using the project venv.
+
+## Acceptance Check
+- Task acceptance condition: Tests fail on stale Qdrant filters, non-durable failure handling, invalid transition mutation, or application-row drift.
+- Status: satisfied
+- Evidence: New tests assert required Qdrant payload indexes, role/status/job-id filters, canonical UUID point IDs, wait=True writes, current-job-only similarity, bounded retry null-score behavior, Qdrant failure durability with committed SQLite rows and null score fields, invalid transition no-mutation behavior from existing coverage, Qdrant status update/delete behavior from existing coverage, manual rejected payload update, saved-to-rejected application creation, and applied-to-rejected preservation of applied_at.
+
+## Artifacts Produced
+- Qdrant service test coverage in backend/tests/test_qdrant_service.py.
+- Additional scorable pipeline/status sync coverage in backend/tests/test_job_processing_service.py.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; A2 owns checkbox updates after ACCEPTED review.
+
+## Key Implementation Decisions
+- Kept changes test-only because existing runtime behavior satisfied the new coverage.
+- Used mocked Qdrant clients and SQLite integration tests only; no live Qdrant or OpenAI calls were used.
+
+## Risks or Open Issues
+- No issue identified for (04C). Existing accepted uncommitted (04A) and (04B) changes remain present and were not reverted.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Selected exactly one task ID: (04C).
+- Dependencies Batch03 and accepted uncommitted (04A)/(04B) context were treated as satisfied based on checked task blocks and user-provided orchestration context.
+- No required user action was listed.
+- Scope stayed within Qdrant service, scorable pipeline, transition, and application-row tests; no sibling (04D), runtime service changes, live provider checks, live Qdrant checks, routes, frontend code, schema changes, or broad phase-boundary verification were added.
+
+## Notes for Next Task
+- next task ID: A2 review for (04C), then (04D) after acceptance.
+- can proceed: yes
+- handoff notes: Required (04C) validation passed from backend using the project venv; test_qdrant_service.py now provides focused mocked Qdrant coverage for Plan 3 handoff.
+---
+
+# Task Execution Report - (04D)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Report File
+docs/reports/report_3_execute_agent.md
+
+## Batch
+Batch04 - Verification and Phase Boundary Tests
+
+## Task
+(04D) - Run full Phase 3 verification and confirm handoff boundary
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/plans/Plan_3.md > ## 9. Verification & Testing Plan
+- docs/plans/Plan_3.md > ## 10. Handoff Notes for Phase 4
+- README.md > ## Setup and Running Instructions
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch04 - Verification and Phase Boundary Tests
+- Task ID: (04D)
+- Task title: Run full Phase 3 verification and confirm handoff boundary
+
+## Completed Work
+- Task status: complete.
+- Ran the required focused Phase 3 test files from backend using the project virtual environment.
+- Ran the full backend pytest suite from backend using the project virtual environment.
+- Ran compile and import smoke checks for the Phase 3 service modules.
+- Confirmed the current worktree has no new API route handlers, frontend code, Tavily orchestration implementation, seed demo data, mock JSON, or database model/schema/index diffs.
+- Confirmed the Phase 4-facing service handoff symbols are importable: processing services, Qdrant service initialization type, status methods, warnings result type, and transition map.
+- Optional live OpenAI/provider and local Qdrant smoke checks were not run because credentials/local services were not provided or confirmed for this optional manual validation; mocked automated verification is complete and unaffected.
+
+## Files Created or Modified
+- docs/reports/report_3_execute_agent.md
+
+## Tests or Validations Run
+- cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_scoring_service.py tests/test_embedding_service.py tests/test_dedup_service.py tests/test_job_processing_service.py tests/test_job_persistence.py tests/test_qdrant_service.py: Passed
+- evidence or reason: 57 passed in 2.59s.
+- cd backend; .\.venv\Scripts\python.exe -m pytest: Passed
+- evidence or reason: 130 passed in 4.05s.
+- cd backend; .\.venv\Scripts\python.exe -m compileall -q app: Passed
+- evidence or reason: command exited 0 with no compile errors.
+- cd backend; .\.venv\Scripts\python.exe -c "from app.services import scoring_service, embedding_service, dedup_service, qdrant_service, job_processing_service; print('service imports ok')": Passed
+- evidence or reason: printed service imports ok.
+- cd backend; .\.venv\Scripts\python.exe -c "from app.services.qdrant_service import QdrantService; from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS, JobProcessingResult, approve_job, reject_job, update_job_status, process_job_state; from app.services.scoring_service import calculate_final_scores; from app.services.dedup_service import build_dedup_key; print('phase 4 handoff symbols ok')": Passed
+- evidence or reason: printed phase 4 handoff symbols ok.
+- git status --short / git diff --name-only / git ls-files --others --exclude-standard: Passed
+- evidence or reason: changed or untracked files are limited to Phase 3 service/test/docs/report artifacts already in the accepted Batch04 workstream plus this appended report; no frontend, route, seed, JSON, schema, or migration files are present in the changed file list.
+- git diff -- backend/app/api backend/app/db/models.py backend/app/db/session.py docker-compose.yml .env.example README.md: Passed
+- evidence or reason: no diff output for API package, DB model/session, compose, env example, or README.
+- rg boundary search for API route, Tavily, seed, mock JSON, JSON files, frontend/src/scripts paths: Passed with notes
+- evidence or reason: no new frontend/src/scripts paths or JSON/seed files were found; existing Tavily/input-source references are pre-existing Phase 1/2 constants/schema/extraction support, not Tavily orchestration implementation; backend/app/api contains only __init__.py plus ignored __pycache__ generated by compile/import checks.
+- Optional live provider/local Qdrant smoke checks: Blocked / Not run
+- evidence or reason: optional manual validation requires real provider credentials and a confirmed running local Qdrant service; these were not provided or confirmed. This is not a blocker for mocked automated acceptance.
+
+## Acceptance Check
+- Task acceptance condition: Focused tests and full backend tests pass, compile/import smoke checks pass, and no out-of-scope files or schema changes are present.
+- Status: satisfied
+- Evidence: Focused Plan 3 tests passed 57/57, full backend tests passed 130/130, compileall exited 0, service imports and Phase 4 handoff symbol imports succeeded, and boundary inspection found no route handlers, React/frontend files, Tavily orchestration implementation, seed data, mock JSON, model/schema/index changes, or other Phase 4/5 runtime scope additions.
+
+## Artifacts Produced
+- Final Phase 3 verification evidence in docs/reports/report_3_execute_agent.md.
+- Phase 4-ready handoff confirmation for processing services, Qdrant initialization service, status mutation methods, warning propagation result type, and transition map.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated A1 run; A2 owns checkbox and batch progress updates after ACCEPTED review.
+
+## Key Implementation Decisions
+- No runtime or test implementation changes were made for (04D); this task was verification and reporting only.
+- Treated optional live OpenAI/provider and local Qdrant checks as not run/blocked by missing user-provided credentials/service confirmation, per the task's optional validation rule.
+
+## Risks or Open Issues
+- Optional live provider/local Qdrant smoke validation remains not run. This is not required for automated Phase 3 acceptance.
+- Existing accepted uncommitted (04A), (04B), and (04C) work remains present and was not reverted.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Selected exactly one task ID: (04D).
+- Dependencies (04A), (04B), and (04C) were checked in the selected Batch04 task block and treated as satisfied per the user-provided orchestration context.
+- Required user action: none. Optional user action for live provider/local Qdrant validation was not provided and was recorded as optional not run/blocked, not a task blocker.
+- No source-of-truth conflict identified.
+- Scope stayed within verification, boundary inspection, and report append only; no checkbox update, commit, API route, frontend, Tavily orchestration, seed/demo/mock JSON, schema/model/index, or broad runtime changes were made.
+
+## Notes for Next Task
+- next task ID: A2 review for (04D), then Batch04/A3 scope audit after acceptance.
+- can proceed: yes
+- handoff notes: Plan 4 can consume the Phase 3 service surface: deterministic scoring helpers, deduplication service, process_job_state and JobProcessingResult.warnings, QdrantService initialization and point/payload operations, approve_job/reject_job/update_job_status, and ALLOWED_STATUS_TRANSITIONS. Plan 4 should call these services from route handlers instead of reimplementing scoring, deduplication, persistence, Qdrant initialization, status transitions, application-row handling, or warning mapping.

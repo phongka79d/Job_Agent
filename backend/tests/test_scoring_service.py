@@ -150,6 +150,24 @@ def test_calculate_final_scores():
     assert percent is None
 
 
+@pytest.mark.parametrize("jd_status", ["contact_for_jd", "no_jd", "unclear"])
+def test_non_scorable_statuses_return_null_score_behavior(jd_status):
+    """Verify non-scorable JD statuses produce null final score fields."""
+    multiplier = get_jd_confidence_multiplier(jd_status)
+    final_score, final_percent = calculate_final_scores(0.80, multiplier)
+
+    assert multiplier is None
+    assert final_score is None
+    assert final_percent is None
+
+
+def test_qdrant_similarity_score_clamping_helper():
+    """Verify the shared Qdrant score normalization helper clamps to [0, 1]."""
+    assert clamp_score(1.25) == 1.0
+    assert clamp_score(0.42) == 0.42
+    assert clamp_score(-0.25) == 0.0
+
+
 def test_build_embedding_text():
     """Verify job embedding text construction for dicts and objects."""
     # Dict input
