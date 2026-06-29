@@ -123,7 +123,7 @@ Scoring formulas, skill normalization, and clean embedding text are pure busines
 
 ### Tasks
 
-- [ ] (01A): Verify Phase 3 prerequisites and schema compatibility
+- [x] (01A): Verify Phase 3 prerequisites and schema compatibility
   - Source of Truth:
     - `docs/plans/Plan_3.md` > `## 3. Prerequisites from Prior Phases`
     - `docs/plans/Plan_3.md` > `## 5. Out of Scope`
@@ -151,7 +151,7 @@ Scoring formulas, skill normalization, and clean embedding text are pure busines
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only if required local project files are absent or the user must approve a separate schema revision.
   - Files: Existing files only; no source edits expected for this task.
 
-- [ ] (01B): Implement deterministic scoring and clean text builders
+- [x] (01B): Implement deterministic scoring and clean text builders
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
     - `docs/plans/Master_Plan.md` > `## 9. Scoring Formula`
@@ -188,7 +188,7 @@ Scoring formulas, skill normalization, and clean embedding text are pure busines
   - Blocked Condition: None.
   - Files: `backend/app/services/scoring_service.py`.
 
-- [ ] (01C): Implement embedding provider service and vector validation
+- [x] (01C): Implement embedding provider service and vector validation
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 17. Smart Embedding Strategy`
     - `docs/plans/Master_Plan.md` > `## 31. Environment Setup`

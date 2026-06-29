@@ -63,18 +63,22 @@ Job_Agent/
 |   |   |-- services/
 |   |   |   |-- __init__.py
 |   |   |   |-- cost_service.py       # Provider-neutral token, cost, and timing normalization (Batch01)
+|   |   |   |-- embedding_service.py  # Mockable OpenAI embedding provider boundary (Phase 3 Batch 01)
 |   |   |   |-- extraction_service.py # Bounded raw-text/URL prep and graph entrypoints (Batch02/Batch03)
-|   |   |   `-- llm_client.py         # Mockable OpenAI structured extraction client boundary (Batch03)
+|   |   |   |-- llm_client.py         # Mockable OpenAI structured extraction client boundary (Batch03)
+|   |   |   `-- scoring_service.py    # Deterministic scoring and clean text builders (Phase 3 Batch 01)
 |   |-- data/
 |   |   `-- .gitkeep
 |   |-- tests/
 |   |   |-- __init__.py
 |   |   |-- test_constants_contract.py        # Shared constants contract test
+|   |   |-- test_embedding_service.py        # Unit tests for embedding provider and dimensions (Phase 3 Batch 01)
 |   |   |-- test_extraction_graph.py         # Integration tests for graph and entrypoints (Batch03)
 |   |   |-- test_extraction_schema.py        # Focused extraction schema and fallback contract tests (Batch04)
 |   |   |-- test_llm_client.py               # Unit tests for mockable extraction client (Batch03)
 |   |   |-- test_manual_text_preparation.py   # Manual raw-text parser preparation tests (Batch02)
 |   |   |-- test_nodes.py                    # Unit tests for extraction graph nodes (Batch03)
+|   |   |-- test_scoring_service.py          # Unit tests for deterministic scoring and normalization (Phase 3 Batch 01)
 |   |   `-- test_url_cleaning.py             # Mocked URL extraction and fallback tests (Batch02)
 |   |-- requirements.txt          # Backend runtime dependencies
 |   |-- requirements-dev.txt      # Backend test dependencies
@@ -162,4 +166,22 @@ From the `backend` directory, smoke-check the app compile and run tests:
 python -m compileall -q app
 python -c "from app.agents.graph import graph; from app.services.extraction_service import run_extraction_graph; print('extraction graph and entrypoints import successfully')"
 pytest
+```
+
+---
+
+## Scoring & Embedding Foundations (Phase 3 - Batch 01)
+
+Phase 3 Batch 01 implements the deterministic scoring calculations, skill alias normalization, clean embedding text construction, and mockable embedding provider boundary:
+
+- **Deterministic Scoring (Batch 01 - Task 01B):** Exposes pure mathematical formulas for calculating location match scores, adjacent level match scores, skill overlap percentages, and final weighted job match scores (with a JD confidence multiplier). Normalizes user and JD skills using pre-defined skill aliases before computing overlap.
+- **Embedding Provider Boundary (Batch 01 - Task 01C):** Integrates with `langchain_openai.OpenAIEmbeddings` using backend settings, features validation of vector dimensions against configurations, implements fast-fail checking on blank inputs, and enforces lazy initialization of the client API connection.
+- **Verification and Testing:** Includes unit tests `test_scoring_service.py` and `test_embedding_service.py` to validate scoring logic, skill normalization, and embedding client behavior under simulated network/API failures.
+
+Smoke-check the new service implementations and run tests:
+
+```bash
+python -m compileall -q app
+python -c "from app.services.scoring_service import calculate_final_scores; from app.services.embedding_service import embed_text; print('scoring and embedding services import successfully')"
+pytest tests/test_scoring_service.py tests/test_embedding_service.py
 ```
