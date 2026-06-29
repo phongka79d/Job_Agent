@@ -5,7 +5,6 @@ from typing import Any, Mapping, Optional, Protocol
 
 from pydantic import SecretStr, ValidationError
 from langchain_core.exceptions import OutputParserException
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from app.agents.prompts import build_extraction_prompt, build_repair_prompt
@@ -125,12 +124,11 @@ class OpenAIJobExtractionClient(JobExtractionClientProtocol):
             source_url=source_url,
             source_platform=source_platform,
         )
-        prompt = ChatPromptTemplate.from_messages([("user", prompt_text)])
         llm = self._get_llm()
 
         with track_extraction_time() as timing:
             try:
-                response = await llm.ainvoke(prompt)
+                response = await llm.ainvoke(prompt_text)
             except (ValidationError, OutputParserException) as e:
                 invalid_output = getattr(e, "llm_output", None)
                 if not invalid_output and hasattr(e, "observation"):
@@ -198,12 +196,11 @@ class OpenAIJobExtractionClient(JobExtractionClientProtocol):
             source_url=source_url,
             source_platform=source_platform,
         )
-        prompt = ChatPromptTemplate.from_messages([("user", prompt_text)])
         llm = self._get_llm()
 
         with track_extraction_time() as timing:
             try:
-                response = await llm.ainvoke(prompt)
+                response = await llm.ainvoke(prompt_text)
             except (ValidationError, OutputParserException) as e:
                 invalid_output = getattr(e, "llm_output", None)
                 if not invalid_output and hasattr(e, "observation"):

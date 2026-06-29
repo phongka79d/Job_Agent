@@ -1,5 +1,7 @@
 """Focused unit tests for the mockable LLM client boundary."""
 
+from typing import Any
+
 import pytest
 from pydantic import SecretStr
 
@@ -10,6 +12,30 @@ from app.services.llm_client import (
     LLMValidationError,
     OpenAIJobExtractionClient,
 )
+
+
+class _RawMessage:
+    response_metadata = {
+        "token_usage": {
+            "prompt_tokens": 100,
+            "completion_tokens": 50,
+        }
+    }
+
+
+class _StructuredLLMDouble:
+    def __init__(self, parsed: JobPostExtract):
+        self.parsed = parsed
+        self.prompts: list[Any] = []
+
+    async def ainvoke(self, prompt: Any) -> dict[str, Any]:
+        if not isinstance(prompt, str):
+            raise ValueError(f"invalid prompt type: {type(prompt).__name__}")
+        self.prompts.append(prompt)
+        return {
+            "parsed": self.parsed,
+            "raw": _RawMessage(),
+        }
 
 
 @pytest.mark.asyncio
@@ -115,3 +141,61 @@ async def test_production_client_raises_provider_error_on_missing_key() -> None:
             source_url=None,
             source_platform="manual_text",
         )
+
+
+@pytest.mark.asyncio
+async def test_production_client_invokes_structured_llm_with_prompt_text() -> None:
+    parsed = JobPostExtract(
+        title="Production Engineer",
+        source_platform="manual_text",
+        jd_status="full_jd",
+        should_score_similarity=True,
+    )
+    llm = _StructuredLLMDouble(parsed)
+    client = OpenAIJobExtractionClient(
+        model_name="gpt-4o-mini",
+        api_key=SecretStr("test-api-key"),
+    )
+    client._llm = llm
+
+    job = await client.extract_job(
+        clean_text="Hiring a Production Engineer with Python experience.",
+        source_url=None,
+        source_platform="manual_text",
+    )
+
+    assert job == parsed
+    assert llm.prompts
+    assert "Hiring a Production Engineer" in llm.prompts[0]
+    assert job._input_tokens == 100
+    assert job._output_tokens == 50
+
+
+@pytest.mark.asyncio
+async def test_production_client_repair_invokes_structured_llm_with_prompt_text() -> None:
+    parsed = JobPostExtract(
+        title="Repaired Engineer",
+        source_platform="manual_url",
+        jd_status="partial_jd",
+        should_score_similarity=True,
+    )
+    llm = _StructuredLLMDouble(parsed)
+    client = OpenAIJobExtractionClient(
+        model_name="gpt-4o-mini",
+        api_key=SecretStr("test-api-key"),
+    )
+    client._llm = llm
+
+    job = await client.repair_job(
+        clean_text="Hiring a Repaired Engineer. Python required.",
+        invalid_output="{}",
+        validation_error="missing required fields",
+        source_url="https://example.com/job",
+        source_platform="manual_url",
+    )
+
+    assert job == parsed
+    assert llm.prompts
+    assert "missing required fields" in llm.prompts[0]
+    assert job._input_tokens == 100
+    assert job._output_tokens == 50
