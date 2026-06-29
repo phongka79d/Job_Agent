@@ -790,38 +790,38 @@ Future-phase tracks are outside this mandatory chain.
 
 ## Global Verification Checklist
 
-- [ ] Phase 3 prerequisite modules and schema/index fields are verified before implementation.
-- [ ] Runtime statuses and sources use Phase 1 shared constants.
-- [ ] Scoring functions are deterministic and normalized to `[0, 1]`.
-- [ ] Only `full_jd` and `partial_jd` are embedded and scored.
-- [ ] Non-scorable jobs persist as `pending_review` with null score fields and no Qdrant point.
-- [ ] Job embedding text uses only clean extracted fields.
-- [ ] Role query text is generated dynamically and not stored.
-- [ ] Embedding vectors are validated against `EMBEDDING_DIMENSION`.
-- [ ] Dedup checks `raw_content_hash` before `dedup_key`.
-- [ ] Missing company/title never creates a shared empty dedup key.
-- [ ] Duplicates of saved/applied/interview/rejected/offer jobs do not re-enter `pending_review`.
-- [ ] New non-duplicate jobs commit to SQLite before OpenAI or Qdrant calls.
-- [ ] Embedding or Qdrant failures keep committed SQLite rows visible with null score fields and safe `error_reason`.
-- [ ] Qdrant collection initialization and payload indexes are idempotent.
-- [ ] Qdrant point IDs use canonical `job_posts.id` UUID strings.
-- [ ] Qdrant scoring query filters include active `role_profile_id`, `pending_review`, and current `job_id`.
-- [ ] Qdrant write/read visibility failure uses bounded retry and never borrows another job's score.
-- [ ] `approve_job`, `reject_job`, and `update_job_status` are the only backend status mutation entrypoints intended for routes.
-- [ ] Application-row creation/update follows the approved `applied_at` semantics.
-- [ ] Manual tracked `rejected` updates Qdrant payload; review rejection to `ignored` deletes the point.
-- [ ] Focused Plan 3 tests and full backend tests pass.
-- [ ] Implementation code is clean, idiomatic, typed where appropriate, and easy to understand.
-- [ ] No schema changes, routes, Tavily search, demo seed data, mock data, React UI, or vector deduplication were added.
+- [x] Phase 3 prerequisite modules and schema/index fields are verified before implementation.
+- [x] Runtime statuses and sources use Phase 1 shared constants.
+- [x] Scoring functions are deterministic and normalized to `[0, 1]`.
+- [x] Only `full_jd` and `partial_jd` are embedded and scored.
+- [x] Non-scorable jobs persist as `pending_review` with null score fields and no Qdrant point.
+- [x] Job embedding text uses only clean extracted fields.
+- [x] Role query text is generated dynamically and not stored.
+- [x] Embedding vectors are validated against `EMBEDDING_DIMENSION`.
+- [x] Dedup checks `raw_content_hash` before `dedup_key`.
+- [x] Missing company/title never creates a shared empty dedup key.
+- [x] Duplicates of saved/applied/interview/rejected/offer jobs do not re-enter `pending_review`.
+- [x] New non-duplicate jobs commit to SQLite before OpenAI or Qdrant calls.
+- [x] Embedding or Qdrant failures keep committed SQLite rows visible with null score fields and safe `error_reason`.
+- [x] Qdrant collection initialization and payload indexes are idempotent.
+- [x] Qdrant point IDs use canonical `job_posts.id` UUID strings.
+- [x] Qdrant scoring query filters include active `role_profile_id`, `pending_review`, and current `job_id`.
+- [x] Qdrant write/read visibility failure uses bounded retry and never borrows another job's score.
+- [x] `approve_job`, `reject_job`, and `update_job_status` are the only backend status mutation entrypoints intended for routes.
+- [x] Application-row creation/update follows the approved `applied_at` semantics.
+- [x] Manual tracked `rejected` updates Qdrant payload; review rejection to `ignored` deletes the point.
+- [x] Focused Plan 3 tests and full backend tests pass.
+- [x] Implementation code is clean, idiomatic, typed where appropriate, and easy to understand.
+- [x] No schema changes, routes, Tavily search, demo seed data, mock data, React UI, or vector deduplication were added.
 
 ## Progress Tracker
 
 ### Batches
 
-- [ ] Batch01 - Scoring and Embedding Foundations
-- [ ] Batch02 - Deduplication and SQLite-First Persistence
-- [ ] Batch03 - Qdrant Sync and Status Mutation Services
-- [ ] Batch04 - Verification and Phase Boundary Tests
+- [x] Batch01 - Scoring and Embedding Foundations
+- [x] Batch02 - Deduplication and SQLite-First Persistence
+- [x] Batch03 - Qdrant Sync and Status Mutation Services
+- [x] Batch04 - Verification and Phase Boundary Tests
 
 ### Task IDs
 
