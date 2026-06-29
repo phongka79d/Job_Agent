@@ -63,8 +63,10 @@ Job_Agent/
 |   |   |-- services/
 |   |   |   |-- __init__.py
 |   |   |   |-- cost_service.py       # Provider-neutral token, cost, and timing normalization (Batch01)
+|   |   |   |-- dedup_service.py      # Null-safe duplicate checking and key generation (Phase 3 Batch 02)
 |   |   |   |-- embedding_service.py  # Mockable OpenAI embedding provider boundary (Phase 3 Batch 01)
 |   |   |   |-- extraction_service.py # Bounded raw-text/URL prep and graph entrypoints (Batch02/Batch03)
+|   |   |   |-- job_processing_service.py # SQLite-first persistence and state-to-post mapping (Phase 3 Batch 02)
 |   |   |   |-- llm_client.py         # Mockable OpenAI structured extraction client boundary (Batch03)
 |   |   |   `-- scoring_service.py    # Deterministic scoring and clean text builders (Phase 3 Batch 01)
 |   |-- data/
@@ -75,6 +77,7 @@ Job_Agent/
 |   |   |-- test_embedding_service.py        # Unit tests for embedding provider and dimensions (Phase 3 Batch 01)
 |   |   |-- test_extraction_graph.py         # Integration tests for graph and entrypoints (Batch03)
 |   |   |-- test_extraction_schema.py        # Focused extraction schema and fallback contract tests (Batch04)
+|   |   |-- test_job_processing_service.py   # Integration tests for duplicate control and database persistence (Phase 3 Batch 02)
 |   |   |-- test_llm_client.py               # Unit tests for mockable extraction client (Batch03)
 |   |   |-- test_manual_text_preparation.py   # Manual raw-text parser preparation tests (Batch02)
 |   |   |-- test_nodes.py                    # Unit tests for extraction graph nodes (Batch03)
@@ -184,4 +187,23 @@ Smoke-check the new service implementations and run tests:
 python -m compileall -q app
 python -c "from app.services.scoring_service import calculate_final_scores; from app.services.embedding_service import embed_text; print('scoring and embedding services import successfully')"
 pytest tests/test_scoring_service.py tests/test_embedding_service.py
+```
+
+---
+
+## Deduplication & SQLite-First Persistence (Phase 3 - Batch 02)
+
+Phase 3 Batch 02 implements the null-safe duplicate key checking and SQLite database persistence boundary before any embedding or vector database operations occur:
+
+- **Null-Safe Deduplication Service (Batch 02 - Task 02A):** Normalizes company names and job titles (whitespace trimming, lowercase) and constructs a deterministic SHA-256 hex digest duplicate key only if both fields are non-blank. Maps existing duplicate job statuses to the duplicate policy using `TRACKED_JOB_STATUSES` from shared constants.
+- **State to Persistence Mapping (Batch 02 - Task 02B):** Maps LangGraph extraction state and loaded role profiles to the `JobPost` database ORM payload. Enforces JSON serialization of skill arrays, maps input sources, derives similarity scoring eligibility based on JD status, and prepares clean initial records with null scoring fields and `pending_review` status.
+- **SQLite-First Orchestration (Batch 02 - Task 02C):** Integrates the mapping, exact duplicate check (via raw content hash), and duplicate key policy into the `process_job_state` pipeline entrypoint. Safeguards operations using database transaction commits and rollbacks on constraint collisions (`IntegrityError`), ensuring duplicate records bypass Qdrant/embedding logic.
+- **Verification and Testing:** Includes integration tests `test_job_processing_service.py` to cover all deduplication paths: new inserts, exact duplicates, key duplicates (skips vs ignored metadata insertions), and hash collisions.
+
+Smoke-check the new service implementations and run tests:
+
+```bash
+python -m compileall -q app
+python -c "from app.services.dedup_service import build_dedup_key; from app.services.job_processing_service import process_job_state; print('deduplication and persistence services import successfully')"
+pytest tests/test_job_processing_service.py
 ```

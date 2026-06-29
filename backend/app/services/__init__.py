@@ -30,6 +30,18 @@ from app.services.embedding_service import (
     EmbeddingServiceError,
     embed_text,
 )
+from app.services.dedup_service import (
+    normalize_text,
+    build_dedup_key,
+    decide_duplicate_action,
+)
+from app.services.job_processing_service import (
+    JobProcessingResult,
+    validate_extraction_state,
+    load_role_profile,
+    map_state_to_job_post,
+    process_job_state,
+)
 
 __all__ = [
     "JobExtractionClientProtocol",
@@ -54,6 +66,14 @@ __all__ = [
     "build_role_query_text",
     "EmbeddingServiceError",
     "embed_text",
+    "normalize_text",
+    "build_dedup_key",
+    "decide_duplicate_action",
+    "JobProcessingResult",
+    "validate_extraction_state",
+    "load_role_profile",
+    "map_state_to_job_post",
+    "process_job_state",
 ]
 
 

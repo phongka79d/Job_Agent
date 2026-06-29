@@ -271,7 +271,7 @@ The system must never lose parsed jobs because embedding or Qdrant fails. Durabl
 
 ### Tasks
 
-- [ ] (02A): Implement null-safe deduplication service
+- [x] (02A): Implement null-safe deduplication service
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`
     - `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Deduplication`
@@ -297,7 +297,7 @@ The system must never lose parsed jobs because embedding or Qdrant fails. Durabl
   - Blocked Condition: None.
   - Files: `backend/app/services/dedup_service.py`.
 
-- [ ] (02B): Implement extraction-state to job persistence mapping
+- [x] (02B): Implement extraction-state to job persistence mapping
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking`
     - `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
@@ -330,7 +330,7 @@ The system must never lose parsed jobs because embedding or Qdrant fails. Durabl
   - Blocked Condition: None unless the role profile referenced by input state does not exist in the test/runtime database; report a safe validation error.
   - Files: `backend/app/services/job_processing_service.py` and optionally one narrow private helper under `backend/app/db/` or `backend/app/services/`.
 
-- [ ] (02C): Implement SQLite-first processing result and duplicate persistence behavior
+- [x] (02C): Implement SQLite-first processing result and duplicate persistence behavior
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4. Architecture`
     - `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`
@@ -833,9 +833,9 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch02
 
-- [ ] (02A): Implement null-safe deduplication service
-- [ ] (02B): Implement extraction-state to job persistence mapping
-- [ ] (02C): Implement SQLite-first processing result and duplicate persistence behavior
+- [x] (02A): Implement null-safe deduplication service
+- [x] (02B): Implement extraction-state to job persistence mapping
+- [x] (02C): Implement SQLite-first processing result and duplicate persistence behavior
 
 #### Batch03
 

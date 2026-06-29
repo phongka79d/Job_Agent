@@ -422,3 +422,413 @@ ACCEPTED
 ## Repair Instructions
 - None
 
+
+---
+
+# Task Review Report - (02A)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Deduplication and SQLite-First Persistence
+- Task ID: (02A)
+- Task title: Implement null-safe deduplication service
+- Executor status reported: complete
+- Source of Truth:
+  - `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`
+  - `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Deduplication`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02A)
+- Reviewed task ID: (02A)
+- Correct selection: yes
+- Notes: Reviewed the implementation of the null-safe deduplication utility service.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `backend/app/services/__init__.py`
+  - `backend/app/services/dedup_service.py` (untracked)
+- untracked files:
+  - `backend/app/services/dedup_service.py`
+
+## Files Reviewed
+- `backend/app/services/dedup_service.py`: in scope - Implements text normalization, deterministic SHA-256 duplicate key construction, and status-based duplicate action decisions.
+- `backend/app/services/__init__.py`: in scope - Publicly exports deduplication utilities.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/dedup_service.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Implemented as specified.
+- file from execution report: `backend/app/services/__init__.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Successfully updated with exports.
+
+## Dependency Review
+- Required dependencies: (01A) prerequisite verification.
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Full logic implemented for `normalize_text`, `build_dedup_key`, and `decide_duplicate_action` without placeholder logic or stubs.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Relies on `TRACKED_JOB_STATUSES` constants from `app.core.constants` and parameterized fields.
+
+## Validations Reviewed
+- Command/check: `.venv\Scripts\pytest`
+  - Reported result: 90 tests passed
+  - Rerun result: 90 tests passed
+  - Status: passed
+  - Notes: Checked that all tests continue to pass correctly.
+- Command/check: Local python check script
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: passed
+  - Notes: Verified deduplication behaviors with manual cases successfully.
+
+## Acceptance Review
+- Task acceptance: Duplicate decisions match the approved policy and missing company/title never collide through a shared empty key.
+- Status: satisfied
+- Evidence: Verified via execution tests that `build_dedup_key` correctly returns `None` for missing company/title, avoiding key collision. Status-based duplicate policies map correctly.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]`
+- Checkbox updated by reviewer: yes
+- Batch status: Batch02 - In Progress
+- Execution report entry: appended successfully
+- Review report entry: appended successfully
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Separating normalized fields with `|` before hashing prevents edge-case collisions between combined text segments.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no (only if all task IDs are complete - other tasks in Batch02 are still pending)
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (02C)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Deduplication and SQLite-First Persistence
+- Task ID: (02C)
+- Task title: Implement SQLite-first processing result and duplicate persistence behavior
+- Executor status reported: complete
+- Source of Truth:
+  - `docs/plans/Master_Plan.md` > `## 4. Architecture`
+  - `docs/plans/Master_Plan.md` > `## 16. Simplified Deduplication Strategy`
+  - `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Processing Pipeline Order` / `### Processing Result` / `### Qdrant Failure Handling`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02C)
+- Reviewed task ID: (02C)
+- Correct selection: yes
+- Notes: Reviewed the pipeline orchestrator and SQLite-first duplicate control functions.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `backend/app/services/__init__.py`
+- untracked files:
+  - `backend/app/services/dedup_service.py`
+  - `backend/app/services/job_processing_service.py`
+  - `backend/tests/test_job_processing_service.py`
+
+## Files Reviewed
+- `backend/app/services/job_processing_service.py`: in scope - Defines `process_job_state` which performs SQLite-first persistence and deduplication check logic.
+- `backend/app/services/__init__.py`: in scope - Exposes public interfaces.
+- `backend/tests/test_job_processing_service.py`: in scope - Comprehensive test suite for `process_job_state`.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/job_processing_service.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Newly modified file in Batch02.
+- file from execution report: `backend/app/services/__init__.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Public exports are correctly updated.
+- file from execution report: `backend/tests/test_job_processing_service.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Test suite created and validated.
+
+## Dependency Review
+- Required dependencies: (02A) deduplication service, (02B) state-to-persistence mapping
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: `process_job_state` performs real duplicate decisions, ORM object creations, transactional database commits, and catches `IntegrityError` to safely roll back and return exact duplicate states.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The service accesses SQLite data dynamically, utilizes core constants, and applies general mapping keys.
+
+## Validations Reviewed
+- Command/check: `backend/.venv/Scripts/pytest backend/tests/test_job_processing_service.py`
+  - Reported result: 5 tests passed
+  - Rerun result: 5 tests passed
+  - Status: passed
+  - Notes: Runs all custom integration test scenarios successfully.
+- Command/check: `backend/.venv/Scripts/pytest`
+  - Reported result: 95 tests passed
+  - Rerun result: 95 tests passed
+  - Status: passed
+  - Notes: Runs the entire test suite successfully.
+
+## Acceptance Review
+- Task acceptance: The service can insert new pending-review rows, skip exact/key duplicates, and insert ignored duplicate metadata rows without Qdrant.
+- Status: satisfied
+- Evidence: Verified that the pipeline behaves correctly for new inputs, exact hash duplicates, dedup key duplicate skip/ignore actions, and raw hash database constraint IntegrityError rollbacks.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]`
+- Checkbox updated by reviewer: yes
+- Batch status: Batch02 - Complete
+- Execution report entry: appended successfully
+- Review report entry: appended successfully
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Built-in transaction rollbacks on IntegrityError ensure SQLite database state is always kept clean and consistent.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? yes (all Batch02 tasks: 02A, 02B, and 02C are now checked and completed)
+
+## Repair Instructions
+- None
+
+
+
+---
+
+# Task Review Report - (02B)
+
+## Source Task File
+docs/tasks/task_3.md
+
+## Execution Report Reviewed
+docs/reports/report_3_execute_agent.md
+
+## Review Report File
+docs/review/review_3_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch02 - Deduplication and SQLite-First Persistence
+- Task ID: (02B)
+- Task title: Implement extraction-state to job persistence mapping
+- Executor status reported: complete
+- Source of Truth:
+  - `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking`
+  - `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
+  - `docs/plans/Master_Plan.md` > `## 20. SQLite Database Design`
+  - `docs/plans/Master_Plan.md` > `## 22. Table: job_posts`
+  - `docs/plans/Plan_3.md` > `## 7. Technical Specifications` > `### Persistence` / `### Processing Pipeline Order`
+  - `README.md` > `## Extraction Architecture & Workflows (Phase 2)`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (02B)
+- Reviewed task ID: (02B)
+- Correct selection: yes
+- Notes: Reviewed the mapping implementation converting JobAgentState and loaded RoleProfile into JobPost model payload.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `backend/app/services/__init__.py`
+- untracked files:
+  - `backend/app/services/job_processing_service.py`
+
+## Files Reviewed
+- `backend/app/services/job_processing_service.py`: in scope - Implements JobProcessingResult dataclass, state validation, and map_state_to_job_post helper.
+- `backend/app/services/__init__.py`: in scope - Properly exports job processing types and helpers.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/job_processing_service.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Contains all required persistence mapping logic.
+- file from execution report: `backend/app/services/__init__.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Correctly registered exports.
+
+## Dependency Review
+- Required dependencies: (01B) scoring, (02A) deduplication service
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Verified via test execution that `map_state_to_job_post` maps state inputs to database model attributes with proper defaults and nullable fields.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Status mappings, input sources, and configurations are handled dynamically and derived from core models/constants.
+
+## Validations Reviewed
+- Command/check: `backend/.venv/Scripts/python -c "from app.services import JobProcessingResult, ..."`
+  - Reported result: Imports OK
+  - Rerun result: Imports OK
+  - Status: passed
+  - Notes: Imports check verifies service functions are importable.
+- Command/check: `backend/.venv/Scripts/pytest`
+  - Reported result: 90 passed
+  - Rerun result: 90 passed
+  - Status: passed
+  - Notes: Existing tests passed with no regressions.
+- Command/check: Reviewer scratch script `test_job_mapping.py`
+  - Reported result: Not reported (added by reviewer)
+  - Rerun result: ALL TEST SCENARIOS COMPLETED SUCCESSFULLY!
+  - Status: passed
+  - Notes: Programmatically verified scorable and non-scorable mappings, null-safe dedup key generation, and validation exceptions.
+
+## Acceptance Review
+- Task acceptance: Mapping can produce complete pending-review rows for scorable, non-scorable, and unclear extraction results.
+- Status: satisfied
+- Evidence: Code properly maps state payload, maps JSON-serialised skill sets, defaults status to pending_review, and configures should_score_similarity and embedding_text dynamically.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]`
+- Checkbox updated by reviewer: yes
+- Batch status: Batch02 - In Progress
+- Execution report entry: appended successfully
+- Review report entry: appended successfully
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Handled skill arrays/strings robustly when parsing and mapping to JSON text format.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no (only if all task IDs are complete - other tasks in Batch02 are still pending)
+
+## Repair Instructions
+- None
