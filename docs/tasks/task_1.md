@@ -825,26 +825,26 @@ The following work is explicitly outside Plan 1 and belongs to later approved pl
 
 ## Global Verification Checklist
 
-- [ ] Backend skeleton matches Plan 1 target structure.
-- [ ] Dependency files match Plan 1 runtime and test requirements.
-- [ ] Root `.env.example` uses only placeholder values and contains no real API keys.
-- [ ] `.gitignore` protects local secrets, generated SQLite files, virtual environments, frontend dependencies, and frontend build output.
-- [ ] Qdrant Docker Compose service starts and stops locally when Docker is available.
-- [ ] Backend Dockerfile packages only FastAPI backend behavior.
-- [ ] Backend settings load from the project root `.env`.
-- [ ] Secrets are never logged, printed, committed, or exposed to frontend code.
-- [ ] Shared constants expose exact Plan 1 status/source values.
-- [ ] `pytest tests/test_constants_contract.py` passes.
-- [ ] Database initializes with exactly `role_profiles`, `job_posts`, and `applications`.
-- [ ] `role_profiles` does not contain `matching_text`.
-- [ ] No `search_runs` or other out-of-scope table exists.
-- [ ] Required SQLite indexes exist.
-- [ ] SQLite foreign keys are enabled for app-managed connections.
-- [ ] SQLite WAL mode is enabled.
-- [ ] Application foreign-key delete behavior is inspected and reported.
-- [ ] Minimal FastAPI app imports and can initialize the database.
-- [ ] Implementation code is clean, idiomatic, typed where appropriate, and easy to understand.
-- [ ] No Plan 1 non-goals were implemented.
+- [x] Backend skeleton matches Plan 1 target structure.
+- [x] Dependency files match Plan 1 runtime and test requirements.
+- [x] Root `.env.example` uses only placeholder values and contains no real API keys.
+- [x] `.gitignore` protects local secrets, generated SQLite files, virtual environments, frontend dependencies, and frontend build output.
+- [x] Qdrant Docker Compose service starts and stops locally when Docker is available.
+- [x] Backend Dockerfile packages only FastAPI backend behavior.
+- [x] Backend settings load from the project root `.env`.
+- [x] Secrets are never logged, printed, committed, or exposed to frontend code.
+- [x] Shared constants expose exact Plan 1 status/source values.
+- [x] `pytest tests/test_constants_contract.py` passes.
+- [x] Database initializes with exactly `role_profiles`, `job_posts`, and `applications`.
+- [x] `role_profiles` does not contain `matching_text`.
+- [x] No `search_runs` or other out-of-scope table exists.
+- [x] Required SQLite indexes exist.
+- [x] SQLite foreign keys are enabled for app-managed connections.
+- [x] SQLite WAL mode is enabled.
+- [x] Application foreign-key delete behavior is inspected and reported.
+- [x] Minimal FastAPI app imports and can initialize the database.
+- [x] Implementation code is clean, idiomatic, typed where appropriate, and easy to understand.
+- [x] No Plan 1 non-goals were implemented.
 
 ## Progress Tracker
 
