@@ -398,7 +398,7 @@ Later phases need extraction behavior without depending on graph internals or pr
 
 ### Tasks
 
-- [ ] (03A): Implement the mockable LLM extraction client boundary
+- [x] (03A): Implement the mockable LLM extraction client boundary
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 2. Final MVP Stack`
     - `docs/plans/Master_Plan.md` > `## 18. LLM JSON Fallback`
@@ -424,7 +424,7 @@ Later phases need extraction behavior without depending on graph internals or pr
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only for an explicitly requested live-provider validation when a valid API key is absent; mocked automated acceptance remains available.
   - Files: `backend/app/services/extraction_service.py` and, only if separation is clearer, one narrowly scoped client module.
 
-- [ ] (03B): Implement extraction, retry, classification, and unclear nodes
+- [x] (03B): Implement extraction, retry, classification, and unclear nodes
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4. Architecture`
     - `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking`
@@ -455,7 +455,7 @@ Later phases need extraction behavior without depending on graph internals or pr
   - Blocked Condition: None.
   - Files: `backend/app/agents/nodes.py`.
 
-- [ ] (03C): Compile the extraction graph and expose public service entrypoints
+- [x] (03C): Compile the extraction graph and expose public service entrypoints
   - Source of Truth:
     - `docs/plans/Master_Plan.md` > `## 4. Architecture`
     - `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Public Extraction Entrypoints`
@@ -752,9 +752,9 @@ Future-phase tracks are outside this mandatory chain.
 
 #### Batch03
 
-- [ ] (03A): Implement the mockable LLM extraction client boundary
-- [ ] (03B): Implement extraction, retry, classification, and unclear nodes
-- [ ] (03C): Compile the extraction graph and expose public service entrypoints
+- [x] (03A): Implement the mockable LLM extraction client boundary
+- [x] (03B): Implement extraction, retry, classification, and unclear nodes
+- [x] (03C): Compile the extraction graph and expose public service entrypoints
 
 #### Batch04
 

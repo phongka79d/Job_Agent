@@ -1305,3 +1305,413 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - (03A)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch03 - Structured Extraction Graph and Service API
+- Task ID: (03A)
+- Task title: Implement the mockable LLM extraction client boundary
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 2. Final MVP Stack`, `## 18. LLM JSON Fallback` và `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Mockable LLM Client Boundary`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03A)
+- Reviewed task ID: (03A)
+- Correct selection: yes
+- Notes: Báo cáo thực thi khớp hoàn toàn với task được yêu cầu review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/services/__init__.py`, `backend/app/services/llm_client.py` (untracked), `backend/tests/test_llm_client.py` (untracked), `docs/reports/report_2_execute_agent.md`
+- untracked files: `backend/app/services/llm_client.py`, `backend/tests/test_llm_client.py`
+
+## Files Reviewed
+- `backend/app/services/llm_client.py`: in scope - Chứa định nghĩa protocol `JobExtractionClientProtocol`, production client `OpenAIJobExtractionClient` hỗ trợ lazy loading và custom exceptions (`LLMExtractionError`, `LLMProviderError`, `LLMValidationError`), và fake client `FakeJobExtractionClient` phục vụ kiểm thử.
+- `backend/app/services/__init__.py`: in scope - Expose các classes cần thiết của client ra ngoài package services.
+- `backend/tests/test_llm_client.py`: in scope - Unit tests cho fake client (default behavior, canned responses) và production client (lazy initialization, provider error on missing key).
+- `docs/tasks/task_2.md`: in scope - Tài liệu quản lý tasks của Plan 2.
+- `docs/reports/report_2_execute_agent.md`: in scope - Báo cáo thực thi task (03A) của Execution Agent.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/llm_client.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Triển khai hoàn chỉnh, đúng spec kỹ thuật của Plan 2.
+- file from execution report: `backend/app/services/__init__.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Cập nhật exports chính xác.
+- file from execution report: `backend/tests/test_llm_client.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Test suite đầy đủ các kịch bản fake client & lazy load production.
+
+## Dependency Review
+- Required dependencies: (01A), (01C), (01D)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Định nghĩa `JobExtractionClientProtocol` đúng signature. Production client implement đúng protocol, dùng lazy loading tránh lỗi api key lúc import. Fake client hỗ trợ queuing responses thích hợp. Token usage/cost/timing được normalise tốt qua `cost_service`. Exceptions phân loại rõ ràng (`LLMExtractionError`, `LLMProviderError`, `LLMValidationError`).
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: OpenAI client tích hợp với `ChatOpenAI.with_structured_output` thực tế và hỗ trợ lấy `response_metadata` và gán metadata.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Giá pricing được map theo model config từ config file. Api key được load từ settings thay vì hardcode.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest tests/test_llm_client.py`
+  - Reported result: passed (4 passed in 2.63s)
+  - Rerun result: passed (4 passed in 0.90s)
+  - Status: passed
+  - Notes: Test suite của llm_client pass 100%.
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (21 passed in 4.90s)
+  - Rerun result: passed (21 passed in 11.24s)
+  - Status: passed
+  - Notes: Toàn bộ test suite của backend pass 100%.
+
+## Acceptance Review
+- Task acceptance: satisfied
+- Status: satisfied
+- Evidence: Đã chứng minh fake client hoạt động đúng các kịch bản lỗi, repair và success; production client lazy load, parse data từ settings an toàn.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: remains unchecked (các task khác trong Batch 3 chưa xong)
+- Execution report entry: present (appended ở report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không cập nhật bất kỳ checkbox hay batch status nào khác.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Việc đính kèm usage metadata thông qua private attributes (`_input_tokens`, v.v.) lên `JobPostExtract` giúp bảo toàn signature của protocol và schema validation.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only (03A) is accepted
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (03B)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch03 - Structured Extraction Graph and Service API
+- Task ID: (03B)
+- Task title: Implement extraction, retry, classification, and unclear nodes
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 4. Architecture`, `## 4.1. LangGraph State Tracking`, `## 8. JD Status Rules` và `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### JD Status Rules` / `### Parse vs Extraction Status Semantics` / `### LLM Fallback`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03B)
+- Reviewed task ID: (03B)
+- Correct selection: yes
+- Notes: Báo cáo thực thi khớp hoàn toàn với tác vụ (03B) được yêu cầu review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/agents/nodes.py` (untracked), `backend/tests/test_nodes.py` (untracked)
+- untracked files: `backend/app/agents/nodes.py`, `backend/tests/test_nodes.py`
+
+## Files Reviewed
+- `backend/app/agents/nodes.py`: in scope - Chứa các node LangGraph: `prepare_content`, `extract_job`, `repair_job`, `classify_jd`, `mark_unclear`. Có cơ chế bảo lưu required state, short-circuit, và accumulate observability chính xác.
+- `backend/tests/test_nodes.py`: in scope - Test suite chứa 15 test case bao phủ toàn bộ các node độc lập và các kịch bản điều hướng đồ thị LangGraph (success, retry_success, retry_failure, provider_failure, parser_fallback).
+- `docs/tasks/task_2.md`: in scope - Tài liệu theo dõi tác vụ.
+- `docs/reports/report_2_execute_agent.md`: in scope - Báo cáo thực thi của Executor.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/agents/nodes.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Triển khai hoàn chỉnh, đúng kiến trúc và logic phân luồng.
+- file from execution report: `backend/tests/test_nodes.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Test coverage tốt, mock LLM client qua RunnableConfig dễ dàng.
+
+## Dependency Review
+- Required dependencies: (01B), (03A)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Cài đặt đúng các node đồ thị LangGraph theo Plan 2. Sử dụng `RunnableConfig` để tiêm `llm_client`. Sử dụng các helper từ schemas để map source và build unclear fallback an toàn.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Các node thực hiện logic xử lý thật, bắt lỗi validation/provider cụ thể, cộng dồn token/chi phí/thời gian chạy qua các nodes thông qua helper `_accumulate_observability`.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Số lần retry tối đa được cấu hình qua `settings.MAX_RETRY_PER_JOB`. Không hardcode các key dữ liệu hay model.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest tests/test_nodes.py`
+  - Reported result: passed (15 passed in 6.57s)
+  - Rerun result: passed (15 passed in 6.57s)
+  - Status: passed
+  - Notes: Test suite cho các nodes hoạt động trơn tru.
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (36 passed in 11.58s)
+  - Rerun result: passed (36 passed in 11.58s)
+  - Status: passed
+  - Notes: Toàn bộ suite backend pass 100%.
+
+## Acceptance Review
+- Task acceptance: Success, retry success, retry failure, and parser fallback all return complete, distinguishable states.
+- Status: satisfied
+- Evidence: Test suite đã chứng minh đồ thị hoạt động đúng spec cho mọi terminal paths, bảo lưu thông tin identifiers, phân biệt rõ parse status và extraction status.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes (update thành `[x]` ở cả 2 chỗ)
+- Batch status: remains unchecked (chờ task (03C) và audit Batch 3 hoàn tất)
+- Execution report entry: present (appended ở report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không thay đổi bất kỳ checkbox hoặc batch status nào khác.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Việc sử dụng `RunnableConfig` để pass dynamic `llm_client` là một giải pháp thiết kế tốt giúp cô lập và mock hành vi của LLM trong kiểm thử một cách thanh lịch mà không làm thay đổi logic runtime của đồ thị.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (03C)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Execution Report Reviewed
+docs/reports/report_2_execute_agent.md
+
+## Review Report File
+docs/review/review_2_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Mandatory Batch03 - Structured Extraction Graph and Service API
+- Task ID: (03C)
+- Task title: Compile the extraction graph and expose public service entrypoints
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Master_Plan.md` > `## 4. Architecture`; `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Public Extraction Entrypoints`; `docs/plans/Plan_2.md` > `## 10. Handoff Notes for Phase 3`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03C)
+- Reviewed task ID: (03C)
+- Correct selection: yes
+- Notes: Báo cáo thực thi của task (03C) nằm ở cuối file report_2_execute_agent.md và trùng khớp với task ID được yêu cầu đánh giá.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - backend/app/agents/graph.py (untracked)
+  - backend/app/services/extraction_service.py (modified)
+  - backend/app/services/__init__.py (modified)
+  - backend/tests/test_extraction_graph.py (untracked)
+- untracked files:
+  - backend/app/agents/graph.py
+  - backend/tests/test_extraction_graph.py
+  - (Các file untracked khác từ task cũ: backend/app/agents/nodes.py, backend/app/services/llm_client.py, backend/tests/test_llm_client.py, backend/tests/test_nodes.py)
+
+## Files Reviewed
+- `backend/app/agents/graph.py`: in scope - chứa định nghĩa đồ thị LangGraph và biên dịch (compile) đồ thị.
+- `backend/app/services/extraction_service.py`: in scope - chứa các hàm entrypoint: run_extraction_graph, extract_from_raw_text, extract_from_url.
+- `backend/app/services/__init__.py`: in scope - xuất khẩu (export) các hàm entrypoint.
+- `backend/tests/test_extraction_graph.py`: in scope - chứa bộ test tích hợp cho graph và entrypoints.
+- `docs/tasks/task_2.md`: in scope - tài liệu theo dõi tiến trình và đặc tả task.
+- `docs/reports/report_2_execute_agent.md`: in scope - tài liệu báo cáo thực thi của executor.
+- `docs/plans/Plan_2.md`: in scope - kế hoạch thực thi giai đoạn 2.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/agents/graph.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Được tạo mới, cấu trúc đồ thị chuẩn xác.
+- file from execution report: `backend/app/services/extraction_service.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Được bổ sung các hàm entrypoint phù hợp với đặc tả.
+- file from execution report: `backend/app/services/__init__.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Export đầy đủ các entrypoint cần thiết.
+- file from execution report: `backend/tests/test_extraction_graph.py`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: Suite test tích hợp bao phủ tất cả các kịch bản của đồ thị.
+
+## Dependency Review
+- Required dependencies: (02C), (03B)
+- Dependency status: satisfied
+- Missing or invalid dependency: none
+
+## Architecture Alignment
+- Passed: Cài đặt đúng cấu trúc đồ thị kết nối các node từ chuẩn bị nội dung, trích xuất, sửa lỗi trích xuất đến phân loại JD và xử lý unclear. Cung cấp 3 public entrypoints an toàn, không tạo ra SQLite writes hay Qdrant side effects, hỗ trợ inject LLM client cho testing, sử dụng import cục bộ để giải quyết circular dependency.
+- Failed: none
+- Uncertain: none
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Đồ thị LangGraph được kết nối thật, các conditional edges được triển khai rõ ràng dựa trên trạng thái thật. Các public entrypoints thực hiện việc gọi ainvoke của đồ thị và trả về state chính xác.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Các giá trị đầu vào của URL và text được truyền động, input_source của URL được validate chặt chẽ dựa trên các kiểu dữ liệu cho phép.
+
+## Validations Reviewed
+- Command/check: `.\.venv\Scripts\pytest`
+  - Reported result: passed (44 passed in 12.29s)
+  - Rerun result: passed (44 passed in 11.80s)
+  - Status: passed
+  - Notes: Suite test hoàn tất thành công, chứng minh toàn bộ logic Phase 2 hoạt động chính xác.
+- Command/check: `python -m compileall -q app`
+  - Reported result: passed
+  - Rerun result: passed
+  - Status: passed
+  - Notes: Biên dịch toàn bộ app không gặp lỗi cú pháp hay import.
+- Command/check: `git diff --check`
+  - Reported result: passed
+  - Rerun result: passed
+  - Status: passed
+  - Notes: Không phát hiện lỗi whitespace thừa nào trong tracked code.
+
+## Acceptance Review
+- Task acceptance: satisfied
+- Status: satisfied
+- Evidence: Tất cả các entrypoint đều trả về đầy đủ `JobAgentState`, bảo lưu thông tin identifiers (`batch_id`, `role_profile_id`, `input_source`), và đồ thị định tuyến chính xác (ví dụ, nhảy thẳng tới END khi gặp parser fallback). Test suite bao phủ toàn bộ các case này và đã pass 100%.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: remains unchecked (Chỉ cập nhật checkbox cho task 03C, không tự động hoàn thành batch/các task khác)
+- Execution report entry: present (được append ở cuối file report_2_execute_agent.md)
+- Review report entry: appended ở review_2_review_agent.md
+- Other: Không sửa đổi checkbox của sibling hoặc future tasks.
+
+## Report Accuracy
+- Accurate
+- Mismatches: none
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Việc thực hiện import cục bộ `from app.agents.graph import graph` bên trong `extraction_service.py` là một giải pháp thiết kế hợp lý để giải quyết triệt để circular import giữa service và nodes/graph.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no (chờ hoàn thành Batch04 và audit/approval từ A3)
+
+## Repair Instructions
+- None

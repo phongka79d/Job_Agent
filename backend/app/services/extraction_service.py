@@ -2,6 +2,7 @@
 
 import hashlib
 import re
+from typing import Literal
 from urllib.parse import urlparse
 
 import httpx
@@ -14,6 +15,7 @@ from app.agents.schemas import (
     score_placeholder_update,
 )
 from app.core.config import settings
+from app.services.llm_client import JobExtractionClientProtocol
 
 
 _HORIZONTAL_WHITESPACE = re.compile(r"[^\S\r\n]+")
@@ -310,3 +312,60 @@ async def prepare_url_content(
         "raw_content_hash": compute_content_hash(clean_text),
         "parse_status": "success" if clean_text is not None else "failed",
     }
+
+
+async def run_extraction_graph(
+    initial_state: JobAgentState,
+    *,
+    llm_client: JobExtractionClientProtocol | None = None,
+) -> JobAgentState:
+    """Run the compiled extraction graph and return a complete extraction state."""
+    from app.agents.graph import graph
+
+    config = None
+    if llm_client is not None:
+        config = {"configurable": {"llm_client": llm_client}}
+
+    return await graph.ainvoke(initial_state, config=config)
+
+
+async def extract_from_raw_text(
+    *,
+    batch_id: str,
+    role_profile_id: str,
+    raw_text: str,
+    source_url: str | None = None,
+    llm_client: JobExtractionClientProtocol | None = None,
+) -> JobAgentState:
+    """Prepare a manual_text state, clean/truncate raw text, and run extraction."""
+    initial_state: JobAgentState = {
+        "batch_id": batch_id,
+        "role_profile_id": role_profile_id,
+        "input_source": "manual_text",
+        "raw_text": raw_text,
+        "source_url": source_url,
+    }
+    return await run_extraction_graph(initial_state, llm_client=llm_client)
+
+
+async def extract_from_url(
+    *,
+    batch_id: str,
+    role_profile_id: str,
+    source_url: str,
+    input_source: Literal["manual_url", "tavily"] = "manual_url",
+    llm_client: JobExtractionClientProtocol | None = None,
+) -> JobAgentState:
+    """Prepare a manual_url or tavily state, fetch/clean URL content, and run extraction or fallback."""
+    if input_source not in ("manual_url", "tavily"):
+        raise ValueError(
+            f"input_source for extract_from_url must be 'manual_url' or 'tavily', got: {input_source}"
+        )
+
+    initial_state: JobAgentState = {
+        "batch_id": batch_id,
+        "role_profile_id": role_profile_id,
+        "input_source": input_source,
+        "source_url": source_url,
+    }
+    return await run_extraction_graph(initial_state, llm_client=llm_client)

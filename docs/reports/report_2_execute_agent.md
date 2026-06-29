@@ -801,3 +801,273 @@ complete
 - next task ID: (03A)
 - can proceed: yes, after A2 reviews and accepts `(02C)`
 - handoff notes: Low-content/unreliable URL parser states now return terminal `needs_manual_input` states with exact warning text, complete unclear job shape, all score placeholders as `None`, and `should_run_llm_extraction(state) == False`.
+
+---
+
+# Task Execution Report - (03A)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Report File
+docs/reports/report_2_execute_agent.md
+
+## Batch
+Mandatory Batch03 - Structured Extraction Graph and Service API
+
+## Task
+(03A) - Implement the mockable LLM extraction client boundary
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Master_Plan.md` > `## 2. Final MVP Stack`
+- `docs/plans/Master_Plan.md` > `## 18. LLM JSON Fallback`
+- `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Mockable LLM Client Boundary`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Mandatory Batch03 - Structured Extraction Graph and Service API
+- Task ID: (03A)
+- Task title: Implement the mockable LLM extraction client boundary
+
+## Completed Work
+- Status: complete.
+- Defined the `JobExtractionClientProtocol` protocol with signature matching Plan 2.
+- Implemented `OpenAIJobExtractionClient` using LangChain/OpenAI structured output, enabling `include_raw=True` to fetch raw response metadata.
+- Implemented custom typed exceptions: `LLMExtractionError`, `LLMProviderError`, `LLMValidationError` to surface failures safely.
+- Normalized token usage, cost calculation, and timing duration using `normalize_usage` and `track_extraction_time` from `cost_service` without logging secrets.
+- Implemented lazy loading of the ChatOpenAI client during method execution to avoid live client construction during test imports.
+- Implemented `FakeJobExtractionClient` supporting queued canned responses (mocked values or exceptions) for unit/graph tests.
+
+## Files Created or Modified
+- `backend/app/services/llm_client.py`
+- `backend/app/services/__init__.py`
+- `backend/tests/test_llm_client.py`
+- `docs/reports/report_2_execute_agent.md`
+
+## Tests or Validations Run
+- `pytest tests/test_llm_client.py`: Passed (4 passed in 2.63s)
+- `pytest`: Passed (21 passed in 4.90s)
+
+## Acceptance Check
+- Task acceptance condition: A fake client can drive every graph path; production code reads model/key configuration only from backend settings.
+- Status: satisfied
+- Evidence: `FakeJobExtractionClient` test suite proves that it behaves correctly under normal success, initial failure followed by repair success, and failure after retry scenarios. `OpenAIJobExtractionClient` verifies model/key values from backend settings, lazy loading, and error handling without requiring live API keys.
+
+## Artifacts Produced
+- `JobExtractionClientProtocol` protocol.
+- `OpenAIJobExtractionClient` production implementation.
+- `FakeJobExtractionClient` test double.
+- Custom exceptions (`LLMExtractionError`, `LLMProviderError`, `LLMValidationError`).
+- Unit test suite `backend/tests/test_llm_client.py`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; progress checkboxes and batch-status updates are handled by A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Placed client interfaces and classes in a dedicated, narrowly scoped module `backend/app/services/llm_client.py` to keep parsing logic separate and avoid heavy LangChain/OpenAI imports in core parser services.
+- Used `include_raw=True` in `with_structured_output` of LangChain to directly obtain token usage from `AIMessage` metadata, avoiding the use of deprecated `langchain_community` callback managers and silencing deprecation warnings.
+- Attached token usage metadata as private attributes (`_input_tokens`, etc.) on the returned `JobPostExtract` instance to maintain structural conformity with the protocol's signature.
+- Formulated custom `LLMValidationError` to contain timing and token usage measurements from the failed attempt, ensuring these metrics are preserved and can be accumulated during graph execution.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- no issue identified
+
+## Notes for Next Task
+- next task ID: (03B)
+- can proceed: yes
+- handoff notes: The graph nodes in `backend/app/agents/nodes.py` should import and accept an injected client of type `JobExtractionClientProtocol` to drive the initial extraction and repair nodes, handling `LLMValidationError` and `LLMProviderError` accordingly.
+
+---
+
+# Task Execution Report - (03B)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Report File
+docs/reports/report_2_execute_agent.md
+
+## Batch
+Mandatory Batch03 - Structured Extraction Graph and Service API
+
+## Task
+(03B) - Implement extraction, retry, classification, and unclear nodes
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Master_Plan.md` > `## 4. Architecture`
+- `docs/plans/Master_Plan.md` > `## 4.1. LangGraph State Tracking`
+- `docs/plans/Master_Plan.md` > `## 8. JD Status Rules`
+- `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### JD Status Rules` / `### Parse vs Extraction Status Semantics` / `### LLM Fallback`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Mandatory Batch03 - Structured Extraction Graph and Service API
+- Task ID: (03B)
+- Task title: Implement extraction, retry, classification, and unclear nodes
+
+## Completed Work
+- Đã cài đặt đầy đủ các node của đồ thị LangGraph trong `backend/app/agents/nodes.py`:
+  - `prepare_content`: Node chuẩn bị và làm sạch dữ liệu từ văn bản thô hoặc từ URL (tích hợp các helper từ Batch02).
+  - `extract_job`: Node thực hiện trích xuất thông tin cấu trúc lần đầu, bắt lỗi validation để chuyển sang repair, hoặc chuyển thẳng sang thất bại nếu cấu hình không cho phép retry hoặc gặp lỗi provider.
+  - `repair_job`: Node thực hiện sửa lỗi trích xuất bằng prompt repair đúng một lần, cộng dồn các thông số đo lường (observability).
+  - `classify_jd`: Node phân loại trạng thái Job Description, xác định khả năng tính điểm tương đồng (`should_score_similarity` chỉ True với `full_jd` và `partial_jd`).
+  - `mark_unclear`: Node tạo trạng thái fallback `unclear` cho job khi việc trích xuất thất bại hoàn toàn.
+- Cài đặt cơ chế tích lũy thông số đo lường (observability fields): cộng dồn tokens, chi phí, và thời gian chạy qua các node.
+- Các node bảo lưu đầy đủ `batch_id`, `role_profile_id`, và `input_source` ở mỗi lượt cập nhật state.
+
+## Files Created or Modified
+- `backend/app/agents/nodes.py`
+- `backend/tests/test_nodes.py`
+
+## Tests or Validations Run
+- Chạy toàn bộ unit test và integration test: `pytest`. Kết quả tất cả 36 tests đều PASS (trong đó có 15 tests mới viết trong `tests/test_nodes.py`).
+
+## Acceptance Check
+- Task acceptance condition: Success, retry success, retry failure, and parser fallback all return complete, distinguishable states.
+- Status: satisfied
+- Evidence: Đã kiểm thử đầy đủ các kịch bản qua đồ thị test: trích xuất thành công lần 1 (success), trích xuất thành công sau khi sửa (retry success), thất bại sau khi sửa (retry failure), lỗi kết nối LLM (provider failure), và bỏ qua LLM khi parser URL quá ngắn (parser fallback). Tất cả đều bảo lưu thông tin định danh và trả về cấu trúc trạng thái hoàn chỉnh, phân biệt rõ ràng.
+
+## Artifacts Produced
+- File `backend/app/agents/nodes.py` chứa các nodes của LangGraph.
+- File `backend/tests/test_nodes.py` chứa các test case bao phủ toàn bộ các luồng xử lý và điều hướng trong đồ thị.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; progress checkboxes and batch-status updates are handled by A2 after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Sử dụng `RunnableConfig` để truyền và inject LLM client (`llm_client`) giúp dễ dàng mock hành vi LLM trong test mà không ảnh hưởng tới code thực tế.
+- Viết hàm helper `_accumulate_observability` để cộng dồn chính xác token, chi phí và thời gian thực thi của cả lượt trích xuất ban đầu lẫn lượt repair.
+- Xử lý short-circuit trong các node trích xuất và repair khi `parse_status` không phải `"success"`.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Không phát hiện vấn đề nào.
+
+## Notes for Next Task
+- next task ID: (03C)
+- can proceed: yes
+- handoff notes: Sẵn sàng để thực hiện việc kết nối và compile đồ thị chính thức trong `backend/app/agents/graph.py` và cung cấp public entrypoints.
+
+---
+
+# Task Execution Report - (03C)
+
+## Source Task File
+docs/tasks/task_2.md
+
+## Report File
+docs/reports/report_2_execute_agent.md
+
+## Batch
+Mandatory Batch03 - Structured Extraction Graph and Service API
+
+## Task
+(03C) - Compile the extraction graph and expose public service entrypoints
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Master_Plan.md` > `## 4. Architecture`
+- `docs/plans/Plan_2.md` > `## 7. Technical Specifications` > `### Public Extraction Entrypoints`
+- `docs/plans/Plan_2.md` > `## 10. Handoff Notes for Phase 3`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Mandatory Batch03 - Structured Extraction Graph and Service API
+- Task ID: (03C)
+- Task title: Compile the extraction graph and expose public service entrypoints
+
+## Completed Work
+- Đã cài đặt đồ thị LangGraph chính thức trong `backend/app/agents/graph.py` kết nối đầy đủ các node (`prepare_content` -> `extract_job` -> `repair_job`/`mark_unclear` -> `classify_jd`/`mark_unclear`).
+- Định tuyến các nhánh rẽ trong đồ thị một cách rõ ràng:
+  - Nếu bước chuẩn bị nội dung thất bại hoặc cần nhập thủ công (`parse_status != "success"`), đồ thị kết thúc trực tiếp (đến `END`).
+  - Lỗi trích xuất ban đầu được chuyển hướng qua một lượt sửa lỗi duy nhất (repair branch) nếu cấu hình cho phép.
+  - Lỗi trích xuất không thể khắc phục được hoặc lỗi kết nối LLM được chuyển hướng đến node `mark_unclear` để sinh dữ liệu fallback hoàn chỉnh.
+- Expose 3 hàm public service entrypoint trong `backend/app/services/extraction_service.py` ẩn đi chi tiết bên trong LangGraph:
+  - `run_extraction_graph`: Chạy đồ thị với initial state và hỗ trợ inject LLM client tùy chọn cho môi trường kiểm thử.
+  - `extract_from_raw_text`: Khởi tạo state cho dữ liệu văn bản thủ công và chạy đồ thị.
+  - `extract_from_url`: Kiểm tra hợp lệ `input_source` (chỉ chấp nhận `manual_url` hoặc `tavily`), khởi tạo state URL và chạy đồ thị.
+- Các hàm entrypoint không tạo ra tác dụng phụ (side effects) liên quan đến cơ sở dữ liệu SQLite, scoring, hay Qdrant.
+- Cập nhật export các entrypoints trong `backend/app/services/__init__.py`.
+
+## Files Created or Modified
+- `backend/app/agents/graph.py`
+- `backend/app/services/extraction_service.py`
+- `backend/app/services/__init__.py`
+- `backend/tests/test_extraction_graph.py`
+
+## Tests or Validations Run
+- Đã viết suite test mới `backend/tests/test_extraction_graph.py` kiểm thử đầy đủ tất cả các nhánh rẽ của đồ thị tích hợp:
+  - `test_run_extraction_graph_success`: Trích xuất thành công lần đầu.
+  - `test_run_extraction_graph_retry_success`: Sửa lỗi trích xuất thành công.
+  - `test_run_extraction_graph_retry_failure`: Sửa lỗi trích xuất thất bại, trả về fallback unclear.
+  - `test_run_extraction_graph_provider_failure`: LLM client provider error, trả về fallback unclear.
+  - `test_extract_from_raw_text`: Chạy trích xuất từ văn bản thô.
+  - `test_extract_from_url_success`: Chạy trích xuất từ URL thành công (mocked parser).
+  - `test_extract_from_url_invalid_input_source`: Xác thực input source URL không hợp lệ (raise ValueError).
+  - `test_extract_from_url_parser_fallback`: URL parser fallback không gọi LLM và kết thúc trực tiếp tại `END`.
+- Chạy toàn bộ suite test của backend: `.\.venv\Scripts\pytest`. Kết quả: Tất cả 44 tests đều PASS (`44 passed in 12.29s`).
+
+## Acceptance Check
+- Task acceptance condition: All three entrypoints return complete states, preserve required identifiers, and follow the approved routing semantics.
+- Status: satisfied
+- Evidence: Kết quả test trong `test_extraction_graph.py` chứng minh cả 3 hàm entrypoints đều trả về state hoàn chỉnh (`JobAgentState`), bảo lưu đầy đủ các định danh bắt buộc (`batch_id`, `role_profile_id`, `input_source`) và đi theo các luồng điều hướng được duyệt.
+
+## Artifacts Produced
+- File `backend/app/agents/graph.py` chứa đồ thị LangGraph được kết nối hoàn chỉnh.
+- Các hàm public service entrypoint trong `backend/app/services/extraction_service.py` và exports trong `backend/app/services/__init__.py`.
+- Suite test tích hợp `backend/tests/test_extraction_graph.py`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; progress checkboxes và batch-status được cập nhật bởi A2 sau khi review `ACCEPTED`.
+
+## Key Implementation Decisions
+- Sử dụng import cục bộ (`from app.agents.graph import graph`) bên trong các hàm của `extraction_service.py` để triệt tiêu hoàn toàn circular dependency giữa `nodes.py` -> `extraction_service.py` -> `graph.py` -> `nodes.py`.
+- Tích hợp `llm_client` qua `RunnableConfig` trong `run_extraction_graph` giúp client dễ dàng được inject cho kiểm thử mà không phá vỡ signature quy định của các entrypoint công khai.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Các dependency (02C), (03B) đã được kiểm tra và đánh dấu hoàn thành trong task file.
+- Không phát hiện các vấn đề bất thường hay lệch kiến trúc.
+
+## Notes for Next Task
+- next task ID: (04A)
+- can proceed: yes
+- handoff notes: Chuyển sang Batch04 để thực hiện kiểm thử toàn bộ các hợp đồng dữ liệu, chuẩn hóa đầu vào và luồng tích hợp của Phase 2.
+
+
