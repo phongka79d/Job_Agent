@@ -71,7 +71,6 @@ def test_constants_values():
         "tavily",
         "manual_url",
         "manual_text",
-        "mock",
         "job_board",
     )
     
@@ -79,7 +78,6 @@ def test_constants_values():
         "tavily",
         "manual_url",
         "manual_text",
-        "mock",
     )
 
 

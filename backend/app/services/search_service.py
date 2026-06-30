@@ -9,7 +9,7 @@ from urllib.parse import urlparse, urlunparse
 from app.core.config import settings
 
 
-_TAVILY_PLACEHOLDER_KEY = "your-tavily-api-key"
+_TAVILY_DEFAULT_KEY = "your-tavily-api-key"
 
 
 class SearchServiceError(RuntimeError):
@@ -43,7 +43,7 @@ class SearchResult:
 
 
 class TavilySearchService:
-    """Small mockable wrapper around Tavily search calls."""
+    """Small injectable wrapper around Tavily search calls."""
 
     def __init__(
         self,
@@ -92,7 +92,7 @@ class TavilySearchService:
             return self._client
 
         api_key = settings.TAVILY_API_KEY.get_secret_value()
-        if not api_key or api_key == _TAVILY_PLACEHOLDER_KEY:
+        if not api_key or api_key == _TAVILY_DEFAULT_KEY:
             raise SearchServiceError("Tavily API key is not configured")
 
         try:

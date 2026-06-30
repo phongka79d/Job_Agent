@@ -10,7 +10,6 @@ import type {
   SearchJobsRequest,
   ParseJobUrlRequest,
   ParseJobTextRequest,
-  MockLoadRequest,
   StatusUpdateRequest,
   JobStatus
 } from "../types/api";
@@ -140,19 +139,6 @@ export async function parseJobUrl(request: ParseJobUrlRequest): Promise<Ingestio
 export async function parseJobText(request: ParseJobTextRequest): Promise<IngestionResponse> {
   try {
     const response = await apiClient.post<IngestionResponse>("/api/jobs/parse-text", request);
-    return response.data;
-  } catch (error) {
-    throw normalizeError(error);
-  }
-}
-
-/**
- * Triggers ingestion by loading mock/demo data for testing.
- * POST /api/jobs/mock-load
- */
-export async function loadMockJobs(request: MockLoadRequest): Promise<IngestionResponse> {
-  try {
-    const response = await apiClient.post<IngestionResponse>("/api/jobs/mock-load", request);
     return response.data;
   } catch (error) {
     throw normalizeError(error);

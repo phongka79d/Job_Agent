@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import App from "../App";
 import {
   listRoleProfiles,
-  loadMockJobs,
   searchJobs,
   parseJobUrl,
   parseJobText,
@@ -17,7 +16,6 @@ import type { RoleProfile, IngestionResponse, BatchSummary } from "../types/api"
 vi.mock("../api/client", () => {
   return {
     listRoleProfiles: vi.fn(),
-    loadMockJobs: vi.fn(),
     searchJobs: vi.fn(),
     parseJobUrl: vi.fn(),
     parseJobText: vi.fn(),
@@ -111,7 +109,7 @@ describe("Active Batch State and Role Isolation", () => {
   it("should isolate active batch IDs between different role profiles in localStorage", async () => {
     // 1. Setup API mocks
     vi.mocked(listRoleProfiles).mockResolvedValue({ role_profiles: mockProfiles });
-    vi.mocked(loadMockJobs).mockResolvedValue(mockIngestionResponse1);
+    vi.mocked(parseJobText).mockResolvedValue(mockIngestionResponse1);
 
     // 2. Render the App
     render(<App />);
@@ -127,16 +125,17 @@ describe("Active Batch State and Role Isolation", () => {
     // Initially, there should be no active batch ID
     expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: None");
 
-    // 3. Switch to Demo Ingestion and trigger mock load for prof-1
-    fireEvent.click(screen.getByTestId("tab-mock"));
-    const submitMockBtn = screen.getByTestId("btn-mock-submit");
-    fireEvent.click(submitMockBtn);
+    fireEvent.click(screen.getByTestId("tab-text"));
+    fireEvent.change(screen.getByTestId("input-text"), {
+      target: { value: "Role requirements with enough text for ingestion." },
+    });
+    const submitTextBtn = screen.getByTestId("btn-text-submit");
+    fireEvent.click(submitTextBtn);
 
-    // Wait for API call and active batch ID to update to batch-abc
     await waitFor(() => {
-      expect(loadMockJobs).toHaveBeenCalledWith({
+      expect(parseJobText).toHaveBeenCalledWith({
         role_profile_id: "prof-1",
-        reset_existing_demo: false,
+        raw_text: "Role requirements with enough text for ingestion.",
       });
     });
 
@@ -158,14 +157,13 @@ describe("Active Batch State and Role Isolation", () => {
     });
     expect(getBatchSummary).toHaveBeenCalledTimes(summaryCallsAfterProfileOneIngestion);
 
-    // 6. Mock ingestion response for prof-2 with a different batch ID (batch-xyz)
-    vi.mocked(loadMockJobs).mockResolvedValue(mockIngestionResponse2);
-    fireEvent.click(submitMockBtn);
+    vi.mocked(parseJobText).mockResolvedValue(mockIngestionResponse2);
+    fireEvent.click(submitTextBtn);
 
     await waitFor(() => {
-      expect(loadMockJobs).toHaveBeenLastCalledWith({
+      expect(parseJobText).toHaveBeenLastCalledWith({
         role_profile_id: "prof-2",
-        reset_existing_demo: false,
+        raw_text: "Role requirements with enough text for ingestion.",
       });
     });
 

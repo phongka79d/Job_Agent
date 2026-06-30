@@ -18,8 +18,6 @@ function App() {
   const handleProfileChange = (profile: RoleProfile) => {
     setActiveProfile(profile);
     
-    // Reload the profile-specific active batch ID when switching role profiles.
-    // If no stored key exists for this profile, storedBatchId will be null, resetting the state/metrics.
     const storedBatchId = loadActiveBatchId(profile.id);
     setActiveBatchId(storedBatchId);
   };
@@ -27,7 +25,6 @@ function App() {
   const handleIngestionSuccess = (batchId: string) => {
     setActiveBatchId(batchId);
     if (activeProfile) {
-      // Store response.batch_id as activeBatchId in component state and localStorage
       saveActiveBatchId(activeProfile.id, batchId);
     }
     triggerMetricsRefresh();

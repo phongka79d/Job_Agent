@@ -4,21 +4,23 @@ import pytest
 from unittest.mock import patch
 
 from app.agents.schemas import JobAgentState
-from app.services import (
+from app.services.extraction_service import (
     run_extraction_graph,
     extract_from_raw_text,
     extract_from_url,
-    FakeJobExtractionClient,
+)
+from app.services.llm_client import (
     LLMValidationError,
     LLMProviderError,
 )
 from app.agents.graph import route_after_prepare, route_after_extract, route_after_repair
 from app.core.config import settings
+from tests.fakes import ScriptedJobExtractionClient
 
 
 @pytest.mark.asyncio
 async def test_run_extraction_graph_success():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     initial_state: JobAgentState = {
         "batch_id": "b1",
         "role_profile_id": "rp1",
@@ -32,7 +34,7 @@ async def test_run_extraction_graph_success():
     assert final_state["extraction_status"] == "success"
     assert final_state["jd_status"] == "full_jd"
     assert final_state["should_score_similarity"] is True
-    assert final_state["extracted_job"]["title"] == "Fake Software Engineer"
+    assert final_state["extracted_job"]["title"] == "Test Engineer"
     assert len(client.extract_calls) == 1
     assert len(client.repair_calls) == 0
 
@@ -50,7 +52,7 @@ def test_graph_routes_reject_statuses_outside_phase_one_constants():
 
 @pytest.mark.asyncio
 async def test_run_extraction_graph_retry_success():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     # First try validation fails, second try repair succeeds
     client.add_extract_response(
         LLMValidationError("Invalid format", invalid_output="{}")
@@ -75,7 +77,7 @@ async def test_run_extraction_graph_retry_success():
 
 @pytest.mark.asyncio
 async def test_run_extraction_graph_retry_failure():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     # Both fail validation
     client.add_extract_response(
         LLMValidationError("Invalid format", invalid_output="{}")
@@ -104,7 +106,7 @@ async def test_run_extraction_graph_retry_failure():
 
 @pytest.mark.asyncio
 async def test_run_extraction_graph_provider_failure():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     # Provider error (e.g. rate limit) during extraction - no retry
     client.add_extract_response(
         LLMProviderError("Rate limit reached")
@@ -129,7 +131,7 @@ async def test_run_extraction_graph_provider_failure():
 
 @pytest.mark.asyncio
 async def test_extract_from_raw_text():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     final_state = await extract_from_raw_text(
         batch_id="b2",
         role_profile_id="rp2",
@@ -148,7 +150,7 @@ async def test_extract_from_raw_text():
 
 @pytest.mark.asyncio
 async def test_extract_from_url_success():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     
     # We mock prepare_url_content inside nodes or in extraction_service
     # Since extraction_service.py has prepare_url_content that performs httpx call,
@@ -194,7 +196,7 @@ async def test_extract_from_url_invalid_input_source():
 
 @pytest.mark.asyncio
 async def test_extract_from_url_parser_fallback():
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     
     # Mock prepare_url_content to return needs_manual_input (low content / blocked page)
     # The graph should route immediately to END and skip LLM.

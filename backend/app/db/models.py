@@ -138,7 +138,7 @@ class JobPost(Base):
     requirements: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Requirements")
     skills: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Extracted canonical skills as a JSON array")
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Source URL if available")
-    source_platform: Mapped[str | None] = mapped_column(Text, nullable=True, doc="tavily/manual_url/manual_text/mock/job_board")
+    source_platform: Mapped[str | None] = mapped_column(Text, nullable=True, doc="tavily/manual_url/manual_text/job_board")
     parse_status: Mapped[str | None] = mapped_column(Text, nullable=True, doc="success/needs_manual_input/failed")
     raw_content_hash: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Hash of cleaned raw content")
     dedup_key: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Hash of company + title")
@@ -180,9 +180,9 @@ class Application(Base):
     Application ORM model representing job application status and details.
 
     Explicit Delete Behavior:
-    We use ON DELETE CASCADE on the job_post_id foreign key. When a job post is deleted
-    (for example during a demo reset in Plan 4), SQLite will automatically delete
-    any matching application tracking records, ensuring database consistency and safety.
+    We use ON DELETE CASCADE on the job_post_id foreign key. When a job post is deleted,
+    SQLite will automatically delete any matching application tracking records, ensuring
+    database consistency and safety.
 
     Allowed Statuses:
     Must align with app.core.constants.APPLICATION_STATUSES:
@@ -222,4 +222,3 @@ class Application(Base):
         doc="Application timestamp (UTC)"
     )
     updated_at: Mapped[updated_timestamp]
-

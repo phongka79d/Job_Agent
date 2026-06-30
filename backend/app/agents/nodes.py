@@ -6,7 +6,6 @@ from langchain_core.runnables import RunnableConfig
 from app.agents.schemas import (
     JobAgentState,
     preserve_required_state,
-    score_placeholder_update,
     map_input_source_to_source_platform,
     build_unclear_extraction_failure_update,
     validate_jd_status,
@@ -14,7 +13,6 @@ from app.agents.schemas import (
 from app.services.extraction_service import (
     prepare_manual_text,
     prepare_url_content,
-    compute_content_hash,
 )
 from app.services.llm_client import (
     JobExtractionClientProtocol,
@@ -98,15 +96,6 @@ async def prepare_content(state: JobAgentState, config: RunnableConfig = None) -
                 source_url=source_url,
                 input_source=input_source,
             )
-    elif input_source == "mock":
-        clean = state.get("clean_text") or raw_text or ""
-        prepared = {
-            "source_url": source_url,
-            "raw_text": raw_text,
-            "clean_text": clean,
-            "raw_content_hash": compute_content_hash(clean),
-            "parse_status": state.get("parse_status") or "success",
-        }
     else:
         prepared = {
             "parse_status": "failed",

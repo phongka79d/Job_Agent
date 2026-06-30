@@ -61,7 +61,6 @@ SOURCE_PLATFORMS = (
     "tavily",
     "manual_url",
     "manual_text",
-    "mock",
     "job_board",
 )
 
@@ -70,5 +69,4 @@ INPUT_SOURCES = (
     "tavily",
     "manual_url",
     "manual_text",
-    "mock",
 )

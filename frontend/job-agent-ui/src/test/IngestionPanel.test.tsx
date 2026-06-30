@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import IngestionPanel from "../components/IngestionPanel";
-import { searchJobs, parseJobUrl, parseJobText, loadMockJobs, ApiClientError } from "../api/client";
+import { searchJobs, parseJobUrl, parseJobText, ApiClientError } from "../api/client";
 import type { IngestionResponse } from "../types/api";
 
 // Mock the API client functions
@@ -11,7 +11,6 @@ vi.mock("../api/client", () => {
     searchJobs: vi.fn(),
     parseJobUrl: vi.fn(),
     parseJobText: vi.fn(),
-    loadMockJobs: vi.fn(),
     ApiClientError: class extends Error {
       message: string;
       constructor(message: string) {
@@ -69,10 +68,8 @@ describe("IngestionPanel", () => {
     expect(screen.queryByTestId("form-url")).not.toBeInTheDocument();
     expect(screen.getByTestId("form-text")).toBeInTheDocument();
 
-    // Click Demo tab
-    fireEvent.click(screen.getByTestId("tab-mock"));
-    expect(screen.queryByTestId("form-text")).not.toBeInTheDocument();
-    expect(screen.getByTestId("form-mock")).toBeInTheDocument();
+    expect(screen.queryByTestId("tab-mock")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("form-mock")).not.toBeInTheDocument();
   });
 
   it("should handle in-flight disabled states and trigger searchJobs with correct inputs", async () => {
@@ -238,25 +235,4 @@ describe("IngestionPanel", () => {
     expect(screen.getByText("Validation Error: raw_text cannot be empty")).toBeInTheDocument();
   });
 
-  it("should trigger loadMockJobs with reset options", async () => {
-    vi.mocked(loadMockJobs).mockResolvedValue(mockSuccessResponse);
-
-    render(<IngestionPanel activeProfileId="prof-1" />);
-
-    // Switch to Demo tab
-    fireEvent.click(screen.getByTestId("tab-mock"));
-
-    const checkbox = screen.getByTestId("input-reset-demo");
-    fireEvent.click(checkbox); // check the reset demo checkbox
-
-    const submitBtn = screen.getByTestId("btn-mock-submit");
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(loadMockJobs).toHaveBeenCalledWith({
-        role_profile_id: "prof-1",
-        reset_existing_demo: true,
-      });
-    });
-  });
 });

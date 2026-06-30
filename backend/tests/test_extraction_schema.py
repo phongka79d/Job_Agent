@@ -9,7 +9,7 @@ from app.agents.schemas import (
     JobPostExtract,
     map_input_source_to_source_platform,
     preserve_required_state,
-    score_placeholder_update,
+    empty_score_update,
     build_unclear_job,
     build_unclear_extraction_failure_update,
     validate_parse_status,
@@ -76,7 +76,6 @@ def test_job_post_extract_invalid_jd_status():
         ("tavily", "tavily"),
         ("manual_url", "manual_url"),
         ("manual_text", "manual_text"),
-        ("mock", "mock"),
     ],
 )
 def test_source_mapping_valid(input_source: str, expected_platform: str):
@@ -143,20 +142,20 @@ def test_preserve_required_state():
         preserve_required_state(invalid_state)
 
 
-def test_score_placeholder_update():
-    """Assert score_placeholder_update populates all score fields as None and preserves required state."""
+def test_empty_score_update():
+    """Assert empty_score_update populates all score fields as None and preserves required state."""
     state: JobAgentState = {
         "batch_id": "batch-789",
         "role_profile_id": "role-012",
-        "input_source": "mock",
+        "input_source": "manual_text",
         "final_score": 0.95,
         "embedding_similarity": 0.88,
     }
-    updated = score_placeholder_update(state)
+    updated = empty_score_update(state)
     
     assert updated["batch_id"] == "batch-789"
     assert updated["role_profile_id"] == "role-012"
-    assert updated["input_source"] == "mock"
+    assert updated["input_source"] == "manual_text"
     
     # Assert score fields are set to None
     score_fields = [

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Search, Link, FileText, Database, Loader2, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
-import { searchJobs, parseJobUrl, parseJobText, loadMockJobs, ApiClientError } from "../api/client";
+import { Search, Link, FileText, Loader2, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
+import { searchJobs, parseJobUrl, parseJobText, ApiClientError } from "../api/client";
 import type { IngestionResponse } from "../types/api";
 
 interface IngestionPanelProps {
@@ -8,7 +8,7 @@ interface IngestionPanelProps {
   onIngestionSuccess?: (batchId: string) => void;
 }
 
-type TabType = "search" | "url" | "text" | "mock";
+type TabType = "search" | "url" | "text";
 
 export default function IngestionPanel({
   activeProfileId,
@@ -24,7 +24,6 @@ export default function IngestionPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [jobUrl, setJobUrl] = useState("");
   const [jobText, setJobText] = useState("");
-  const [resetExistingDemo, setResetExistingDemo] = useState(false);
 
   const resetMessages = () => {
     setError(null);
@@ -113,32 +112,6 @@ export default function IngestionPanel({
         setError(err.message);
       } else {
         setError("Failed to run raw text parse ingestion");
-      }
-    } finally {
-      setIsInFlight(false);
-    }
-  };
-
-  const handleMockLoadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeProfileId) return;
-
-    resetMessages();
-    setIsInFlight(true);
-    try {
-      const response = await loadMockJobs({
-        role_profile_id: activeProfileId,
-        reset_existing_demo: resetExistingDemo,
-      });
-      setSuccessResult(response);
-      if (onIngestionSuccess && response.batch_id) {
-        onIngestionSuccess(response.batch_id);
-      }
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError("Failed to run mock jobs load");
       }
     } finally {
       setIsInFlight(false);
@@ -256,30 +229,6 @@ export default function IngestionPanel({
           data-testid="tab-text"
         >
           <FileText size={12} /> Text
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("mock");
-            resetMessages();
-          }}
-          disabled={isInFlight}
-          style={{
-            background: "transparent",
-            border: "none",
-            borderBottom: activeTab === "mock" ? "2px solid var(--accent)" : "2px solid transparent",
-            color: activeTab === "mock" ? "var(--accent)" : "var(--text-muted)",
-            padding: "6px 8px",
-            cursor: isInFlight ? "not-allowed" : "pointer",
-            fontSize: "12px",
-            fontWeight: activeTab === "mock" ? 600 : 400,
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            opacity: isDisabled && activeTab !== "mock" ? 0.5 : 1,
-          }}
-          data-testid="tab-mock"
-        >
-          <Database size={12} /> Demo
         </button>
       </div>
 
@@ -416,48 +365,6 @@ export default function IngestionPanel({
               </>
             ) : (
               "Parse Text"
-            )}
-          </button>
-        </form>
-      )}
-
-      {activeTab === "mock" && (
-        <form onSubmit={handleMockLoadSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }} data-testid="form-mock">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}>
-            <input
-              type="checkbox"
-              id="resetExistingDemo"
-              checked={resetExistingDemo}
-              onChange={(e) => setResetExistingDemo(e.target.checked)}
-              disabled={isDisabled}
-              style={{ cursor: isDisabled ? "not-allowed" : "pointer" }}
-              data-testid="input-reset-demo"
-            />
-            <label
-              htmlFor="resetExistingDemo"
-              style={{
-                fontSize: "12px",
-                color: "var(--text-secondary)",
-                cursor: isDisabled ? "not-allowed" : "pointer",
-              }}
-            >
-              Reset existing demo data
-            </label>
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center", fontSize: "13px" }}
-            disabled={isDisabled}
-            data-testid="btn-mock-submit"
-          >
-            {isInFlight ? (
-              <>
-                <Loader2 size={14} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
-                Loading Mock...
-              </>
-            ) : (
-              "Load Mock Jobs"
             )}
           </button>
         </form>

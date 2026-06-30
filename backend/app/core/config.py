@@ -3,8 +3,7 @@ from typing import Optional
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Get the directory of the repository root
-# This module is located at backend/app/core/config.py, so we go up 4 levels to get the root.
+
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 ENV_FILE = ROOT_DIR / ".env"
 
@@ -14,12 +13,10 @@ class Settings(BaseSettings):
     Application settings for the Agentic Job Matching System backend.
     Loads values from the root .env file, falling back to sensible defaults.
     """
-    # Environment and Ports
     ENV: str = Field(default="development", description="Deployment environment")
     BACKEND_PORT: int = Field(default=8000, description="Backend API port")
     FRONTEND_PORT: int = Field(default=5173, description="Frontend development server port")
 
-    # Database Settings
     DATABASE_URL: str = Field(
         default="sqlite+aiosqlite:///./data/job_matching.db",
         description="SQLAlchemy database connection string"
@@ -29,11 +26,9 @@ class Settings(BaseSettings):
         description="Path to the SQLite database file"
     )
 
-    # Qdrant Vector DB Settings
     QDRANT_URL: str = Field(default="http://localhost:6333", description="Qdrant API URL")
     QDRANT_API_KEY: Optional[SecretStr] = Field(default=None, description="Qdrant API Key")
 
-    # OpenAI Settings
     OPENAI_API_KEY: SecretStr = Field(
         default=SecretStr("your-openai-api-key"),
         description="OpenAI API key for LLM and embedding operations"
@@ -57,13 +52,11 @@ class Settings(BaseSettings):
     )
     EMBEDDING_DIMENSION: int = Field(default=1536, description="Dimension of embedding vectors")
 
-    # Tavily Settings
     TAVILY_API_KEY: SecretStr = Field(
         default=SecretStr("your-tavily-api-key"),
         description="Tavily API key for search queries"
     )
 
-    # Limits and Timeouts
     MAX_URLS_PER_BATCH: int = Field(default=10, description="Maximum URLs to process per batch")
     MAX_RAW_TEXT_CHARS: int = Field(default=20000, description="Max characters for raw page content")
     MAX_CLEAN_TEXT_CHARS: int = Field(default=12000, description="Max characters for cleaned page content")
@@ -77,6 +70,4 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-
-# Expose a backend-only settings instance for imports by later modules.
 settings = Settings()

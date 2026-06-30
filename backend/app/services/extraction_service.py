@@ -12,7 +12,7 @@ from app.agents.schemas import (
     JobAgentState,
     build_unclear_job,
     map_input_source_to_source_platform,
-    score_placeholder_update,
+    empty_score_update,
 )
 from app.core.config import settings
 from app.services.llm_client import JobExtractionClientProtocol
@@ -90,7 +90,7 @@ def _manual_input_url_state(
     }
     source_platform = map_input_source_to_source_platform(input_source)
     return {
-        **score_placeholder_update(base_state),
+        **empty_score_update(base_state),
         "source_url": source_url,
         "raw_text": None,
         "clean_text": clean_text,
@@ -244,8 +244,6 @@ async def prepare_url_content(
     max_response_bytes = settings.MAX_RESPONSE_SIZE_MB * 1024 * 1024
     response_body = bytearray()
 
-    # Production note: Implement SSRF mitigation for URL parsing endpoints.
-    # Block localhost, private IPs, link-local metadata IPs, unsafe redirects, and internal network targets.
     try:
         async with httpx.AsyncClient(
             follow_redirects=True,

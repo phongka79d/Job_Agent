@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Type
@@ -18,7 +19,6 @@ from app.api.schemas import (
     IngestionResponse,
     JobListResponse,
     JobResponse,
-    MockLoadRequest,
     ParseJobTextRequest,
     ParseJobUrlRequest,
     RoleProfileCreateRequest,
@@ -34,6 +34,7 @@ from app.services.job_processing_service import ALLOWED_STATUS_TRANSITIONS
 
 REPOSITORY_ROOT = BACKEND_ROOT.parent
 CONTRACT_PATH = REPOSITORY_ROOT / "shared" / "api-contract.json"
+logger = logging.getLogger(__name__)
 
 ENDPOINTS = {
     "createRoleProfile": {
@@ -63,12 +64,6 @@ ENDPOINTS = {
         "method": "POST",
         "path": "/api/jobs/parse-text",
         "request_schema": "ParseJobTextRequest",
-        "response_schema": "IngestionResponse",
-    },
-    "loadMockJobs": {
-        "method": "POST",
-        "path": "/api/jobs/mock-load",
-        "request_schema": "MockLoadRequest",
         "response_schema": "IngestionResponse",
     },
     "getReviewJobs": {
@@ -116,7 +111,6 @@ SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
     SearchJobsRequest,
     ParseJobUrlRequest,
     ParseJobTextRequest,
-    MockLoadRequest,
     StatusUpdateRequest,
     JobResponse,
     StatusMutationResponse,
@@ -162,8 +156,9 @@ def write_api_contract() -> Path:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     output_path = write_api_contract()
-    print(f"Wrote {output_path.relative_to(REPOSITORY_ROOT)}")
+    logger.info("Wrote %s", output_path.relative_to(REPOSITORY_ROOT))
 
 
 if __name__ == "__main__":

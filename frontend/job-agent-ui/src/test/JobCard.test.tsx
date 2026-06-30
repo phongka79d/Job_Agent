@@ -18,7 +18,7 @@ const mockScorableJob: Job = {
   requirements: "React, TS",
   skills: ["React", "TypeScript"],
   source_url: "https://example.com/job",
-  source_platform: "mock",
+  source_platform: "manual_text",
   parse_status: "success",
   jd_status: "full_jd",
   extraction_status: "success",
@@ -76,7 +76,7 @@ describe("JobCard and ScoreBreakdown components", () => {
     expect(screen.getByText("San Francisco, CA")).toBeInTheDocument();
     expect(screen.getByText("Remote")).toBeInTheDocument();
     expect(screen.getByText("85%")).toBeInTheDocument();
-    expect(screen.getByText("Source: Mock")).toBeInTheDocument();
+    expect(screen.getByText("Source: Manual Text")).toBeInTheDocument();
     expect(screen.getByText("JD: Full Jd")).toBeInTheDocument();
     expect(screen.getByText("Status: Pending Review")).toBeInTheDocument();
   });

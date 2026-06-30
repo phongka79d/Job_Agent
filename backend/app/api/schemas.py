@@ -90,11 +90,6 @@ class ParseJobTextRequest(ApiSchema):
     source_url: HttpUrl | None = None
 
 
-class MockLoadRequest(ApiSchema):
-    role_profile_id: UUID
-    reset_existing_demo: bool = False
-
-
 class StatusUpdateRequest(ApiSchema):
     status: Annotated[
         str,

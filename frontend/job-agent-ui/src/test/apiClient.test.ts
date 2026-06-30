@@ -6,7 +6,6 @@ import {
   searchJobs,
   parseJobUrl,
   parseJobText,
-  loadMockJobs,
   getReviewJobs,
   approveJob,
   rejectJob,
@@ -126,22 +125,6 @@ describe("API Client Functions", () => {
       const result = await parseJobText(mockRequest);
 
       expect(spyPost).toHaveBeenCalledWith("/api/jobs/parse-text", mockRequest);
-      expect(result).toEqual(mockResponse);
-    });
-  });
-
-  describe("loadMockJobs", () => {
-    it("should make a POST request to mock-load endpoint", async () => {
-      const mockRequest = {
-        role_profile_id: "profile-123",
-        reset_existing_demo: true
-      };
-      const mockResponse = { batch_id: "batch-mock", inserted_jobs: 5, jobs: [], warnings: [] };
-      spyPost.mockResolvedValueOnce({ data: mockResponse });
-
-      const result = await loadMockJobs(mockRequest);
-
-      expect(spyPost).toHaveBeenCalledWith("/api/jobs/mock-load", mockRequest);
       expect(result).toEqual(mockResponse);
     });
   });

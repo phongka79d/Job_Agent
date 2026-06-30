@@ -14,12 +14,11 @@ from app.agents.nodes import (
     mark_unclear,
 )
 from app.services.llm_client import (
-    FakeJobExtractionClient,
     LLMValidationError,
     LLMProviderError,
-    JobPostExtract,
 )
 from app.core.config import settings
+from tests.fakes import ScriptedJobExtractionClient
 
 
 # Helper to build a test graph compiled with the nodes
@@ -82,21 +81,6 @@ async def test_prepare_content_manual_text():
 
 
 @pytest.mark.asyncio
-async def test_prepare_content_mock():
-    state: JobAgentState = {
-        "batch_id": "b1",
-        "role_profile_id": "rp1",
-        "input_source": "mock",
-        "raw_text": "Mock raw",
-        "clean_text": "Mock clean",
-        "parse_status": "success",
-    }
-    res = await prepare_content(state)
-    assert res["parse_status"] == "success"
-    assert res["clean_text"] == "Mock clean"
-
-
-@pytest.mark.asyncio
 async def test_extract_job_success():
     state: JobAgentState = {
         "batch_id": "b1",
@@ -106,13 +90,13 @@ async def test_extract_job_success():
         "clean_text": "Valid job description content.",
     }
     
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     config = RunnableConfig(configurable={"llm_client": client})
 
     res = await extract_job(state, config=config)
     assert res["extraction_status"] == "success"
     assert res["extracted_job"] is not None
-    assert res["extracted_job"]["title"] == "Fake Software Engineer"
+    assert res["extracted_job"]["title"] == "Test Engineer"
     assert res["jd_status"] == "full_jd"
     assert res["should_score_similarity"] is True
     assert res["input_tokens"] == 100
@@ -131,7 +115,7 @@ async def test_extract_job_validation_error_with_retry():
         "clean_text": "Invalid content that triggers schema error.",
     }
 
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     client.add_extract_response(LLMValidationError(
         "Schema failed",
         invalid_output="{}",
@@ -160,7 +144,7 @@ async def test_extract_job_validation_error_no_retry():
         "clean_text": "Invalid content.",
     }
 
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     client.add_extract_response(LLMValidationError(
         "Schema failed",
         invalid_output="{}",
@@ -187,7 +171,7 @@ async def test_extract_job_provider_error():
         "clean_text": "Valid content.",
     }
 
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     client.add_extract_response(LLMProviderError("API Key Expired", extraction_time_ms=8))
     config = RunnableConfig(configurable={"llm_client": client})
 
@@ -213,7 +197,7 @@ async def test_repair_job_success():
         "error_reason": "Schema failed",
     }
 
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     config = RunnableConfig(configurable={"llm_client": client})
 
     res = await repair_job(state, config=config)
@@ -240,7 +224,7 @@ async def test_repair_job_failure():
         "extraction_time_ms": 5,
     }
 
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     client.add_repair_response(LLMValidationError(
         "Still invalid",
         invalid_output="{}",
@@ -339,7 +323,7 @@ async def test_mark_unclear():
 @pytest.mark.asyncio
 async def test_graph_path_success():
     graph = get_test_graph()
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     config = RunnableConfig(configurable={"llm_client": client})
 
     initial_state: JobAgentState = {
@@ -355,13 +339,13 @@ async def test_graph_path_success():
     assert final_state["extraction_status"] == "success"
     assert final_state["jd_status"] == "full_jd"
     assert final_state["should_score_similarity"] is True
-    assert final_state["extracted_job"]["title"] == "Fake Software Engineer"
+    assert final_state["extracted_job"]["title"] == "Test Engineer"
 
 
 @pytest.mark.asyncio
 async def test_graph_path_retry_success():
     graph = get_test_graph()
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     # First extract call fails validation, repair succeeds
     client.add_extract_response(LLMValidationError("First try failed schema validation", invalid_output="{}"))
     config = RunnableConfig(configurable={"llm_client": client})
@@ -385,7 +369,7 @@ async def test_graph_path_retry_success():
 @pytest.mark.asyncio
 async def test_graph_path_retry_failure():
     graph = get_test_graph()
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     # Both initial and repair calls fail validation
     client.add_extract_response(LLMValidationError("First try failed", invalid_output="{}"))
     client.add_repair_response(LLMValidationError("Repair try failed", invalid_output="{}"))
@@ -412,7 +396,7 @@ async def test_graph_path_retry_failure():
 @pytest.mark.asyncio
 async def test_graph_path_provider_failure():
     graph = get_test_graph()
-    client = FakeJobExtractionClient()
+    client = ScriptedJobExtractionClient()
     client.add_extract_response(LLMProviderError("Timeout reaching LLM provider"))
     config = RunnableConfig(configurable={"llm_client": client})
 

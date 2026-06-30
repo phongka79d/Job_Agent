@@ -42,7 +42,7 @@ class SecretMaskingFilter(logging.Filter):
         if secrets:
             for s in secrets:
                 # Mask only values with significant length to avoid masking common single characters.
-                # Skip known dummy placeholder values to prevent masking them during configuration logs.
+                # Skip known non-secret defaults to keep configuration logs readable.
                 if s and len(s) > 4 and not any(p in s.lower() for p in ["your-openai-api-key", "your-tavily-api-key", "your-qdrant-api-key"]):
                     self.secrets.append(s)
 

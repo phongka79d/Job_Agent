@@ -11,7 +11,6 @@ _SOURCE_PLATFORM_BY_INPUT_SOURCE = {
     "tavily": "tavily",
     "manual_url": "manual_url",
     "manual_text": "manual_text",
-    "mock": "mock",
 }
 
 
@@ -29,34 +28,39 @@ def _validate_constant_value(
     return value
 
 
+def _require_valid_value(
+    value: str | None,
+    allowed_values: tuple[str, ...],
+    field_name: str,
+) -> str:
+    validated = _validate_constant_value(value, allowed_values, field_name)
+    if validated is None:
+        raise ValueError(f"{field_name} must be one of {allowed_values}")
+    return validated
+
+
 def validate_input_source(input_source: str | None) -> str:
-    value = _validate_constant_value(
+    return _require_valid_value(
         input_source,
         constants.INPUT_SOURCES,
         "input_source",
     )
-    assert value is not None
-    return value
 
 
 def validate_source_platform_value(source_platform: str | None) -> str:
-    value = _validate_constant_value(
+    return _require_valid_value(
         source_platform,
         constants.SOURCE_PLATFORMS,
         "source_platform",
     )
-    assert value is not None
-    return value
 
 
 def validate_parse_status(parse_status: str | None) -> str:
-    value = _validate_constant_value(
+    return _require_valid_value(
         parse_status,
         constants.PARSE_STATUSES,
         "parse_status",
     )
-    assert value is not None
-    return value
 
 
 def validate_extraction_status(extraction_status: str | None) -> str | None:
@@ -69,13 +73,11 @@ def validate_extraction_status(extraction_status: str | None) -> str | None:
 
 
 def validate_jd_status(jd_status: str | None) -> str:
-    value = _validate_constant_value(
+    return _require_valid_value(
         jd_status,
         constants.JD_STATUSES,
         "jd_status",
     )
-    assert value is not None
-    return value
 
 
 def map_input_source_to_source_platform(input_source: str) -> str:
@@ -99,7 +101,7 @@ class JobAgentState(TypedDict, total=False):
 
     batch_id: str
     role_profile_id: str
-    input_source: Literal["tavily", "manual_url", "manual_text", "mock"]
+    input_source: Literal["tavily", "manual_url", "manual_text"]
 
     source_url: str | None
     raw_text: str | None
@@ -148,7 +150,7 @@ def preserve_required_state(state: JobAgentState) -> JobAgentState:
     }
 
 
-def score_placeholder_update(state: JobAgentState) -> JobAgentState:
+def empty_score_update(state: JobAgentState) -> JobAgentState:
     """Build a required-state-preserving update with all score fields unset."""
 
     return {
@@ -243,7 +245,7 @@ def build_unclear_extraction_failure_update(
 
     source_platform = map_input_source_to_source_platform(state["input_source"])
     return {
-        **score_placeholder_update(state),
+        **empty_score_update(state),
         "parse_status": "success",
         "extracted_job": build_unclear_job(
             source_url=state.get("source_url"),

@@ -1,7 +1,6 @@
 """Services package."""
 
 from app.services.llm_client import (
-    FakeJobExtractionClient,
     JobExtractionClientProtocol,
     LLMExtractionError,
     LLMProviderError,
@@ -46,7 +45,6 @@ from app.services.job_processing_service import (
 __all__ = [
     "JobExtractionClientProtocol",
     "OpenAIJobExtractionClient",
-    "FakeJobExtractionClient",
     "LLMExtractionError",
     "LLMProviderError",
     "LLMValidationError",

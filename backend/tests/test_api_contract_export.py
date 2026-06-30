@@ -63,12 +63,6 @@ def test_contract_content_comes_from_backend_owners():
     )
 
     assert contract["endpoints"] == export_api_contract.ENDPOINTS
-    assert contract["endpoints"]["loadMockJobs"] == {
-        "method": "POST",
-        "path": "/api/jobs/mock-load",
-        "request_schema": "MockLoadRequest",
-        "response_schema": "IngestionResponse",
-    }
     assert contract["endpoints"]["getBatchSummary"] == {
         "method": "GET",
         "path": "/api/batches/{batch_id}/summary",

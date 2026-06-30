@@ -63,12 +63,6 @@
       "path": "/api/role-profiles",
       "response_schema": "RoleProfileListResponse"
     },
-    "loadMockJobs": {
-      "method": "POST",
-      "path": "/api/jobs/mock-load",
-      "request_schema": "MockLoadRequest",
-      "response_schema": "IngestionResponse"
-    },
     "parseJobText": {
       "method": "POST",
       "path": "/api/jobs/parse-text",
@@ -107,8 +101,7 @@
   "input_sources": [
     "tavily",
     "manual_url",
-    "manual_text",
-    "mock"
+    "manual_text"
   ],
   "jd_statuses": [
     "full_jd",
@@ -523,7 +516,6 @@
                 "tavily",
                 "manual_url",
                 "manual_text",
-                "mock",
                 "job_board"
               ],
               "title": "Source Platform"
@@ -1008,7 +1000,6 @@
                 "tavily",
                 "manual_url",
                 "manual_text",
-                "mock",
                 "job_board"
               ],
               "title": "Source Platform"
@@ -1446,7 +1437,6 @@
             "tavily",
             "manual_url",
             "manual_text",
-            "mock",
             "job_board"
           ],
           "title": "Source Platform"
@@ -1541,25 +1531,6 @@
         "updated_at"
       ],
       "title": "JobResponse",
-      "type": "object"
-    },
-    "MockLoadRequest": {
-      "properties": {
-        "reset_existing_demo": {
-          "default": false,
-          "title": "Reset Existing Demo",
-          "type": "boolean"
-        },
-        "role_profile_id": {
-          "format": "uuid",
-          "title": "Role Profile Id",
-          "type": "string"
-        }
-      },
-      "required": [
-        "role_profile_id"
-      ],
-      "title": "MockLoadRequest",
       "type": "object"
     },
     "ParseJobTextRequest": {
@@ -2232,7 +2203,6 @@
             "tavily",
             "manual_url",
             "manual_text",
-            "mock",
             "job_board"
           ],
           "title": "Source Platform"
@@ -2353,7 +2323,6 @@
     "tavily",
     "manual_url",
     "manual_text",
-    "mock",
     "job_board"
   ],
   "tracked_job_statuses": [

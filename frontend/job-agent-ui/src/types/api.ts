@@ -16,7 +16,7 @@ export type JdStatus =
 
 export type ParseStatus = "success" | "needs_manual_input" | "failed";
 export type ExtractionStatus = "success" | "retried" | "failed";
-export type SourcePlatform = "tavily" | "manual_url" | "manual_text" | "mock" | "job_board";
+export type SourcePlatform = "tavily" | "manual_url" | "manual_text" | "job_board";
 
 export interface RoleProfile {
   id: string;
@@ -128,11 +128,6 @@ export interface ParseJobUrlRequest {
   source_url: string;
 }
 
-export interface MockLoadRequest {
-  role_profile_id: string;
-  reset_existing_demo?: boolean;
-}
-
 export interface StatusUpdateRequest {
   status: "applied" | "interview" | "rejected" | "offer";
 }
@@ -166,7 +161,6 @@ export const SOURCE_PLATFORMS: SourcePlatform[] = [
   "tavily",
   "manual_url",
   "manual_text",
-  "mock",
   "job_board"
 ];
 

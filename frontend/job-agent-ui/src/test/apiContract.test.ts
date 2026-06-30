@@ -83,7 +83,6 @@ describe("API Contract Drift Tests", () => {
       getJobs: { method: "GET", path: "/api/jobs" },
       getReviewJobs: { method: "GET", path: "/api/jobs/review" },
       listRoleProfiles: { method: "GET", path: "/api/role-profiles" },
-      loadMockJobs: { method: "POST", path: "/api/jobs/mock-load" },
       parseJobText: { method: "POST", path: "/api/jobs/parse-text" },
       parseJobUrl: { method: "POST", path: "/api/jobs/parse-url" },
       rejectJob: { method: "POST", path: "/api/jobs/{id}/reject" },
@@ -118,7 +117,6 @@ describe("API Contract Drift Tests", () => {
       "SearchJobsRequest",
       "ParseJobTextRequest",
       "ParseJobUrlRequest",
-      "MockLoadRequest",
       "StatusUpdateRequest",
       "StatusMutationResponse"
     ];
