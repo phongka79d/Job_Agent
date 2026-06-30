@@ -264,7 +264,7 @@ These routes provide the stable HTTP surface the frontend will consume. They mus
 
 ### Tasks
 
-- [ ] (02A): Implement role profile create and list routes
+- [x] (02A): Implement role profile create and list routes
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Role Profile Routes`
     - `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
@@ -292,7 +292,7 @@ These routes provide the stable HTTP surface the frontend will consume. They mus
   - Blocked Condition: None.
   - Files: `backend/app/api/routes_role_profiles.py`, possibly `backend/app/api/__init__.py`.
 
-- [ ] (02B): Implement review, dashboard, and job detail routes
+- [x] (02B): Implement review, dashboard, and job detail routes
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Review and Dashboard Queries`
     - `docs/plans/Master_Plan.md` > `## 24. SQLite Indexes`
@@ -320,7 +320,7 @@ These routes provide the stable HTTP surface the frontend will consume. They mus
   - Blocked Condition: None.
   - Files: `backend/app/api/routes_jobs.py`.
 
-- [ ] (02C): Implement approve, reject, and manual status routes
+- [x] (02C): Implement approve, reject, and manual status routes
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Human-in-the-Loop Status Routes`
     - `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
@@ -351,7 +351,7 @@ These routes provide the stable HTTP surface the frontend will consume. They mus
   - Blocked Condition: None.
   - Files: `backend/app/api/routes_jobs.py`.
 
-- [ ] (02D): Implement batch summary route
+- [x] (02D): Implement batch summary route
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Batch Summary`
     - `docs/plans/Master_Plan.md` > `## 15. Cost & Performance Metrics Panel`
@@ -379,7 +379,7 @@ These routes provide the stable HTTP surface the frontend will consume. They mus
   - Blocked Condition: None.
   - Files: `backend/app/api/routes_batches.py`.
 
-- [ ] (02E): Register routers, local CORS, and Qdrant startup initialization
+- [x] (02E): Register routers, local CORS, and Qdrant startup initialization
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 4. Scope`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### CORS`
@@ -1030,11 +1030,11 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch02
 
-- [ ] (02A): Implement role profile create and list routes
-- [ ] (02B): Implement review, dashboard, and job detail routes
-- [ ] (02C): Implement approve, reject, and manual status routes
-- [ ] (02D): Implement batch summary route
-- [ ] (02E): Register routers, local CORS, and Qdrant startup initialization
+- [x] (02A): Implement role profile create and list routes
+- [x] (02B): Implement review, dashboard, and job detail routes
+- [x] (02C): Implement approve, reject, and manual status routes
+- [x] (02D): Implement batch summary route
+- [x] (02E): Register routers, local CORS, and Qdrant startup initialization
 
 #### Batch03
 

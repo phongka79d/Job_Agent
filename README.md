@@ -42,6 +42,9 @@ Job_Agent/
 |   |-- app/
 |   |   |-- api/
 |   |   |   |-- __init__.py
+|   |   |   |-- routes_batches.py    # Batch summary metrics endpoint (Phase 4 Batch 02)
+|   |   |   |-- routes_jobs.py       # Review, dashboard, detail, and status endpoints (Phase 4 Batch 02)
+|   |   |   |-- routes_role_profiles.py # Role profile create/list endpoints (Phase 4 Batch 02)
 |   |   |   `-- schemas.py            # Phase 4 API request/response schemas and JSON Schema source
 |   |   |-- agents/
 |   |   |   |-- __init__.py
@@ -60,7 +63,7 @@ Job_Agent/
 |   |   |   |   `-- .gitkeep
 |   |   |   |-- models.py             # SQLite ORM models and indexes (Batch03)
 |   |   |   `-- session.py            # Async database session and initialization (Batch03)
-|   |   |-- main.py                   # Minimal FastAPI app bootstrap with DB startup initialization
+|   |   |-- main.py                   # FastAPI app bootstrap with API routers, local CORS, DB startup, and Qdrant startup initialization
 |   |   |-- services/
 |   |   |   |-- __init__.py
 |   |   |   |-- cost_service.py       # Provider-neutral token, cost, and timing normalization (Batch01)
@@ -153,10 +156,17 @@ Verify that the database can be initialized and that SQLite connection PRAGMAs (
 python -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"
 ```
 
-### 6. FastAPI App Bootstrap
-From the `backend` directory, verify that the minimal FastAPI app imports and can run local startup database initialization:
+### 6. FastAPI App and Core API Routes
+From the `backend` directory, verify that the FastAPI app imports and exposes the core Phase 4 API route surface:
 ```bash
 python -c "from app.main import app; print(app.title)"
+python -c "from app.main import app; print(sorted(app.openapi()['paths']))"
+```
+
+Run Qdrant before starting the live app because startup initializes the SQLite database and Qdrant collection/payload indexes:
+
+```bash
+docker compose up -d qdrant
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -196,6 +206,25 @@ From the `backend` directory, regenerate and smoke-check the API contract:
 ```bash
 python scripts/export_api_contract.py
 python -c "from app.api.schemas import JobResponse, IngestionResponse; print('api schemas import successfully')"
+```
+
+---
+
+## Core FastAPI Routes and App Wiring (Phase 4 - Batch 02)
+
+Phase 4 Batch 02 exposes the core backend HTTP surface while keeping route handlers as thin adapters over existing database and service owners:
+
+- **Role Profiles:** `POST /api/role-profiles` creates profiles and `GET /api/role-profiles` lists them newest-first.
+- **Job Review and Dashboard:** `GET /api/jobs/review`, `GET /api/jobs`, and `GET /api/jobs/{id}` read persisted SQLite job rows, exclude duplicates, support `status=tracked`, and do not recompute scoring or deduplication decisions.
+- **Status Mutations:** `POST /api/jobs/{id}/approve`, `POST /api/jobs/{id}/reject`, and `PATCH /api/jobs/{id}/status` delegate to the Phase 3 status service so SQLite, application rows, and Qdrant sync stay service-owned.
+- **Batch Summary:** `GET /api/batches/{batch_id}/summary` aggregates stored `job_posts` metrics for parsed jobs, scorable jobs, failures, token totals, estimated cost, and extraction timing.
+- **App Wiring:** `backend/app/main.py` registers the route modules under `/api`, enables local CORS only for `http://localhost:5173`, preserves database startup initialization, and delegates Qdrant collection/payload-index initialization to the existing Qdrant service.
+
+From the `backend` directory, smoke-check the core route wiring:
+
+```bash
+python -m compileall -q app
+python -c "from app.main import app; print(app.title)"
 ```
 
 ---
