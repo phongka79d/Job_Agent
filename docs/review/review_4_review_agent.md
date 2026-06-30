@@ -2593,3 +2593,865 @@ ACCEPTED
 
 ## Repair Instructions
 - None.
+---
+
+# Task Review Report - (05A)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Verification and Phase Boundary Validation
+- Task ID: (05A)
+- Task title: Add API contract export and app wiring tests
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### API Contract Export`; `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`
+- Supplemental documents: `docs/plans/Master_Plan.md` was provided but not needed beyond task-file and Plan 4 alignment checks.
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05A)
+- Reviewed task ID: (05A)
+- Correct selection: yes
+- Notes: Reviewed only `(05A)`. The latest matching execution report entry is for Batch05 `(05A)` and reports status `complete`.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes, to confirm the Batch04 baseline commit before the current uncommitted `(05A)` work
+- changed files from git: `docs/reports/report_4_execute_agent.md`; after ACCEPTED review, `docs/tasks/task_4.md` and `docs/review/review_4_review_agent.md` were also modified by allowed A2 actions
+- untracked files: `backend/tests/test_api_contract_export.py`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected task block, dependencies, source requirements, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(05A)` execution report reviewed.
+- `backend/tests/test_api_contract_export.py`: in scope - new focused contract/app wiring test file reviewed.
+- `backend/scripts/export_api_contract.py`: in scope - contract owner used by the tests reviewed.
+- `shared/api-contract.json`: in scope - checked-in generated artifact targeted by stale-contract test.
+- `backend/app/main.py`: in scope - CORS and startup delegation owner reviewed.
+- `backend/app/core/constants.py`: in scope - backend constants owner reviewed.
+- `backend/app/api/schemas.py`: in scope - schema owner referenced by contract tests reviewed through imports and schema assertions.
+- `backend/app/services/job_processing_service.py`: in scope - allowed status transition owner referenced by contract tests reviewed through imports.
+- `backend/app/services/qdrant_service.py`: in scope - Qdrant initialization owner referenced by startup tests reviewed through imports.
+- `docs/plans/Plan_4.md`: in scope - cited API contract export and verification/testing sections reviewed.
+- `docs/plans/Master_Plan.md`: supplemental - not deeply reread because Plan 4 and the task file provided sufficient selected-scope requirements.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_api_contract_export.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: This is the only implementation/test file added for `(05A)`; no `(05B)`, `(05C)`, `(05D)`, route behavior, seed/mock-load behavior, or runtime implementation file was added by this task.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The `(05A)` execution report was appended and accurately reports the test file, validations, environment caveat, and scope exclusions.
+
+## Dependency Review
+- Required dependencies: `(01C)` Generate the frontend API contract from backend owners; `(02E)` Register routers, local CORS, and Qdrant startup initialization.
+- Dependency status: satisfied; both dependencies are checked complete in the task file and the relevant artifacts exist.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Tests compare generated exporter output against `shared/api-contract.json` without rewriting the checked-in artifact.
+- Passed: Tests assert contract values come from backend constants, Plan 3 status transitions, endpoint metadata, and Pydantic `model_json_schema()` output.
+- Passed: Tests verify CORS allows `http://localhost:5173`, rejects `http://localhost:3000` by absence of `access-control-allow-origin`, and does not enable credentials.
+- Passed: Tests verify FastAPI startup delegates to `app.main.ensure_collection`, which is the imported `qdrant_service.ensure_collection`, with `init_db` and `ensure_collection` patched to avoid live DB/Qdrant startup.
+- Passed: `backend/app/main.py` contains startup delegation and CORS wiring, with no direct `AsyncQdrantClient`, `QdrantService(`, `create_collection(`, or `create_payload_index(` setup duplication.
+- Failed: None.
+- Uncertain: The tests do not cover `(05B)`, `(05C)`, or `(05D)` behavior, which is correct because those are sibling tasks.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The new pytest module contains five concrete tests exercising exporter output, backend owner values, mutable owner reads, CORS preflight behavior, and FastAPI lifespan startup delegation with safe monkeypatches.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: The stale-contract test generates through `write_api_contract()` into a temporary path and compares exact JSON text to the checked-in artifact. Constants, transitions, endpoint metadata, and schema JSON are asserted against backend owners. Specific endpoint spot checks are appropriate contract metadata assertions, not runtime hardcoding.
+
+## Validations Reviewed
+- Command/check: `cd backend; pytest tests/test_api_contract_export.py`
+- Reported result: failed in unactivated system Python because `sqlalchemy` was missing.
+- Rerun result: failed before collection with `ModuleNotFoundError: No module named 'sqlalchemy'` from `tests/conftest.py`.
+- Status: environment issue confirmed.
+- Notes: This is not a hidden task failure; the project backend virtualenv is the valid validation environment.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_api_contract_export.py`
+- Reported result: passed, 5 tests.
+- Rerun result: passed, 5 tests, 1 Starlette/FastAPI TestClient deprecation warning.
+- Status: passed.
+- Notes: Focused validation satisfies the selected task validation requirement.
+- Command/check: git status, git diff --stat, git diff, git ls-files --others --exclude-standard
+- Reported result: not separately reported by executor.
+- Rerun result: reviewed.
+- Status: passed.
+- Notes: Git evidence shows only the execution report tracked modification and the new untracked test file before A2's allowed checkbox/report updates.
+- Command/check: scope grep for sibling/future task work in `backend/tests/test_api_contract_export.py` and changed test area
+- Reported result: executor reported no sibling task work.
+- Rerun result: passed.
+- Status: passed.
+- Notes: Only `loadMockJobs` endpoint metadata appears in the contract test, which belongs to `(05A)` endpoint metadata coverage; no seed/mock-load behavior tests or route behavior tests were added.
+
+## Acceptance Review
+- Task acceptance: Add a backend test/check that fails when `shared/api-contract.json` is missing or stale.
+- Status: satisfied
+- Evidence: `test_export_script_matches_checked_in_contract` asserts the checked-in file exists, writes generated output to `tmp_path`, and compares generated text exactly to `shared/api-contract.json`.
+- Task acceptance: Verify contract values come from backend constants, transitions, endpoint metadata, and schema JSON.
+- Status: satisfied
+- Evidence: `test_contract_content_comes_from_backend_owners` checks constants, `ALLOWED_STATUS_TRANSITIONS`, `ENDPOINTS`, and every schema model's `model_json_schema()` output; `test_contract_builder_reads_mutable_backend_owner_values` confirms the builder observes patched owner values.
+- Task acceptance: Verify CORS allows `http://localhost:5173` and does not approve an unapproved local origin.
+- Status: satisfied
+- Evidence: `test_cors_allows_local_react_dev_origin` verifies approved preflight headers and confirms `http://localhost:3000` does not receive `access-control-allow-origin`.
+- Task acceptance: Verify FastAPI startup calls the Plan 3 Qdrant initialization helper without duplicating setup.
+- Status: satisfied
+- Evidence: `test_startup_delegates_qdrant_initialization_to_service_owner` asserts `app_main.ensure_collection is qdrant_service.ensure_collection`, patches startup dependencies safely, confirms lifespan call order, and checks main source lacks direct Qdrant setup calls.
+- Task acceptance: Stay within selected scope.
+- Status: satisfied
+- Evidence: No `(05B)`, `(05C)`, `(05D)`, seed/mock-load route behavior tests, runtime behavior changes, schema/model changes, frontend work, or commits were added.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task block and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch05 remains unchecked/incomplete because `(05B)`, `(05C)`, and `(05D)` remain unchecked.
+- Execution report entry: appended and accurate for `(05A)`.
+- Review report entry: appended at EOF.
+- Other: No sibling or future task checkbox was updated; no commit was made.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The execution report accurately describes the created test file, validations, unactivated environment failure, venv pass, and scope exclusions.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/tests/test_api_contract_export.py` remains untracked until the Batch05 commit.
+- The unactivated `pytest` command is not usable for this repo because that Python environment lacks `sqlalchemy`; backend validations should use `backend/.venv`.
+- FastAPI TestClient emits a dependency deprecation warning; it does not fail the selected validation.
+
+### Observations
+- The test uses `tmp_path` and monkeypatches `CONTRACT_PATH`, so stale-contract verification does not rewrite `shared/api-contract.json`.
+- The startup test patches live DB/Qdrant boundaries while still proving the FastAPI lifespan delegates to the existing service-owner symbols.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete; `(05B)`, `(05C)`, and `(05D)` remain incomplete.
+
+## Repair Instructions
+- None.
+
+---
+
+# Task Review Report - (05B)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Verification and Phase Boundary Validation
+- Task ID: (05B)
+- Task title: Add core route tests for profiles, queries, status, and batch summary
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Role Profile Routes`; `### Review and Dashboard Queries`; `### Human-in-the-Loop Status Routes`; `### Batch Summary`
+- Supplemental documents: `docs/plans/Master_Plan.md` was provided but not needed beyond selected task and Plan 4 alignment checks.
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05B)
+- Reviewed task ID: (05B)
+- Correct selection: yes
+- Notes: Reviewed only `(05B)`. The latest execution report entry is for Batch05 `(05B)` and reports status `complete`.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes, to distinguish prior accepted Batch04 baseline from current uncommitted Batch05 work
+- changed files from git: `docs/reports/report_4_execute_agent.md`; `docs/review/review_4_review_agent.md`; `docs/tasks/task_4.md`
+- untracked files: `backend/tests/test_api_contract_export.py`; `backend/tests/test_routes_batches.py`; `backend/tests/test_routes_jobs.py`; `backend/tests/test_routes_role_profiles.py`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(05B)` block, dependencies, source requirements, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(05B)` execution report reviewed.
+- `backend/tests/test_routes_role_profiles.py`: in scope - new role profile route tests reviewed.
+- `backend/tests/test_routes_jobs.py`: in scope - new review/dashboard/job detail/status route tests reviewed.
+- `backend/tests/test_routes_batches.py`: in scope - new batch summary route tests reviewed.
+- `backend/tests/conftest.py`: in scope - SQLite async fixture and existing fake service fixtures reviewed for test validity.
+- `backend/app/api/routes_role_profiles.py`: in scope - route behavior under test reviewed.
+- `backend/app/api/routes_jobs.py`: in scope - route behavior under test reviewed.
+- `backend/app/api/routes_batches.py`: in scope - route behavior under test reviewed.
+- `backend/app/api/schemas.py`: in scope - manual status request schema reviewed for ignored-status validation behavior.
+- `backend/app/core/constants.py`: in scope - job and application status constants reviewed.
+- `docs/plans/Plan_4.md`: in scope - cited route contracts and verification test-case list reviewed.
+- `docs/plans/Master_Plan.md`: supplemental - not deeply reread because selected task and Plan 4 sections were sufficient.
+- `backend/tests/test_api_contract_export.py`: prior accepted uncommitted change - recognized as `(05A)` scope, not selected `(05B)` scope.
+- `docs/review/review_4_review_agent.md`: prior accepted uncommitted change plus this review append - recognized as A2 audit artifact, not implementation scope.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_routes_role_profiles.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Covers role profile create UUID response and list ordering.
+- file from execution report: `backend/tests/test_routes_jobs.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Covers review queue, dashboard saved/tracked filters, job detail, approve/reject/manual status delegation, invalid transition 400, and ignored manual update rejection.
+- file from execution report: `backend/tests/test_routes_batches.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Covers stored-field aggregation and unknown-batch 404.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The `(05B)` execution report was appended and accurately lists files, validations, and scope.
+
+## Dependency Review
+- Required dependencies: `(02A)` role profile routes; `(02B)` review/dashboard/job detail routes; `(02C)` approve/reject/manual status routes; `(02D)` batch summary route.
+- Dependency status: satisfied; dependencies are checked complete in `docs/tasks/task_4.md` and the route modules exist.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Tests use FastAPI ASGI clients with dependency overrides against the existing `get_session` dependency, so handlers are exercised through the API route layer.
+- Passed: Query and aggregation tests use real SQLite fixture rows instead of mocking route query behavior.
+- Passed: Status route tests mock only the Plan 3 status service boundaries to prove approve, reject, and manual update delegation plus error conversion.
+- Passed: Review and dashboard tests verify duplicate exclusion and score ordering from persisted `JobPost` rows.
+- Passed: Batch summary test verifies stored-field aggregation rules and 404 behavior for unknown batches.
+- Failed: None.
+- Uncertain: None material for `(05B)`; ingestion/search/demo route tests remain explicitly owned by `(05C)` and `(05D)`.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The three test files contain concrete async pytest cases that call real registered API paths and assert route responses against SQLite fixture data or mocked Plan 3 service calls only where service-boundary delegation is the requirement.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: Fixed UUIDs are not hardcoded; fixture expectations assert deterministic route ordering and aggregation behavior from rows created inside each test. Mocked status helper return values are used only to prove route delegation and HTTP error mapping.
+
+## Validations Reviewed
+- Command/check: `cd backend; pytest tests/test_routes_role_profiles.py tests/test_routes_jobs.py tests/test_routes_batches.py`
+- Reported result: failed before virtualenv activation because bare Python could not import `sqlalchemy`.
+- Rerun result: not rerun because the project virtualenv is the documented validation environment; prior `(05A)` review already confirmed bare pytest has the same missing dependency issue.
+- Status: environment issue acknowledged.
+- Notes: This does not invalidate the selected task because the required project-venv validation passes.
+- Command/check: `cd backend; . .\.venv\Scripts\Activate.ps1; pytest tests/test_routes_role_profiles.py tests/test_routes_jobs.py tests/test_routes_batches.py`
+- Reported result: passed, 8 tests.
+- Rerun result: equivalent validation rerun with `.\.venv\Scripts\python.exe -m pytest ...`; 8 passed in 2.43s.
+- Status: passed.
+- Notes: This satisfies the selected task validation requirement.
+- Command/check: git status, git diff --stat, git diff, git ls-files --others --exclude-standard, git log -1 --stat --oneline
+- Reported result: not separately reported by executor.
+- Rerun result: reviewed.
+- Status: passed.
+- Notes: Git evidence shows `(05B)` route test files are present and untracked, while `(05A)` accepted uncommitted changes are distinguishable.
+
+## Acceptance Review
+- Task acceptance: Role profile create returns a UUID and list ordering is tested.
+- Status: satisfied
+- Evidence: `test_create_role_profile_returns_uuid_and_list_orders_newest_first` posts two profiles, validates UUIDs, and verifies newest-first list order.
+- Task acceptance: Review queue and dashboard exclude duplicates and sort by score.
+- Status: satisfied
+- Evidence: `test_review_queue_excludes_duplicates_and_orders_by_score` and `test_dashboard_saved_and_tracked_filters_exclude_duplicates_and_order_by_score` create duplicate and non-duplicate rows and assert sorted response IDs.
+- Task acceptance: `GET /api/jobs?status=tracked` returns saved/applied/interview/rejected/offer jobs.
+- Status: satisfied
+- Evidence: The tracked filter test asserts exactly those statuses are returned and pending/ignored/duplicate rows are excluded.
+- Task acceptance: Job detail 200/404 behavior is tested.
+- Status: satisfied
+- Evidence: `test_job_detail_returns_200_or_404` verifies existing and missing job responses.
+- Task acceptance: Approve, reject, and manual status update call Plan 3 status sync helpers.
+- Status: satisfied
+- Evidence: `test_status_routes_delegate_to_plan_three_status_helpers` patches route-imported service functions and asserts call order, session, job IDs, status argument, and response statuses.
+- Task acceptance: Invalid transitions return HTTP 400.
+- Status: satisfied
+- Evidence: `test_status_routes_return_400_for_invalid_transitions` raises `InvalidStatusTransition` from the service boundary and asserts HTTP 400.
+- Task acceptance: Manual status update rejects `ignored`.
+- Status: satisfied
+- Evidence: `test_manual_status_update_rejects_ignored_before_service_call` sends `ignored`, receives schema rejection, and asserts the service is not called. Plan 4 requires rejection but does not require a specific status code for this case.
+- Task acceptance: Batch summary aggregates stored fields and returns 404 for unknown batches.
+- Status: satisfied
+- Evidence: `test_batch_summary_aggregates_stored_fields_and_unknown_batch_returns_404` asserts count, scorable count, failed extraction count, token sums, cost sum, average extraction time, and missing-batch 404.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the selected task block and the Batch05 progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch05 remains partial/incomplete; `(05C)` and `(05D)` remain unchecked.
+- Execution report entry: appended and accurate for `(05B)`.
+- Review report entry: appended at EOF.
+- Other: No sibling or future task checkbox was updated; no implementation files were modified by this review; no commit was made.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The report accurately lists the three new route test files, the environment failure for bare pytest, the passing backend-venv validations, and the `(05B)` scope.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/tests/test_routes_role_profiles.py`, `backend/tests/test_routes_jobs.py`, and `backend/tests/test_routes_batches.py` remain untracked until the Batch05 commit.
+- `backend/tests/test_api_contract_export.py` is a prior accepted `(05A)` untracked file and remains uncommitted by design.
+- The unactivated shell `pytest` command is not usable for this repo because that Python environment lacks `sqlalchemy`; backend validations should use `backend/.venv`.
+- Manual `ignored` status is rejected at request schema validation with HTTP 422 before the route's explicit `ignored` branch. This still satisfies the selected test requirement that manual status update rejects `ignored` and does not call the service.
+
+### Observations
+- The new tests keep `(05B)` focused; ingestion/search behavior and demo/mock-load behavior are not tested here and remain scheduled for `(05C)` and `(05D)`.
+- Query tests cover duplicate exclusion through `duplicate_of_job_id IS NULL` and final-score ordering with null-score placement.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete; `(05C)` and `(05D)` remain incomplete.
+
+## Repair Instructions
+- None.
+---
+
+# Task Review Report - (05C)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Verification and Phase Boundary Validation
+- Task ID: (05C)
+- Task title: Add ingestion and search route tests with mocked providers
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Parse Routes`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Search Route`; `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners`
+- Supplemental documents: `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05C)
+- Reviewed task ID: (05C)
+- Correct selection: yes
+- Notes: Reviewed only `(05C)`. The latest matching execution report entry is for Batch05 `(05C)` and reports status `complete`.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes, to distinguish the committed Batch04 baseline and prior accepted uncommitted Batch05 review work from the selected `(05C)` changes
+- changed files from git: `docs/reports/report_4_execute_agent.md`; `docs/review/review_4_review_agent.md`; `docs/tasks/task_4.md`
+- untracked files: `backend/tests/test_api_contract_export.py`; `backend/tests/test_routes_batches.py`; `backend/tests/test_routes_jobs.py`; `backend/tests/test_routes_role_profiles.py`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(05C)` block, dependencies, source requirements, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(05C)` execution report reviewed.
+- `backend/tests/test_routes_jobs.py`: in scope - selected ingestion/search tests plus prior accepted `(05B)` tests reviewed and distinguished.
+- `backend/tests/conftest.py`: in scope - async SQLite fixture reviewed for validation context.
+- `backend/app/api/routes_jobs.py`: in scope - route behavior and service-boundary imports under test reviewed.
+- `backend/app/services/search_service.py`: in scope - Tavily wrapper and `MAX_URLS_PER_BATCH` clamping owner reviewed.
+- `backend/app/api/schemas.py`: in scope - search request max URL validation owner reviewed by reference search.
+- `backend/app/core/constants.py`: in scope - table metadata/out-of-scope infrastructure assertion context reviewed by reference search.
+- `docs/plans/Plan_4.md`: in scope - cited parse route, search route, and verification/testing sections reviewed.
+- `docs/plans/Master_Plan.md`: supplemental - cited JavaScript/cookie/low-content handling section reviewed.
+- `backend/tests/test_api_contract_export.py`: prior accepted uncommitted change - recognized as `(05A)` scope, not selected `(05C)` scope.
+- `backend/tests/test_routes_role_profiles.py`: prior accepted uncommitted change - recognized as `(05B)` scope, not selected `(05C)` scope.
+- `backend/tests/test_routes_batches.py`: prior accepted uncommitted change - recognized as `(05B)` scope, not selected `(05C)` scope.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_routes_jobs.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains concrete mocked tests for parse-text, parse-url low-content warning, search max URL limiting/continuation, Tavily 502 handling, full `jobs` loading from Plan 3 `job_ids`, and absence of forbidden background infrastructure tables. The same file also contains prior accepted `(05B)` tests.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The `(05C)` execution report was appended and accurately lists files, validations, and scope exclusions.
+
+## Dependency Review
+- Required dependencies: `(03A)` standard ingestion response and parse-text endpoint; `(03B)` parse-url endpoint; `(03C)` Tavily search service; `(03D)` search endpoint.
+- Dependency status: satisfied; dependencies are checked complete in `docs/tasks/task_4.md` and the route/service modules exist.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Tests patch route-imported extraction, processing, and search boundaries so automated validation does not call live LLM, Tavily, OpenAI, internet, or Qdrant.
+- Passed: Parse-text and parse-url tests exercise registered FastAPI paths with SQLite dependency overrides and mocked Plan 2/Plan 3 boundaries.
+- Passed: Search test uses `TavilySearchService` with a fake client so max URL clamping is exercised through the service boundary.
+- Passed: Search route test verifies one URL parse failure is converted into a warning while remaining URLs continue.
+- Passed: Tavily provider failure is converted to HTTP 502 before extraction/processing is called.
+- Passed: The no-background-infrastructure test checks SQLAlchemy metadata for queue, worker, cron, background-job, and search-run table names.
+- Failed: None.
+- Uncertain: None material for `(05C)`; demo, seed, mock-load, and final phase-boundary checks remain owned by `(05D)`.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The tests call real registered route paths and use fakes only at approved external/provider and Plan 3 service boundaries. Persisted job rows are inserted into the SQLite fixture and loaded back through the ingestion response path.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: Fixture URLs, titles, and warning text are controlled test data used to verify route behavior. The tests assert behavior derived from request inputs, fake provider output, `JobProcessingResult.job_ids`, and SQLAlchemy metadata rather than hardcoded production success paths.
+
+## Validations Reviewed
+- Command/check: `cd backend; pytest tests/test_routes_jobs.py`
+- Reported result: failed before virtualenv activation because bare Python could not import `sqlalchemy`.
+- Rerun result: not rerun; prior Batch05 reviews and this report identify the bare environment as missing backend dependencies.
+- Status: environment issue acknowledged.
+- Notes: This does not invalidate the selected task because the required project-venv validation passes.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_routes_jobs.py`
+- Reported result: passed, 11 tests.
+- Rerun result: passed, 11 tests in 2.48s.
+- Status: passed.
+- Notes: This satisfies the selected task validation requirement.
+- Command/check: git status, git diff --stat, git diff, git ls-files --others --exclude-standard, git log -1 --stat --oneline
+- Reported result: not separately reported by executor.
+- Rerun result: reviewed.
+- Status: passed.
+- Notes: Git evidence shows the selected `(05C)` work in `backend/tests/test_routes_jobs.py` alongside prior accepted uncommitted `(05A)` and `(05B)` test files.
+
+## Acceptance Review
+- Task acceptance: Parse text inserts a `pending_review` job and returns the standard ingestion response.
+- Status: satisfied
+- Evidence: `test_parse_text_returns_standard_ingestion_response_with_loaded_job` posts to `/api/jobs/parse-text`, mocks extraction and processing, persists a `pending_review` job, and asserts standard counts, Qdrant fields, empty warnings, and full job serialization.
+- Task acceptance: Parse URL with low content returns a manual input warning.
+- Status: satisfied
+- Evidence: `test_parse_url_manual_input_warning_and_loaded_job` mocks `parse_status = needs_manual_input`, persists the failed/unclear job row, and asserts the warning and job `error_reason` are returned.
+- Task acceptance: Search respects `MAX_URLS_PER_BATCH`.
+- Status: satisfied
+- Evidence: `test_search_respects_max_urls_and_continues_after_url_parse_failure` sends 12 fake results with `max_urls = 10`, asserts the fake Tavily client received `max_results == 10`, and verifies only 10 URLs were processed.
+- Task acceptance: Search continues after one URL parse failure.
+- Status: satisfied
+- Evidence: The same search test raises for `job-1`, still inserts 9 jobs, returns 9 serialized jobs, and includes a warning for the failed URL.
+- Task acceptance: Tavily failure returns HTTP 502 without crashing.
+- Status: satisfied
+- Evidence: `test_search_tavily_failure_returns_502_without_processing` raises `SearchServiceError`, receives HTTP 502, and confirms extraction was not called.
+- Task acceptance: Ingestion responses load full jobs for Plan 3 `job_ids`.
+- Status: satisfied
+- Evidence: Parse-text, parse-url, and search tests all return persisted job rows loaded from the IDs reported by `JobProcessingResult`.
+- Task acceptance: No queue, worker, cron, or background-job table is introduced.
+- Status: satisfied
+- Evidence: `test_no_background_infrastructure_tables_are_introduced` asserts SQLAlchemy metadata is disjoint from the forbidden infrastructure table names.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the selected task block and the Batch05 progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch05 remains partial/incomplete; `(05D)` remains unchecked.
+- Execution report entry: appended and accurate for `(05C)`.
+- Review report entry: appended at EOF.
+- Other: No sibling or future task checkbox was updated; no implementation files were modified by this review; no commit was made.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The report accurately lists the changed test file, the environment failure for bare pytest, the passing backend-venv validation, and the `(05C)` scope.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/tests/test_routes_jobs.py` remains untracked until the Batch05 commit.
+- `backend/tests/test_api_contract_export.py`, `backend/tests/test_routes_role_profiles.py`, and `backend/tests/test_routes_batches.py` are prior accepted untracked Batch05 files and remain uncommitted by design.
+- The unactivated shell `pytest` command is not usable for this repo because that Python environment lacks `sqlalchemy`; backend validations should use `backend/.venv`.
+
+### Observations
+- The selected tests stay within `(05C)` and do not add `(05D)` demo/seed/mock-load coverage.
+- The search warning assertion intentionally checks the safe user-facing URL failure message rather than exposing provider exception details.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete; `(05D)` remains incomplete.
+
+## Repair Instructions
+- None.
+
+---
+
+# Task Review Report - (05D)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Verification and Phase Boundary Validation
+- Task ID: (05D)
+- Task title: Add demo loader, seed, mock-load, and final phase-boundary verification
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Demo Dataset`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Demo Offline Expectations`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### seed_demo.py`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Data Normalization Contract`; `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Load Endpoint`
+- Supplemental documents: `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05D)
+- Reviewed task ID: (05D)
+- Correct selection: yes
+- Notes: Reviewed only `(05D)`. The latest matching execution report entry is for Batch05 `(05D)` and reports status `complete`.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes, to distinguish the committed Batch04 baseline and prior accepted uncommitted Batch05 review work from selected `(05D)` changes
+- changed files from git: `docs/reports/report_4_execute_agent.md`; `docs/review/review_4_review_agent.md`; `docs/tasks/task_4.md`
+- untracked files: `backend/tests/test_api_contract_export.py`; `backend/tests/test_routes_batches.py`; `backend/tests/test_routes_jobs.py`; `backend/tests/test_routes_role_profiles.py`; `backend/tests/test_seed_demo.py`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(05D)` block, dependencies, source requirements, progress tracker, and checkbox state reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(05D)` execution report reviewed.
+- `backend/tests/test_seed_demo.py`: in scope - selected seed/demo/mock-load/final-boundary tests reviewed.
+- `backend/app/services/demo_loader.py`: in scope - demo fixture adapter and safe reset owner reviewed as the dependency under test.
+- `backend/scripts/seed_demo.py`: in scope - seed script delegation, dependency requirements, output expectations, and reset path reviewed.
+- `backend/app/api/routes_jobs.py`: in scope - mock-load endpoint, shared loader use, reset preservation, and Plan 3 processing path reviewed.
+- `mock_data/demo_jobs.json`: in scope - actual demo fixture content reviewed.
+- `mock_data/messy_social_posts.json`: in scope - actual social fixture content reviewed.
+- `docs/plans/Plan_4.md`: in scope - cited verification, dataset, offline expectations, seed, normalization, and mock-load sections reviewed.
+- `docs/plans/Master_Plan.md`: supplemental - provided as architecture source; no conflict found with the cited Plan 4 task requirements.
+- `backend/tests/test_api_contract_export.py`: prior accepted uncommitted change - recognized as `(05A)` scope, not selected `(05D)` scope.
+- `backend/tests/test_routes_role_profiles.py`: prior accepted uncommitted change - recognized as `(05B)` scope, not selected `(05D)` scope.
+- `backend/tests/test_routes_batches.py`: prior accepted uncommitted change - recognized as `(05B)` scope, not selected `(05D)` scope.
+- `backend/tests/test_routes_jobs.py`: prior accepted uncommitted change - recognized as `(05B)`/`(05C)` scope, not selected `(05D)` scope.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/tests/test_seed_demo.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains concrete tests for fixture normalization, reset safety with application rows, mock-load role preservation, shared seed/route adapter use, offline expectation text, and phase-boundary checks.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The `(05D)` execution report was appended and accurately lists files, validations, and scope exclusions.
+
+## Dependency Review
+- Required dependencies: `(04A)` demo loader adapter/reset helper; `(04B)` JSON fixtures; `(04C)` seed demo script; `(04D)` mock-load endpoint.
+- Dependency status: satisfied; dependencies are checked complete in `docs/tasks/task_4.md`, committed in the latest Batch04 baseline, and the corresponding modules/files exist.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Actual fixture JSON is loaded through `demo_loader.py` and validated into Plan 3-compatible state shape.
+- Passed: Tests verify seed and mock-load both call the shared fixture adapter and Plan 3 `process_job_state` path instead of inserting directly into `job_posts`.
+- Passed: Safe reset deletes mock-owned application rows and mock jobs while preserving non-mock data.
+- Passed: Mock-load reset preserves the active `role_profile_id` by passing `preserve_role_profile_id`.
+- Passed: Seed help/source text clearly distinguishes first-time seed requirements from post-seed demo expectations.
+- Passed: Boundary audit checks no React UI, Celery/Redis/Playwright files, forbidden queue/worker/cron/search-run tables, direct `JobPost` insert path in seed, or direct Qdrant upsert bypass in seed/mock-load.
+- Failed: None.
+- Uncertain: Optional live seed was not run because it requires local Qdrant and embedding credentials; this is explicitly optional and not required for automated acceptance.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The new tests execute real fixture conversion and safe reset logic, exercise `/api/jobs/mock-load` through ASGI with dependency overrides, and patch only the approved service seams needed to avoid live external providers. Static boundary checks support the non-runtime scope requirements.
+
+## Hardcoding Review
+- Hardcoding found: no blocking hardcoding
+- Evidence: The fixture count assertions match the source-plan dataset contract. Test strings and IDs are local test fixtures; production code still derives behavior from fixture JSON, request `role_profile_id`, shared constants, and Plan 3 processing services.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_seed_demo.py`
+- Reported result: passed, 7 tests.
+- Rerun result: passed, 7 tests in 2.33s.
+- Status: passed.
+- Notes: Satisfies the selected seed/demo validation target.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app`
+- Reported result: passed.
+- Rerun result: passed with no output.
+- Status: passed.
+- Notes: Confirms app package compilation.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe scripts/export_api_contract.py`
+- Reported result: passed, wrote `shared\api-contract.json` with no final git diff for the artifact.
+- Rerun result: passed, wrote `shared\api-contract.json`; `git diff -- shared/api-contract.json` was empty.
+- Status: passed.
+- Notes: Confirms generated contract remains current.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest tests/test_api_contract_export.py tests/test_routes_role_profiles.py tests/test_routes_jobs.py tests/test_routes_batches.py tests/test_seed_demo.py`
+- Reported result: passed, 25 tests, 1 existing FastAPI/Starlette deprecation warning.
+- Rerun result: passed, 25 tests in 2.79s, same warning.
+- Status: passed.
+- Notes: Confirms focused Phase 4 verification.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m pytest`
+- Reported result: passed, 155 tests, 1 existing FastAPI/Starlette deprecation warning.
+- Rerun result: passed, 155 tests in 5.25s, same warning.
+- Status: passed.
+- Notes: Confirms full backend suite.
+- Command/check: optional manual live seed command
+- Reported result: not run; requires local Qdrant and embedding credentials.
+- Rerun result: not run.
+- Status: not required / optional.
+- Notes: Automated mocked validation covers mandatory acceptance; live seed remains optional per task and plan.
+- Command/check: git status, git diff --stat, git diff, git ls-files --others --exclude-standard, git log -1 --stat --oneline
+- Reported result: not separately reported by executor.
+- Rerun result: reviewed.
+- Status: passed.
+- Notes: Git evidence shows selected `(05D)` work in `backend/tests/test_seed_demo.py` alongside prior accepted uncommitted Batch05 test files and review/task/report docs.
+
+## Acceptance Review
+- Task acceptance: Actual mock JSON fixtures validate against the mock data normalization contract.
+- Status: satisfied
+- Evidence: `test_actual_demo_fixtures_validate_through_loader` loads `DEMO_FIXTURE_PATHS` through `load_mock_fixture_states`, validates state fields, source values, content hashes, placeholder score fields, and scorable status logic.
+- Task acceptance: Dataset has 12 items, 10 scorable jobs, and 2 need-review/social jobs.
+- Status: satisfied
+- Evidence: The same fixture test asserts 12 states, 10 states with `should_score_similarity is True`, and 2 non-scorable social/need-review states.
+- Task acceptance: Seed reset does not delete non-mock jobs.
+- Status: satisfied
+- Evidence: `test_reset_deletes_mock_applications_and_jobs_only` creates mock and manual jobs, resets mock data, and verifies manual job/application/profile remain.
+- Task acceptance: Seed reset succeeds after mock jobs have application rows.
+- Status: satisfied
+- Evidence: The reset test creates an `Application` for the mock job and verifies it is deleted before the mock job is removed.
+- Task acceptance: Mock-load reset preserves the caller's active role profile.
+- Status: satisfied
+- Evidence: `test_mock_load_reset_preserves_active_role_profile` posts to `/api/jobs/mock-load` and asserts reset receives `preserve_role_profile_id` equal to the request role profile.
+- Task acceptance: Seed and mock-load share the same adapter and neither inserts directly into `job_posts` nor calls Qdrant outside Plan 3 services.
+- Status: satisfied
+- Evidence: `test_seed_uses_shared_loader_and_plan_three_processing` verifies seed calls `load_mock_fixture_states` and `process_job_state`; `test_seed_and_mock_load_do_not_bypass_plan_three_boundaries` checks seed/mock-load source for shared adapter, Plan 3 processing, no direct `insert(JobPost)`, and no direct Qdrant upsert bypass.
+- Task acceptance: Post-seed demo mode does not depend on Tavily, LLM extraction, URL fetching, or manual paste.
+- Status: satisfied
+- Evidence: `test_seed_help_documents_first_time_and_post_seed_offline_expectations` verifies seed script text documents post-seed no Tavily/LLM extraction/URL fetching and first-time Qdrant/OpenAI embedding requirements.
+- Task acceptance: Final phase-boundary verification passes without scope creep.
+- Status: satisfied
+- Evidence: `test_phase_four_did_not_introduce_out_of_scope_infrastructure` and repository search found no forbidden Celery/Redis/Playwright project files or forbidden background infrastructure tables; focused and full backend validation passed.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in both the selected task block and the Batch05 progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch05 remains partial/incomplete (`[~]`) per user instruction; no batch completion checkbox/status was updated.
+- Execution report entry: appended and accurate for `(05D)`.
+- Review report entry: appended at EOF.
+- Other: Only the selected `(05D)` checkbox occurrences were updated; no implementation files were modified by this review; no commit was made.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The report accurately lists the new seed demo test file, the passing focused/full validations, the optional live seed omission, and the selected task scope.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/tests/test_seed_demo.py` remains untracked until the Batch05 commit.
+- Prior accepted untracked Batch05 files remain uncommitted by design: `backend/tests/test_api_contract_export.py`, `backend/tests/test_routes_batches.py`, `backend/tests/test_routes_jobs.py`, and `backend/tests/test_routes_role_profiles.py`.
+- Optional live `python scripts/seed_demo.py --reset` was not run because it requires local Qdrant and embedding credentials; automated mocked validation covers mandatory acceptance.
+- The full backend suite reports one existing FastAPI/Starlette deprecation warning from `fastapi.testclient`; tests still pass.
+
+### Observations
+- `backend/tests/test_seed_demo.py` is 299 lines, under the preferred 300-line ceiling.
+- Batch05 has all task checkboxes checked after this review, but the batch status remains `[~]` because the user explicitly instructed not to mark the batch complete.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, there is no next task in Plan 4 Batch05; proceed to A3/batch-scope audit if orchestrated.
+- Should batch be marked complete? no, per user instruction and because A3/batch-scope validation is the next gate.
+
+## Repair Instructions
+- None.
+
+---
+
+# Task Review Report - Batch05 A3 Repair
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Verification and Phase Boundary Validation
+- Task ID: Batch05 A3 repair after accepted `(05A)`, `(05B)`, `(05C)`, and `(05D)`
+- Task title: Remove out-of-scope prior-batch progress tracker changes after A3 audit feedback
+- Executor status reported: complete
+- Source of Truth: A3 audit JSON supplied by user; `docs/tasks/task_4.md` progress tracker
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: Batch05 A3 repair after A3 scope audit
+- Reviewed task ID: Batch05 A3 repair
+- Correct selection: yes
+- Notes: The latest execution report entry is `Task Execution Report - Batch05 Repair After A3 Scope Audit` and reports status `complete`.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes, only to identify the committed Batch04 baseline and distinguish existing uncommitted Batch05 audit/test artifacts.
+- changed files from git: `docs/reports/report_4_execute_agent.md`; `docs/review/review_4_review_agent.md`; `docs/tasks/task_4.md`
+- untracked files: `backend/tests/test_api_contract_export.py`; `backend/tests/test_routes_batches.py`; `backend/tests/test_routes_jobs.py`; `backend/tests/test_routes_role_profiles.py`; `backend/tests/test_seed_demo.py`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - reviewed the current progress tracker, Batch05 task entries, and `git diff -- docs/tasks/task_4.md` after the repair.
+- `docs/reports/report_4_execute_agent.md`: in scope for review evidence - latest A1 repair report reviewed; the report append is audit evidence, not implementation repair work.
+- `docs/review/review_4_review_agent.md`: in scope for append-only A2 review record; final lines inspected before EOF append.
+- `backend/tests/test_api_contract_export.py`: existing accepted Batch05 artifact - untracked from prior accepted `(05A)`, not changed by this repair review.
+- `backend/tests/test_routes_role_profiles.py`: existing accepted Batch05 artifact - untracked from prior accepted `(05B)`, not changed by this repair review.
+- `backend/tests/test_routes_batches.py`: existing accepted Batch05 artifact - untracked from prior accepted `(05B)`, not changed by this repair review.
+- `backend/tests/test_routes_jobs.py`: existing accepted Batch05 artifact - untracked from prior accepted `(05B)`/`(05C)`, not changed by this repair review.
+- `backend/tests/test_seed_demo.py`: existing accepted Batch05 artifact - untracked from prior accepted `(05D)`, not changed by this repair review.
+
+## Reported Files Cross-Check
+- file from execution report: `docs/tasks/task_4.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The task-file diff no longer contains Batch02, Batch03, or Batch04 tracker-status changes. Remaining task-file diff is limited to accepted Batch05 task checkboxes and the Batch05 in-progress marker.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes, as append-only A1 audit evidence for the repair run.
+- notes: No implementation, test, README, plan, or non-task documentation file was modified by the repair evidence reviewed here.
+
+## Dependency Review
+- Required dependencies: A3 audit finding for Batch05; prior A2 acceptance of `(05A)`, `(05B)`, `(05C)`, and `(05D)`.
+- Dependency status: satisfied.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Repair only affects progress tracking in `docs/tasks/task_4.md`; no implementation, route, service, schema, test behavior, or phase-boundary code changed.
+- Passed: Prior-batch tracker lines for Batch02, Batch03, and Batch04 are currently unchecked and are no longer present as changed lines in `git diff -- docs/tasks/task_4.md`.
+- Passed: Accepted Batch05 task checkboxes remain checked in both the task entries and Batch05 progress tracker.
+- Failed: None.
+- Uncertain: Exact pre-repair timestamp attribution for existing report/review/test diffs cannot be reconstructed from git status alone; the A1 repair report and current diff support that the functional repair was limited to `docs/tasks/task_4.md` plus report append evidence.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: This was a documentation/progress repair. Repository evidence directly shows the prior-batch progress changes are absent from the task-file diff.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Not applicable to runtime logic; no implementation files changed.
+
+## Validations Reviewed
+- Command/check: `git diff -- docs/tasks/task_4.md`
+- Reported result: passed; no Batch02, Batch03, or Batch04 tracker-status changes remain in the task-file diff, and Batch05 accepted task checkbox updates remain.
+- Rerun result: passed; diff shows only `(05A)`-`(05D)` checkbox updates, Batch05 `[~]`, and Batch05 tracker task checkboxes.
+- Status: passed.
+- Notes: This is the primary A3 repair validation.
+- Command/check: `rg -n "Batch02 - Core FastAPI|Batch03 - Manual|Batch04 - Demo|Batch05 - Verification|\(05A\)|\(05B\)|\(05C\)|\(05D\)" docs/tasks/task_4.md`
+- Reported result: passed.
+- Rerun result: passed; Batch02, Batch03, and Batch04 tracker lines are unchecked at lines 1018-1020; Batch05 is `[~]` at line 1021; `(05A)`-`(05D)` are checked at lines 819, 844, 876, 908, and 1055-1058.
+- Status: passed.
+- Notes: Confirms accepted Batch05 task checkboxes remain intact.
+- Command/check: `git status --short`
+- Reported result: passed.
+- Rerun result: reviewed.
+- Status: passed.
+- Notes: Current modified tracked files are the expected task/report/review audit files; current untracked files are accepted Batch05 test artifacts from prior reviewed tasks.
+- Command/check: `git diff --name-only`
+- Reported result: not separately reported by executor.
+- Rerun result: reviewed; output is `docs/reports/report_4_execute_agent.md`, `docs/review/review_4_review_agent.md`, and `docs/tasks/task_4.md` before this append.
+- Status: passed.
+- Notes: No implementation source file appears in the tracked diff.
+- Command/check: `git diff -U0 -- docs/tasks/task_4.md`
+- Reported result: not separately reported by executor.
+- Rerun result: passed; zero-context diff confirms no Batch02, Batch03, or Batch04 tracker-line hunks remain.
+- Status: passed.
+- Notes: Focused confirmation of the A3 finding repair.
+
+## Acceptance Review
+- Task acceptance: Remove prior-batch tracker status changes from the Batch05 diff.
+- Status: satisfied
+- Evidence: `git diff -U0 -- docs/tasks/task_4.md` contains no Batch02, Batch03, or Batch04 tracker-line changes.
+- Task acceptance: Keep accepted `(05A)`, `(05B)`, `(05C)`, and `(05D)` checkbox updates intact.
+- Status: satisfied
+- Evidence: All four accepted Batch05 task checkboxes are checked in the task entries and the Batch05 progress tracker.
+- Task acceptance: Do not modify implementation, test, or unrelated files as part of the functional repair.
+- Status: satisfied
+- Evidence: No tracked implementation files are modified; untracked test files are the existing accepted Batch05 artifacts; A1 repair report states no implementation/test/review/README files were edited during repair.
+
+## Progress Tracking
+- Selected task checkbox before review: not applicable; this was an A3 repair, not a new task ID.
+- Checkbox updated by reviewer: no
+- Batch status: Batch05 remains `[~]`; A2 did not mark the batch complete.
+- Execution report entry: latest repair report appended and reviewed.
+- Review report entry: appended at EOF.
+- Other: `(05A)`, `(05B)`, `(05C)`, and `(05D)` remain checked; Batch02, Batch03, and Batch04 batch tracker lines are unchecked and not part of the current task-file diff.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None blocking. The A1 report accurately describes the task-file repair and validation evidence. It also records its own report append, which is treated here as audit evidence rather than implementation repair scope.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- Current git status still includes pre-existing untracked Batch05 test artifacts until the Batch05 commit.
+- `docs/reports/report_4_execute_agent.md` and `docs/review/review_4_review_agent.md` remain modified as append-only audit files for Batch05 execution/review history.
+
+### Observations
+- The specific A3 blocking condition is resolved: prior-batch Batch02, Batch03, and Batch04 tracker status changes are no longer in the Batch05 task-file diff.
+- A3 should be rerun after this accepted repair review.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, proceed to A3 rerun for Batch05 scope audit.
+- Should batch be marked complete? no, wait for A3/batch-scope validation.
+
+## Repair Instructions
+- None.

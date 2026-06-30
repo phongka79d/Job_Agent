@@ -84,6 +84,7 @@ Job_Agent/
 |   |-- tests/
 |   |   |-- __init__.py
 |   |   |-- conftest.py                    # Shared SQLite and fake provider fixtures (Phase 3 Batch 04)
+|   |   |-- test_api_contract_export.py    # API contract freshness, CORS, and startup wiring tests (Phase 4 Batch 05)
 |   |   |-- test_constants_contract.py        # Shared constants contract test
 |   |   |-- test_dedup_service.py            # Focused deduplication policy tests (Phase 3 Batch 04)
 |   |   |-- test_embedding_service.py        # Unit tests for embedding provider and dimensions (Phase 3 Batch 01)
@@ -95,7 +96,11 @@ Job_Agent/
 |   |   |-- test_manual_text_preparation.py   # Manual raw-text parser preparation tests (Batch02)
 |   |   |-- test_nodes.py                    # Unit tests for extraction graph nodes (Batch03)
 |   |   |-- test_qdrant_service.py           # Mocked Qdrant collection/filter/query tests (Phase 3 Batch 04)
+|   |   |-- test_routes_batches.py           # Batch summary route tests (Phase 4 Batch 05)
+|   |   |-- test_routes_jobs.py              # Job route, ingestion, search, and status tests (Phase 4 Batch 05)
+|   |   |-- test_routes_role_profiles.py     # Role profile route tests (Phase 4 Batch 05)
 |   |   |-- test_scoring_service.py          # Unit tests for deterministic scoring and normalization (Phase 3 Batch 01)
+|   |   |-- test_seed_demo.py                # Demo loader, seed, mock-load, and scope-boundary tests (Phase 4 Batch 05)
 |   |   `-- test_url_cleaning.py             # Mocked URL extraction and fallback tests (Batch02)
 |   |-- requirements.txt          # Backend runtime dependencies
 |   |-- requirements-dev.txt      # Backend test dependencies
@@ -275,6 +280,22 @@ Run a live reset seed only when local Qdrant is running and `OPENAI_API_KEY` is 
 
 ```bash
 python scripts/seed_demo.py --reset
+```
+
+---
+
+## Phase 4 Verification and Boundary Checks (Batch 05)
+
+Phase 4 Batch 05 adds focused backend tests that protect the API contract, route behavior, ingestion flow, demo reset behavior, and phase boundary before the React phase consumes the API:
+
+- `test_api_contract_export.py` fails when `shared/api-contract.json` is stale and verifies local CORS plus Qdrant startup delegation.
+- `test_routes_role_profiles.py`, `test_routes_jobs.py`, and `test_routes_batches.py` cover role profile routes, review/dashboard/detail/status routes, ingestion/search routes, and batch summary aggregation with mocked external providers where needed.
+- `test_seed_demo.py` validates actual demo fixtures, safe mock-data reset with application rows, mock-load role preservation, shared seed/mock-load adapter use, post-seed offline expectations, and absence of out-of-scope worker/browser infrastructure.
+
+From the `backend` directory, run the focused Phase 4 verification target:
+
+```bash
+python -m pytest tests/test_api_contract_export.py tests/test_routes_role_profiles.py tests/test_routes_jobs.py tests/test_routes_batches.py tests/test_seed_demo.py
 ```
 
 ---

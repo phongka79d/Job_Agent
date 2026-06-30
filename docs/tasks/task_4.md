@@ -816,7 +816,7 @@ Phase 4 is an integration layer over existing services. Tests must catch contrac
 
 ### Tasks
 
-- [ ] (05A): Add API contract export and app wiring tests
+- [x] (05A): Add API contract export and app wiring tests
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### API Contract Export`
     - `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`
@@ -841,7 +841,7 @@ Phase 4 is an integration layer over existing services. Tests must catch contrac
   - Blocked Condition: None.
   - Files: `backend/tests/test_api_contract_export.py`, possibly existing route test files.
 
-- [ ] (05B): Add core route tests for profiles, queries, status, and batch summary
+- [x] (05B): Add core route tests for profiles, queries, status, and batch summary
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Role Profile Routes`
@@ -873,7 +873,7 @@ Phase 4 is an integration layer over existing services. Tests must catch contrac
   - Blocked Condition: None.
   - Files: `backend/tests/test_routes_role_profiles.py`, `backend/tests/test_routes_jobs.py`, `backend/tests/test_routes_batches.py`.
 
-- [ ] (05C): Add ingestion and search route tests with mocked providers
+- [x] (05C): Add ingestion and search route tests with mocked providers
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Parse Routes`
@@ -905,7 +905,7 @@ Phase 4 is an integration layer over existing services. Tests must catch contrac
   - Blocked Condition: None.
   - Files: `backend/tests/test_routes_jobs.py`.
 
-- [ ] (05D): Add demo loader, seed, mock-load, and final phase-boundary verification
+- [x] (05D): Add demo loader, seed, mock-load, and final phase-boundary verification
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Demo Dataset`
@@ -1018,7 +1018,7 @@ Optional future tracks are outside the mandatory chain.
 - [ ] Batch02 - Core FastAPI Routes and App Wiring
 - [ ] Batch03 - Manual and Search Ingestion Routes
 - [ ] Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
-- [ ] Batch05 - Verification and Phase Boundary Validation
+- [~] Batch05 - Verification and Phase Boundary Validation
 
 ### Task IDs
 
@@ -1052,10 +1052,10 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch05
 
-- [ ] (05A): Add API contract export and app wiring tests
-- [ ] (05B): Add core route tests for profiles, queries, status, and batch summary
-- [ ] (05C): Add ingestion and search route tests with mocked providers
-- [ ] (05D): Add demo loader, seed, mock-load, and final phase-boundary verification
+- [x] (05A): Add API contract export and app wiring tests
+- [x] (05B): Add core route tests for profiles, queries, status, and batch summary
+- [x] (05C): Add ingestion and search route tests with mocked providers
+- [x] (05D): Add demo loader, seed, mock-load, and final phase-boundary verification
 
 ## Completion Reporting Rules for Future Execution Agents
 
