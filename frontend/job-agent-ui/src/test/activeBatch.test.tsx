@@ -85,6 +85,8 @@ describe("Active Batch State and Role Isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [] });
+    vi.mocked(getJobs).mockResolvedValue({ jobs: [] });
   });
 
   afterEach(() => {
@@ -186,13 +188,13 @@ describe("Active Batch State and Role Isolation", () => {
     const profileSelect = screen.getByTestId("profile-select") as HTMLSelectElement;
     fireEvent.change(profileSelect, { target: { value: "prof-2" } });
 
-    // There should be no network calls except listRoleProfiles
-    // Let's assert that other mocked api client methods were never called
+    // There should be no ingestion or dashboard calls. Review jobs may load for the selected profile,
+    // but no latest-batch discovery endpoint exists or is called.
     expect(searchJobs).not.toHaveBeenCalled();
     expect(parseJobUrl).not.toHaveBeenCalled();
     expect(parseJobText).not.toHaveBeenCalled();
-    expect(getReviewJobs).not.toHaveBeenCalled();
     expect(getJobs).not.toHaveBeenCalled();
+    expect(getReviewJobs).toHaveBeenCalledWith("prof-2");
 
     // Verify localStorage key for prof-2 doesn't trigger any API fetch
     const storedBatchId = localStorage.getItem("job-agent.activeBatchId.prof-2");

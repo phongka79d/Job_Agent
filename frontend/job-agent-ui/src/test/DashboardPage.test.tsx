@@ -143,18 +143,23 @@ describe("DashboardPage component tests", () => {
     expect(screen.getByText(/Please select or create a role profile/i)).toBeInTheDocument();
   });
 
-  it("renders active batch prompt when activeBatchId is missing", () => {
+  it("fetches tracked jobs when activeBatchId is missing", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: null });
+    vi.mocked(getJobs).mockResolvedValue({ jobs: [mockJobs[0]] });
     render(<DashboardPage />);
-    expect(screen.getByText(/No active batch/i)).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(getJobs).toHaveBeenCalledWith("profile-456", "tracked");
+      expect(screen.getByText("React Developer")).toBeInTheDocument();
+    });
   });
 
-  it("renders empty state when there are no jobs for the batch", async () => {
-    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: "batch-123" });
+  it("renders empty state when there are no tracked jobs", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: null });
     vi.mocked(getJobs).mockResolvedValue({ jobs: [] });
     render(<DashboardPage />);
     await waitFor(() => {
-      expect(screen.getByText(/No tracked jobs found for the active batch/i)).toBeInTheDocument();
+      expect(screen.getByText(/No tracked jobs found/i)).toBeInTheDocument();
     });
   });
 
@@ -183,18 +188,17 @@ describe("DashboardPage component tests", () => {
     });
   });
 
-  it("fetches and renders jobs matching the active batch ID and filters out other batches", async () => {
+  it("fetches tracked jobs and preserves backend returned statuses across batches", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: "batch-123" });
     vi.mocked(getJobs).mockResolvedValue({ jobs: mockJobs });
     render(<DashboardPage />);
 
-    // Should show job-1 (batch-123, status=applied)
-    // Should show job-2 (batch-123, status=interviewing)
-    // Should NOT show job-3 (batch-different, status=offer)
+    // Dashboard scope is the role profile and backend-tracked status filter.
+    // Active batch is only used by the metrics panel, so older tracked jobs stay visible.
     await waitFor(() => {
       expect(screen.getByText("React Developer")).toBeInTheDocument();
       expect(screen.getByText("Vue Developer")).toBeInTheDocument();
-      expect(screen.queryByText("Angular Developer")).not.toBeInTheDocument();
+      expect(screen.getByText("Angular Developer")).toBeInTheDocument();
     });
 
     // Verify it called API with correct status="tracked" and role_profile_id="profile-456"

@@ -664,7 +664,7 @@ The MVP must be reliable during a portfolio demo. This batch fills in the operat
 
 ### Tasks
 
-- [ ] (04A): Build batch metrics panel with active batch lifecycle
+- [x] (04A): Build batch metrics panel with active batch lifecycle
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Metrics Panel`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Active Batch Handling`
@@ -693,7 +693,7 @@ The MVP must be reliable during a portfolio demo. This batch fills in the operat
   - Blocked Condition: None.
   - Files: `src/components/BatchMetrics.tsx`, `src/App.tsx`, metrics tests.
 
-- [ ] (04B): Complete loading, empty, disabled, warning, and error states
+- [x] (04B): Complete loading, empty, disabled, warning, and error states
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### UI States`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Ingestion UI`

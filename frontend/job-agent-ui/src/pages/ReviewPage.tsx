@@ -18,7 +18,7 @@ export default function ReviewPage() {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const fetchJobs = useCallback(async () => {
-    if (!activeProfileId || !activeBatchId) {
+    if (!activeProfileId) {
       setJobs([]);
       return;
     }
@@ -27,19 +27,13 @@ export default function ReviewPage() {
     setError(null);
     try {
       const response = await getReviewJobs(activeProfileId);
-      // Filter jobs based on active batch ID and pending_review status from the API.
-      const filtered = (response.jobs || []).filter(
-        (job) =>
-          job.batch_id === activeBatchId &&
-          job.status === "pending_review"
-      );
-      setJobs(filtered);
+      setJobs(response.jobs || []);
     } catch (err: any) {
       setError(err.message || "Failed to fetch review jobs.");
     } finally {
       setIsLoading(false);
     }
-  }, [activeProfileId, activeBatchId]);
+  }, [activeProfileId]);
 
   useEffect(() => {
     fetchJobs();
@@ -50,9 +44,10 @@ export default function ReviewPage() {
     setError(null);
     try {
       await approveJob(jobId);
-      // Remove immediately from the UI review queue list on success
-      setJobs((prev) => prev.filter((job) => job.id !== jobId));
-      triggerMetricsRefresh?.();
+      await fetchJobs();
+      if (activeBatchId) {
+        triggerMetricsRefresh?.();
+      }
     } catch (err: any) {
       setError(err.message || "Failed to approve job.");
     } finally {
@@ -65,9 +60,10 @@ export default function ReviewPage() {
     setError(null);
     try {
       await rejectJob(jobId);
-      // Remove immediately from the UI review queue list on success
-      setJobs((prev) => prev.filter((job) => job.id !== jobId));
-      triggerMetricsRefresh?.();
+      await fetchJobs();
+      if (activeBatchId) {
+        triggerMetricsRefresh?.();
+      }
     } catch (err: any) {
       setError(err.message || "Failed to reject job.");
     } finally {
@@ -112,21 +108,9 @@ export default function ReviewPage() {
             color: "var(--text-muted)",
             fontSize: "14px",
           }}
-        >
-          Please select or create a role profile to view pending review jobs.
-        </div>
-      ) : !activeBatchId ? (
-        <div
-          className="glass-panel"
-          style={{
-            padding: "32px",
-            textAlign: "center",
-            color: "var(--text-muted)",
-            fontSize: "14px",
-          }}
-        >
-          No active batch. Create or select a role profile and ingest jobs to start evaluating.
-        </div>
+      >
+        Please select or create a role profile to view pending review jobs.
+      </div>
       ) : isLoading ? (
         <div
           style={{
@@ -149,7 +133,7 @@ export default function ReviewPage() {
             fontSize: "14px",
           }}
         >
-          No jobs pending review for the active batch.
+          No jobs pending review.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>

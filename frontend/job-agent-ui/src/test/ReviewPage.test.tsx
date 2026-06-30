@@ -145,39 +145,44 @@ describe("ReviewPage component tests", () => {
     expect(screen.getByText(/Please select or create a role profile/i)).toBeInTheDocument();
   });
 
-  it("renders active batch prompt when activeBatchId is missing", () => {
+  it("fetches review jobs when activeBatchId is missing", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: null });
+    vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [mockJobs[0]] });
     render(<ReviewPage />);
-    expect(screen.getByText(/No active batch/i)).toBeInTheDocument();
-  });
 
-  it("renders empty state when there are no jobs for the batch", async () => {
-    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: "batch-123" });
-    vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [] });
-    render(<ReviewPage />);
     await waitFor(() => {
-      expect(screen.getByText(/No jobs pending review for the active batch/i)).toBeInTheDocument();
+      expect(getReviewJobs).toHaveBeenCalledWith("profile-456");
+      expect(screen.getByText("React Developer")).toBeInTheDocument();
     });
   });
 
-  it("fetches and renders jobs matching the active batch ID and pending review status", async () => {
+  it("renders empty state when there are no pending review jobs", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: null });
+    vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [] });
+    render(<ReviewPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/No jobs pending review/i)).toBeInTheDocument();
+    });
+  });
+
+  it("fetches and renders backend pending review jobs across batches", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: "batch-123" });
     vi.mocked(getReviewJobs).mockResolvedValue({ jobs: mockJobs });
     render(<ReviewPage />);
 
-    // Should show job-1 (batch-123 & status=pending_review)
-    // Should show job-2 (batch-123 & jd_status=pending_review)
-    // Should NOT show job-3 (batch-different)
+    // Review queue scope is the role profile. Active batch is only used by metrics.
     await waitFor(() => {
       expect(screen.getByText("React Developer")).toBeInTheDocument();
       expect(screen.getByText("Vue Developer")).toBeInTheDocument();
-      expect(screen.queryByText("Angular Developer")).not.toBeInTheDocument();
+      expect(screen.getByText("Angular Developer")).toBeInTheDocument();
     });
   });
 
-  it("approving a job calls the API and immediately removes it from the list", async () => {
+  it("approving a job calls the API and refreshes the list from the backend", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: "batch-123" });
-    vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [mockJobs[0]] });
+    vi.mocked(getReviewJobs)
+      .mockResolvedValueOnce({ jobs: [mockJobs[0]] })
+      .mockResolvedValueOnce({ jobs: [] });
     vi.mocked(approveJob).mockResolvedValue({ ...mockJobs[0], status: "saved" });
 
     render(<ReviewPage />);
@@ -190,14 +195,17 @@ describe("ReviewPage component tests", () => {
 
     expect(approveJob).toHaveBeenCalledWith("job-1");
     await waitFor(() => {
+      expect(getReviewJobs).toHaveBeenCalledTimes(2);
       expect(screen.queryByText("React Developer")).not.toBeInTheDocument();
-      expect(screen.getByText(/No jobs pending review for the active batch/i)).toBeInTheDocument();
+      expect(screen.getByText(/No jobs pending review/i)).toBeInTheDocument();
     });
   });
 
-  it("rejecting a job calls the API and immediately removes it from the list", async () => {
+  it("rejecting a job calls the API and refreshes the list from the backend", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-456", activeBatchId: "batch-123" });
-    vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [mockJobs[0]] });
+    vi.mocked(getReviewJobs)
+      .mockResolvedValueOnce({ jobs: [mockJobs[0]] })
+      .mockResolvedValueOnce({ jobs: [] });
     vi.mocked(rejectJob).mockResolvedValue({ ...mockJobs[0], status: "ignored" });
 
     render(<ReviewPage />);
@@ -210,8 +218,9 @@ describe("ReviewPage component tests", () => {
 
     expect(rejectJob).toHaveBeenCalledWith("job-1");
     await waitFor(() => {
+      expect(getReviewJobs).toHaveBeenCalledTimes(2);
       expect(screen.queryByText("React Developer")).not.toBeInTheDocument();
-      expect(screen.getByText(/No jobs pending review for the active batch/i)).toBeInTheDocument();
+      expect(screen.getByText(/No jobs pending review/i)).toBeInTheDocument();
     });
   });
 
