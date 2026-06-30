@@ -43,6 +43,18 @@ class Settings(BaseSettings):
         default="text-embedding-3-small",
         description="OpenAI embedding model name"
     )
+    OPENAI_BASE_URL: Optional[str] = Field(
+        default=None,
+        description="Optional shared OpenAI-compatible API base URL"
+    )
+    OPENAI_LLM_BASE_URL: Optional[str] = Field(
+        default=None,
+        description="Optional OpenAI-compatible API base URL for chat/LLM calls"
+    )
+    OPENAI_EMBEDDING_BASE_URL: Optional[str] = Field(
+        default=None,
+        description="Optional OpenAI-compatible API base URL for embedding calls"
+    )
     EMBEDDING_DIMENSION: int = Field(default=1536, description="Dimension of embedding vectors")
 
     # Tavily Settings

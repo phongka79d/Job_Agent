@@ -1,11 +1,13 @@
 """Focused unit tests for the mockable LLM client boundary."""
 
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import SecretStr
 
 from app.agents.schemas import JobPostExtract
+from app.core.config import settings
 from app.services.llm_client import (
     FakeJobExtractionClient,
     LLMProviderError,
@@ -125,6 +127,49 @@ def test_production_client_lazy_initialization() -> None:
     
     assert client.model_name == "test-model"
     assert client._llm is None
+
+
+def test_production_client_passes_configured_base_url() -> None:
+    structured_llm = MagicMock()
+
+    with patch("app.services.llm_client.ChatOpenAI") as chat_openai:
+        chat_openai.return_value.with_structured_output.return_value = structured_llm
+
+        client = OpenAIJobExtractionClient(
+            model_name="test-model",
+            api_key=SecretStr("test-api-key"),
+            base_url="https://llm-gateway.test/v1",
+        )
+        llm = client._get_llm()
+
+    assert llm is structured_llm
+    chat_openai.assert_called_once_with(
+        model="test-model",
+        api_key="test-api-key",
+        base_url="https://llm-gateway.test/v1",
+        temperature=0.0,
+    )
+    chat_openai.return_value.with_structured_output.assert_called_once_with(
+        JobPostExtract,
+        include_raw=True,
+    )
+
+
+def test_production_client_uses_llm_base_url_from_settings(monkeypatch) -> None:
+    structured_llm = MagicMock()
+    monkeypatch.setattr(settings, "OPENAI_BASE_URL", "https://common-gateway.test/v1", raising=False)
+    monkeypatch.setattr(settings, "OPENAI_LLM_BASE_URL", "https://settings-llm-gateway.test/v1", raising=False)
+
+    with patch("app.services.llm_client.ChatOpenAI") as chat_openai:
+        chat_openai.return_value.with_structured_output.return_value = structured_llm
+
+        client = OpenAIJobExtractionClient(
+            model_name="test-model",
+            api_key=SecretStr("test-api-key"),
+        )
+        client._get_llm()
+
+    assert chat_openai.call_args.kwargs["base_url"] == "https://settings-llm-gateway.test/v1"
 
 
 @pytest.mark.asyncio

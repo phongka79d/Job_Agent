@@ -127,6 +127,7 @@ Create your local environment file by copying the template:
 cp .env.example .env
 ```
 Fill in the required keys (such as `OPENAI_API_KEY` and `TAVILY_API_KEY`) inside the `.env` file.
+For official OpenAI, leave the optional OpenAI endpoint fields blank. For OpenAI-compatible providers, set `OPENAI_BASE_URL` as the shared endpoint, or use `OPENAI_LLM_BASE_URL` and `OPENAI_EMBEDDING_BASE_URL` when chat and embedding calls go to different endpoints.
 
 ### 2. Infrastructure Setup
 Run the vector database locally using Docker Compose:

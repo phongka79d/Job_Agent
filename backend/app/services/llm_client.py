@@ -89,9 +89,11 @@ class OpenAIJobExtractionClient(JobExtractionClientProtocol):
         self,
         model_name: Optional[str] = None,
         api_key: Optional[SecretStr] = None,
+        base_url: Optional[str] = None,
     ):
         self.model_name = model_name or settings.OPENAI_MODEL
         self.api_key = api_key or settings.OPENAI_API_KEY
+        self.base_url = base_url or settings.OPENAI_LLM_BASE_URL or settings.OPENAI_BASE_URL
         self._llm = None
 
     def _get_llm(self) -> Any:
@@ -106,6 +108,7 @@ class OpenAIJobExtractionClient(JobExtractionClientProtocol):
                 self._llm = ChatOpenAI(
                     model=self.model_name,
                     api_key=api_key_str,
+                    base_url=self.base_url or None,
                     temperature=0.0,
                 ).with_structured_output(JobPostExtract, include_raw=True)
             except Exception as e:

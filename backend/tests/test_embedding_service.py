@@ -39,6 +39,45 @@ async def test_embed_text_success():
 
 
 @pytest.mark.asyncio
+async def test_embedding_service_passes_configured_base_url():
+    mock_vector = [0.1] * settings.EMBEDDING_DIMENSION
+    base_url = "https://embedding-gateway.test/v1"
+
+    with patch("app.services.embedding_service.OpenAIEmbeddings") as mock_embeddings_class:
+        mock_instance = MagicMock()
+        mock_instance.aembed_query = AsyncMock(return_value=mock_vector)
+        mock_embeddings_class.return_value = mock_instance
+
+        service = EmbeddingService(openai_api_key="test-api-key", base_url=base_url)
+        result = await service.embed_text("This is a valid JD text to embed.")
+
+    assert result == mock_vector
+    mock_embeddings_class.assert_called_once_with(
+        api_key="test-api-key",
+        model=settings.OPENAI_EMBEDDING_MODEL,
+        base_url=base_url,
+    )
+
+
+@pytest.mark.asyncio
+async def test_embedding_service_uses_embedding_base_url_from_settings(monkeypatch):
+    mock_vector = [0.1] * settings.EMBEDDING_DIMENSION
+    base_url = "https://settings-embedding-gateway.test/v1"
+    monkeypatch.setattr(settings, "OPENAI_BASE_URL", "https://common-gateway.test/v1", raising=False)
+    monkeypatch.setattr(settings, "OPENAI_EMBEDDING_BASE_URL", base_url, raising=False)
+
+    with patch("app.services.embedding_service.OpenAIEmbeddings") as mock_embeddings_class:
+        mock_instance = MagicMock()
+        mock_instance.aembed_query = AsyncMock(return_value=mock_vector)
+        mock_embeddings_class.return_value = mock_instance
+
+        service = EmbeddingService(openai_api_key="test-api-key")
+        await service.embed_text("This is a valid JD text to embed.")
+
+    assert mock_embeddings_class.call_args.kwargs["base_url"] == base_url
+
+
+@pytest.mark.asyncio
 async def test_embed_text_dimension_mismatch():
     """Verify dimension mismatch throws an EmbeddingServiceError."""
     # Return vector size smaller than configured

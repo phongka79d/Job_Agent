@@ -21,9 +21,11 @@ class EmbeddingService:
         model_name: Optional[str] = None,
         embedding_dimension: Optional[int] = None,
         openai_api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
     ):
         self.model_name = model_name or settings.OPENAI_EMBEDDING_MODEL
         self.embedding_dimension = embedding_dimension or settings.EMBEDDING_DIMENSION
+        self.base_url = base_url or settings.OPENAI_EMBEDDING_BASE_URL or settings.OPENAI_BASE_URL
         
         # Read API key. If not provided, fetch from settings lazily.
         self._openai_api_key = openai_api_key
@@ -43,8 +45,9 @@ class EmbeddingService:
             
             try:
                 self._client = OpenAIEmbeddings(
-                    openai_api_key=api_key,
+                    api_key=api_key,
                     model=self.model_name,
+                    base_url=self.base_url or None,
                 )
             except Exception as e:
                 logger.error("Failed to initialize OpenAIEmbeddings client")
