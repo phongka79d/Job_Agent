@@ -130,7 +130,7 @@ Routes and the future React frontend need one backend-owned contract. Building s
 
 ### Tasks
 
-- [ ] (01A): Verify Phase 4 prerequisites and service ownership boundaries
+- [x] (01A): Verify Phase 4 prerequisites and service ownership boundaries
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 3. Prerequisites from Prior Phases`
     - `docs/plans/Plan_4.md` > `## 5. Out of Scope`
@@ -157,7 +157,7 @@ Routes and the future React frontend need one backend-owned contract. Building s
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only if the user must approve a separate earlier-phase repair.
   - Files: Existing files only; no source edits expected for this task.
 
-- [ ] (01B): Create backend API request and response schemas
+- [x] (01B): Create backend API request and response schemas
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Common API Response Shapes`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### API Schema Ownership`
@@ -185,7 +185,7 @@ Routes and the future React frontend need one backend-owned contract. Building s
   - Blocked Condition: None.
   - Files: `backend/app/api/schemas.py`.
 
-- [ ] (01C): Generate the frontend API contract from backend owners
+- [x] (01C): Generate the frontend API contract from backend owners
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### API Contract Export`
     - `docs/plans/Plan_4.md` > `## 10. Handoff Notes for Phase 5`
@@ -1014,7 +1014,7 @@ Optional future tracks are outside the mandatory chain.
 
 ### Batches
 
-- [ ] Batch01 - API Schema and Contract Foundation
+- [x] Batch01 - API Schema and Contract Foundation
 - [ ] Batch02 - Core FastAPI Routes and App Wiring
 - [ ] Batch03 - Manual and Search Ingestion Routes
 - [ ] Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
@@ -1024,9 +1024,9 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch01
 
-- [ ] (01A): Verify Phase 4 prerequisites and service ownership boundaries
-- [ ] (01B): Create backend API request and response schemas
-- [ ] (01C): Generate the frontend API contract from backend owners
+- [x] (01A): Verify Phase 4 prerequisites and service ownership boundaries
+- [x] (01B): Create backend API request and response schemas
+- [x] (01C): Generate the frontend API contract from backend owners
 
 #### Batch02
 

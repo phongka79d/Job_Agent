@@ -41,7 +41,8 @@ Job_Agent/
 |-- backend/
 |   |-- app/
 |   |   |-- api/
-|   |   |   `-- __init__.py
+|   |   |   |-- __init__.py
+|   |   |   `-- schemas.py            # Phase 4 API request/response schemas and JSON Schema source
 |   |   |-- agents/
 |   |   |   |-- __init__.py
 |   |   |   |-- graph.py              # Extraction graph wiring and conditional edges (Batch03)
@@ -72,6 +73,8 @@ Job_Agent/
 |   |   |   `-- scoring_service.py    # Deterministic scoring and clean text builders (Phase 3 Batch 01)
 |   |-- data/
 |   |   `-- .gitkeep
+|   |-- scripts/
+|   |   `-- export_api_contract.py   # Generates the frontend API contract from backend owners
 |   |-- tests/
 |   |   |-- __init__.py
 |   |   |-- conftest.py                    # Shared SQLite and fake provider fixtures (Phase 3 Batch 04)
@@ -93,6 +96,8 @@ Job_Agent/
 |   |-- .dockerignore             # Docker ignore configuration
 |   `-- Dockerfile                # Backend-only Docker build configuration
 |-- docker-compose.yml            # Local Qdrant container orchestration
+|-- shared/
+|   `-- api-contract.json          # Generated API contract for frontend consumers
 |-- .gitignore                    # Repository ignore rules (protecting secrets and local DB)
 |-- .env.example                  # Environment configuration template
 |-- README.md                     # Project overview and setup documentation
@@ -174,6 +179,23 @@ From the `backend` directory, smoke-check the app compile and run tests:
 python -m compileall -q app
 python -c "from app.agents.graph import graph; from app.services.extraction_service import run_extraction_graph; print('extraction graph and entrypoints import successfully')"
 pytest
+```
+
+---
+
+## API Schema and Contract Foundation (Phase 4 - Batch 01)
+
+Phase 4 Batch 01 adds the backend-owned API schema layer and a generated frontend contract artifact without adding route handlers or new runtime endpoints yet:
+
+- **API Schema Ownership:** `backend/app/api/schemas.py` defines Pydantic v2 request and response models for role profiles, ingestion requests/results, job rows, status mutations, job lists, and batch summaries.
+- **Backend-Owned Contract Export:** `backend/scripts/export_api_contract.py` generates `shared/api-contract.json` from backend constants, `ALLOWED_STATUS_TRANSITIONS`, endpoint metadata, and Pydantic JSON Schema output.
+- **Route Handoff:** Future FastAPI route modules should import these schemas instead of defining local response shapes or frontend-maintained status/source unions.
+
+From the `backend` directory, regenerate and smoke-check the API contract:
+
+```bash
+python scripts/export_api_contract.py
+python -c "from app.api.schemas import JobResponse, IngestionResponse; print('api schemas import successfully')"
 ```
 
 ---

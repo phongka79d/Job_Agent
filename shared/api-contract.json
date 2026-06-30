@@ -1,0 +1,2366 @@
+{
+  "allowed_status_transitions": {
+    "applied": [
+      "interview",
+      "rejected"
+    ],
+    "ignored": [],
+    "interview": [
+      "rejected",
+      "offer"
+    ],
+    "offer": [],
+    "pending_review": [
+      "saved",
+      "ignored"
+    ],
+    "rejected": [],
+    "saved": [
+      "applied",
+      "rejected"
+    ]
+  },
+  "application_statuses": [
+    "applied",
+    "interview",
+    "rejected",
+    "offer"
+  ],
+  "endpoints": {
+    "approveJob": {
+      "method": "POST",
+      "path": "/api/jobs/{id}/approve",
+      "response_schema": "StatusMutationResponse"
+    },
+    "createRoleProfile": {
+      "method": "POST",
+      "path": "/api/role-profiles",
+      "request_schema": "RoleProfileCreateRequest",
+      "response_schema": "RoleProfileResponse"
+    },
+    "getBatchSummary": {
+      "method": "GET",
+      "path": "/api/batches/{batch_id}/summary",
+      "response_schema": "BatchSummaryResponse"
+    },
+    "getJobDetail": {
+      "method": "GET",
+      "path": "/api/jobs/{id}",
+      "response_schema": "JobResponse"
+    },
+    "getJobs": {
+      "method": "GET",
+      "path": "/api/jobs",
+      "response_schema": "JobListResponse"
+    },
+    "getReviewJobs": {
+      "method": "GET",
+      "path": "/api/jobs/review",
+      "response_schema": "JobListResponse"
+    },
+    "listRoleProfiles": {
+      "method": "GET",
+      "path": "/api/role-profiles",
+      "response_schema": "RoleProfileListResponse"
+    },
+    "loadMockJobs": {
+      "method": "POST",
+      "path": "/api/jobs/mock-load",
+      "request_schema": "MockLoadRequest",
+      "response_schema": "IngestionResponse"
+    },
+    "parseJobText": {
+      "method": "POST",
+      "path": "/api/jobs/parse-text",
+      "request_schema": "ParseJobTextRequest",
+      "response_schema": "IngestionResponse"
+    },
+    "parseJobUrl": {
+      "method": "POST",
+      "path": "/api/jobs/parse-url",
+      "request_schema": "ParseJobUrlRequest",
+      "response_schema": "IngestionResponse"
+    },
+    "rejectJob": {
+      "method": "POST",
+      "path": "/api/jobs/{id}/reject",
+      "response_schema": "StatusMutationResponse"
+    },
+    "searchJobs": {
+      "method": "POST",
+      "path": "/api/jobs/search",
+      "request_schema": "SearchJobsRequest",
+      "response_schema": "IngestionResponse"
+    },
+    "updateJobStatus": {
+      "method": "PATCH",
+      "path": "/api/jobs/{id}/status",
+      "request_schema": "StatusUpdateRequest",
+      "response_schema": "StatusMutationResponse"
+    }
+  },
+  "extraction_statuses": [
+    "success",
+    "retried",
+    "failed"
+  ],
+  "input_sources": [
+    "tavily",
+    "manual_url",
+    "manual_text",
+    "mock"
+  ],
+  "jd_statuses": [
+    "full_jd",
+    "partial_jd",
+    "contact_for_jd",
+    "no_jd",
+    "unclear"
+  ],
+  "job_statuses": [
+    "pending_review",
+    "saved",
+    "applied",
+    "interview",
+    "rejected",
+    "offer",
+    "ignored"
+  ],
+  "parse_statuses": [
+    "success",
+    "needs_manual_input",
+    "failed"
+  ],
+  "schemas": {
+    "BatchSummaryResponse": {
+      "properties": {
+        "average_extraction_time_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Average Extraction Time Ms"
+        },
+        "batch_id": {
+          "format": "uuid",
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "estimated_cost_usd": {
+          "title": "Estimated Cost Usd",
+          "type": "number"
+        },
+        "failed_extractions": {
+          "title": "Failed Extractions",
+          "type": "integer"
+        },
+        "scorable_jobs": {
+          "title": "Scorable Jobs",
+          "type": "integer"
+        },
+        "total_input_tokens": {
+          "title": "Total Input Tokens",
+          "type": "integer"
+        },
+        "total_output_tokens": {
+          "title": "Total Output Tokens",
+          "type": "integer"
+        },
+        "total_parsed_jobs": {
+          "title": "Total Parsed Jobs",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "batch_id",
+        "total_parsed_jobs",
+        "scorable_jobs",
+        "failed_extractions",
+        "total_input_tokens",
+        "total_output_tokens",
+        "total_tokens",
+        "estimated_cost_usd",
+        "average_extraction_time_ms"
+      ],
+      "title": "BatchSummaryResponse",
+      "type": "object"
+    },
+    "IngestionResponse": {
+      "$defs": {
+        "JobResponse": {
+          "properties": {
+            "base_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Base Score"
+            },
+            "batch_id": {
+              "format": "uuid",
+              "title": "Batch Id",
+              "type": "string"
+            },
+            "company": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "discovered_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Discovered At"
+            },
+            "embedding_similarity": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Embedding Similarity"
+            },
+            "employment_type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Employment Type"
+            },
+            "error_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Reason"
+            },
+            "estimated_cost_usd": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estimated Cost Usd"
+            },
+            "extraction_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "success",
+                "retried",
+                "failed"
+              ],
+              "title": "Extraction Status"
+            },
+            "extraction_time_ms": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Extraction Time Ms"
+            },
+            "final_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Final Score"
+            },
+            "final_score_percent": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Final Score Percent"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "input_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Input Tokens"
+            },
+            "jd_confidence_multiplier": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Jd Confidence Multiplier"
+            },
+            "jd_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "full_jd",
+                "partial_jd",
+                "contact_for_jd",
+                "no_jd",
+                "unclear"
+              ],
+              "title": "Jd Status"
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            },
+            "level_match_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level Match Score"
+            },
+            "location": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location"
+            },
+            "location_match_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Match Score"
+            },
+            "output_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Output Tokens"
+            },
+            "parse_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "success",
+                "needs_manual_input",
+                "failed"
+              ],
+              "title": "Parse Status"
+            },
+            "requirements": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Requirements"
+            },
+            "responsibilities": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Responsibilities"
+            },
+            "role_profile_id": {
+              "format": "uuid",
+              "title": "Role Profile Id",
+              "type": "string"
+            },
+            "salary": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Salary"
+            },
+            "should_score_similarity": {
+              "title": "Should Score Similarity",
+              "type": "boolean"
+            },
+            "skill_overlap_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Skill Overlap Score"
+            },
+            "skills": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Skills",
+              "type": "array"
+            },
+            "source_platform": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "tavily",
+                "manual_url",
+                "manual_text",
+                "mock",
+                "job_board"
+              ],
+              "title": "Source Platform"
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Url"
+            },
+            "status": {
+              "enum": [
+                "pending_review",
+                "saved",
+                "applied",
+                "interview",
+                "rejected",
+                "offer",
+                "ignored"
+              ],
+              "title": "Status",
+              "type": "string"
+            },
+            "title": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Title"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            },
+            "work_mode": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Mode"
+            }
+          },
+          "required": [
+            "id",
+            "batch_id",
+            "role_profile_id",
+            "title",
+            "company",
+            "location",
+            "work_mode",
+            "level",
+            "employment_type",
+            "salary",
+            "responsibilities",
+            "requirements",
+            "source_url",
+            "source_platform",
+            "parse_status",
+            "jd_status",
+            "extraction_status",
+            "error_reason",
+            "should_score_similarity",
+            "embedding_similarity",
+            "skill_overlap_score",
+            "location_match_score",
+            "level_match_score",
+            "base_score",
+            "jd_confidence_multiplier",
+            "final_score",
+            "final_score_percent",
+            "status",
+            "input_tokens",
+            "output_tokens",
+            "estimated_cost_usd",
+            "extraction_time_ms",
+            "discovered_at",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "JobResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "batch_id": {
+          "format": "uuid",
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "inserted_duplicate_metadata": {
+          "default": 0,
+          "title": "Inserted Duplicate Metadata",
+          "type": "integer"
+        },
+        "inserted_jobs": {
+          "default": 0,
+          "title": "Inserted Jobs",
+          "type": "integer"
+        },
+        "jobs": {
+          "items": {
+            "$ref": "#/$defs/JobResponse"
+          },
+          "title": "Jobs",
+          "type": "array"
+        },
+        "qdrant_synced": {
+          "default": true,
+          "title": "Qdrant Synced",
+          "type": "boolean"
+        },
+        "qdrant_upserted": {
+          "default": 0,
+          "title": "Qdrant Upserted",
+          "type": "integer"
+        },
+        "skipped_dedup_key_duplicates": {
+          "default": 0,
+          "title": "Skipped Dedup Key Duplicates",
+          "type": "integer"
+        },
+        "skipped_exact_duplicates": {
+          "default": 0,
+          "title": "Skipped Exact Duplicates",
+          "type": "integer"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "batch_id"
+      ],
+      "title": "IngestionResponse",
+      "type": "object"
+    },
+    "JobListResponse": {
+      "$defs": {
+        "JobResponse": {
+          "properties": {
+            "base_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Base Score"
+            },
+            "batch_id": {
+              "format": "uuid",
+              "title": "Batch Id",
+              "type": "string"
+            },
+            "company": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "discovered_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Discovered At"
+            },
+            "embedding_similarity": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Embedding Similarity"
+            },
+            "employment_type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Employment Type"
+            },
+            "error_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Reason"
+            },
+            "estimated_cost_usd": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estimated Cost Usd"
+            },
+            "extraction_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "success",
+                "retried",
+                "failed"
+              ],
+              "title": "Extraction Status"
+            },
+            "extraction_time_ms": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Extraction Time Ms"
+            },
+            "final_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Final Score"
+            },
+            "final_score_percent": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Final Score Percent"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "input_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Input Tokens"
+            },
+            "jd_confidence_multiplier": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Jd Confidence Multiplier"
+            },
+            "jd_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "full_jd",
+                "partial_jd",
+                "contact_for_jd",
+                "no_jd",
+                "unclear"
+              ],
+              "title": "Jd Status"
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            },
+            "level_match_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level Match Score"
+            },
+            "location": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location"
+            },
+            "location_match_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Match Score"
+            },
+            "output_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Output Tokens"
+            },
+            "parse_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "success",
+                "needs_manual_input",
+                "failed"
+              ],
+              "title": "Parse Status"
+            },
+            "requirements": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Requirements"
+            },
+            "responsibilities": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Responsibilities"
+            },
+            "role_profile_id": {
+              "format": "uuid",
+              "title": "Role Profile Id",
+              "type": "string"
+            },
+            "salary": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Salary"
+            },
+            "should_score_similarity": {
+              "title": "Should Score Similarity",
+              "type": "boolean"
+            },
+            "skill_overlap_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Skill Overlap Score"
+            },
+            "skills": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Skills",
+              "type": "array"
+            },
+            "source_platform": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "enum": [
+                "tavily",
+                "manual_url",
+                "manual_text",
+                "mock",
+                "job_board"
+              ],
+              "title": "Source Platform"
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Url"
+            },
+            "status": {
+              "enum": [
+                "pending_review",
+                "saved",
+                "applied",
+                "interview",
+                "rejected",
+                "offer",
+                "ignored"
+              ],
+              "title": "Status",
+              "type": "string"
+            },
+            "title": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Title"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            },
+            "work_mode": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Mode"
+            }
+          },
+          "required": [
+            "id",
+            "batch_id",
+            "role_profile_id",
+            "title",
+            "company",
+            "location",
+            "work_mode",
+            "level",
+            "employment_type",
+            "salary",
+            "responsibilities",
+            "requirements",
+            "source_url",
+            "source_platform",
+            "parse_status",
+            "jd_status",
+            "extraction_status",
+            "error_reason",
+            "should_score_similarity",
+            "embedding_similarity",
+            "skill_overlap_score",
+            "location_match_score",
+            "level_match_score",
+            "base_score",
+            "jd_confidence_multiplier",
+            "final_score",
+            "final_score_percent",
+            "status",
+            "input_tokens",
+            "output_tokens",
+            "estimated_cost_usd",
+            "extraction_time_ms",
+            "discovered_at",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "JobResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "jobs": {
+          "items": {
+            "$ref": "#/$defs/JobResponse"
+          },
+          "title": "Jobs",
+          "type": "array"
+        }
+      },
+      "title": "JobListResponse",
+      "type": "object"
+    },
+    "JobResponse": {
+      "properties": {
+        "base_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Base Score"
+        },
+        "batch_id": {
+          "format": "uuid",
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "company": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Company"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "discovered_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Discovered At"
+        },
+        "embedding_similarity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Embedding Similarity"
+        },
+        "employment_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Employment Type"
+        },
+        "error_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Reason"
+        },
+        "estimated_cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Estimated Cost Usd"
+        },
+        "extraction_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "success",
+            "retried",
+            "failed"
+          ],
+          "title": "Extraction Status"
+        },
+        "extraction_time_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Extraction Time Ms"
+        },
+        "final_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Score"
+        },
+        "final_score_percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Score Percent"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens"
+        },
+        "jd_confidence_multiplier": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Jd Confidence Multiplier"
+        },
+        "jd_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "full_jd",
+            "partial_jd",
+            "contact_for_jd",
+            "no_jd",
+            "unclear"
+          ],
+          "title": "Jd Status"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level"
+        },
+        "level_match_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level Match Score"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location"
+        },
+        "location_match_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location Match Score"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Tokens"
+        },
+        "parse_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "success",
+            "needs_manual_input",
+            "failed"
+          ],
+          "title": "Parse Status"
+        },
+        "requirements": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Requirements"
+        },
+        "responsibilities": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Responsibilities"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "salary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Salary"
+        },
+        "should_score_similarity": {
+          "title": "Should Score Similarity",
+          "type": "boolean"
+        },
+        "skill_overlap_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Skill Overlap Score"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skills",
+          "type": "array"
+        },
+        "source_platform": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "tavily",
+            "manual_url",
+            "manual_text",
+            "mock",
+            "job_board"
+          ],
+          "title": "Source Platform"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Url"
+        },
+        "status": {
+          "enum": [
+            "pending_review",
+            "saved",
+            "applied",
+            "interview",
+            "rejected",
+            "offer",
+            "ignored"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Title"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "work_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Work Mode"
+        }
+      },
+      "required": [
+        "id",
+        "batch_id",
+        "role_profile_id",
+        "title",
+        "company",
+        "location",
+        "work_mode",
+        "level",
+        "employment_type",
+        "salary",
+        "responsibilities",
+        "requirements",
+        "source_url",
+        "source_platform",
+        "parse_status",
+        "jd_status",
+        "extraction_status",
+        "error_reason",
+        "should_score_similarity",
+        "embedding_similarity",
+        "skill_overlap_score",
+        "location_match_score",
+        "level_match_score",
+        "base_score",
+        "jd_confidence_multiplier",
+        "final_score",
+        "final_score_percent",
+        "status",
+        "input_tokens",
+        "output_tokens",
+        "estimated_cost_usd",
+        "extraction_time_ms",
+        "discovered_at",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "JobResponse",
+      "type": "object"
+    },
+    "MockLoadRequest": {
+      "properties": {
+        "reset_existing_demo": {
+          "default": false,
+          "title": "Reset Existing Demo",
+          "type": "boolean"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role_profile_id"
+      ],
+      "title": "MockLoadRequest",
+      "type": "object"
+    },
+    "ParseJobTextRequest": {
+      "properties": {
+        "raw_text": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Raw Text",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        }
+      },
+      "required": [
+        "role_profile_id",
+        "raw_text"
+      ],
+      "title": "ParseJobTextRequest",
+      "type": "object"
+    },
+    "ParseJobUrlRequest": {
+      "properties": {
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "source_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Source Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role_profile_id",
+        "source_url"
+      ],
+      "title": "ParseJobUrlRequest",
+      "type": "object"
+    },
+    "RoleProfileCreateRequest": {
+      "properties": {
+        "accept_remote": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accept Remote"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "resume_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resume Text"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skills",
+          "type": "array"
+        },
+        "target_role": {
+          "minLength": 1,
+          "title": "Target Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_role"
+      ],
+      "title": "RoleProfileCreateRequest",
+      "type": "object"
+    },
+    "RoleProfileListResponse": {
+      "$defs": {
+        "RoleProfileResponse": {
+          "properties": {
+            "accept_remote": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept Remote"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            },
+            "location": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location"
+            },
+            "resume_text": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resume Text"
+            },
+            "skills": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Skills",
+              "type": "array"
+            },
+            "target_role": {
+              "title": "Target Role",
+              "type": "string"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "target_role",
+            "level",
+            "location",
+            "accept_remote",
+            "resume_text",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "RoleProfileResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "role_profiles": {
+          "items": {
+            "$ref": "#/$defs/RoleProfileResponse"
+          },
+          "title": "Role Profiles",
+          "type": "array"
+        }
+      },
+      "title": "RoleProfileListResponse",
+      "type": "object"
+    },
+    "RoleProfileResponse": {
+      "properties": {
+        "accept_remote": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Accept Remote"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location"
+        },
+        "resume_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Resume Text"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skills",
+          "type": "array"
+        },
+        "target_role": {
+          "title": "Target Role",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "target_role",
+        "level",
+        "location",
+        "accept_remote",
+        "resume_text",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "RoleProfileResponse",
+      "type": "object"
+    },
+    "SearchJobsRequest": {
+      "properties": {
+        "max_urls": {
+          "default": 10,
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Max Urls",
+          "type": "integer"
+        },
+        "query": {
+          "minLength": 1,
+          "title": "Query",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role_profile_id",
+        "query"
+      ],
+      "title": "SearchJobsRequest",
+      "type": "object"
+    },
+    "StatusMutationResponse": {
+      "description": "Updated job row returned by approve, reject, and manual status routes.",
+      "properties": {
+        "base_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Base Score"
+        },
+        "batch_id": {
+          "format": "uuid",
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "company": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Company"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "discovered_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Discovered At"
+        },
+        "embedding_similarity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Embedding Similarity"
+        },
+        "employment_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Employment Type"
+        },
+        "error_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Reason"
+        },
+        "estimated_cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Estimated Cost Usd"
+        },
+        "extraction_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "success",
+            "retried",
+            "failed"
+          ],
+          "title": "Extraction Status"
+        },
+        "extraction_time_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Extraction Time Ms"
+        },
+        "final_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Score"
+        },
+        "final_score_percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Score Percent"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens"
+        },
+        "jd_confidence_multiplier": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Jd Confidence Multiplier"
+        },
+        "jd_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "full_jd",
+            "partial_jd",
+            "contact_for_jd",
+            "no_jd",
+            "unclear"
+          ],
+          "title": "Jd Status"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level"
+        },
+        "level_match_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level Match Score"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location"
+        },
+        "location_match_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location Match Score"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Tokens"
+        },
+        "parse_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "success",
+            "needs_manual_input",
+            "failed"
+          ],
+          "title": "Parse Status"
+        },
+        "requirements": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Requirements"
+        },
+        "responsibilities": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Responsibilities"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "salary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Salary"
+        },
+        "should_score_similarity": {
+          "title": "Should Score Similarity",
+          "type": "boolean"
+        },
+        "skill_overlap_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Skill Overlap Score"
+        },
+        "skills": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skills",
+          "type": "array"
+        },
+        "source_platform": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "enum": [
+            "tavily",
+            "manual_url",
+            "manual_text",
+            "mock",
+            "job_board"
+          ],
+          "title": "Source Platform"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Url"
+        },
+        "status": {
+          "enum": [
+            "pending_review",
+            "saved",
+            "applied",
+            "interview",
+            "rejected",
+            "offer",
+            "ignored"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Title"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "work_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Work Mode"
+        }
+      },
+      "required": [
+        "id",
+        "batch_id",
+        "role_profile_id",
+        "title",
+        "company",
+        "location",
+        "work_mode",
+        "level",
+        "employment_type",
+        "salary",
+        "responsibilities",
+        "requirements",
+        "source_url",
+        "source_platform",
+        "parse_status",
+        "jd_status",
+        "extraction_status",
+        "error_reason",
+        "should_score_similarity",
+        "embedding_similarity",
+        "skill_overlap_score",
+        "location_match_score",
+        "level_match_score",
+        "base_score",
+        "jd_confidence_multiplier",
+        "final_score",
+        "final_score_percent",
+        "status",
+        "input_tokens",
+        "output_tokens",
+        "estimated_cost_usd",
+        "extraction_time_ms",
+        "discovered_at",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "StatusMutationResponse",
+      "type": "object"
+    },
+    "StatusUpdateRequest": {
+      "properties": {
+        "status": {
+          "enum": [
+            "applied",
+            "interview",
+            "rejected",
+            "offer"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "StatusUpdateRequest",
+      "type": "object"
+    }
+  },
+  "source_platforms": [
+    "tavily",
+    "manual_url",
+    "manual_text",
+    "mock",
+    "job_board"
+  ],
+  "tracked_job_statuses": [
+    "saved",
+    "applied",
+    "interview",
+    "rejected",
+    "offer"
+  ]
+}
