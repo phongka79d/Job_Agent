@@ -1048,26 +1048,26 @@ Optional future tracks are outside the mandatory chain.
 
 ### Batches
 
-- [ ] Batch01 - Frontend Scaffold and API Contract Foundation
-- [ ] Batch02 - App Shell, Role Profiles, Ingestion, and Active Batch State
-- [ ] Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
-- [ ] Batch04 - Metrics, UI States, Responsive Design, and Demo Readiness
+- [x] Batch01 - Frontend Scaffold and API Contract Foundation
+- [x] Batch02 - App Shell, Role Profiles, Ingestion, and Active Batch State
+- [x] Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- [x] Batch04 - Metrics, UI States, Responsive Design, and Demo Readiness
 - [ ] Batch05 - Final Frontend Verification and MVP Completion Checks
 
 ### Task IDs
 
 #### Batch01
 
-- [ ] (01A): Verify Phase 5 prerequisites and frontend baseline
-- [ ] (01B): Scaffold the Vite React TypeScript app and install required dependencies
-- [ ] (01C): Add TypeScript API types and contract drift tests
+- [x] (01A): Verify Phase 5 prerequisites and frontend baseline
+- [x] (01B): Scaffold the Vite React TypeScript app and install required dependencies
+- [x] (01C): Add TypeScript API types and contract drift tests
 - [x] (01D): Add a typed FastAPI client with safe error surfacing
 
 #### Batch02
 
-- [ ] (02A): Build compact app shell and navigation
+- [x] (02A): Build compact app shell and navigation
 - [x] (02B): Build role profile creation and selection UI
-- [ ] (02C): Build ingestion controls and warning display
+- [x] (02C): Build ingestion controls and warning display
 - [x] (02D): Implement active role and active batch state isolation
 
 #### Batch03
