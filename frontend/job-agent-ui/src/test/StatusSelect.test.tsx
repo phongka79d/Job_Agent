@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import StatusSelect from "../components/StatusSelect";
 import { updateJobStatus } from "../api/client";
+import { loadApiContract } from "./contract";
+import type { JobStatus } from "../types/api";
 
 // Mock the API client
 vi.mock("../api/client", () => ({
@@ -9,9 +11,21 @@ vi.mock("../api/client", () => ({
 }));
 
 describe("StatusSelect component", () => {
+  const contract = loadApiContract();
+
   beforeEach(() => {
     vi.resetAllMocks();
   });
+
+  const expectedOptionsFromContract = (status: JobStatus) => [
+    status,
+    ...contract.allowed_status_transitions[status],
+  ];
+
+  const renderedOptions = () => {
+    const select = screen.getByTestId("status-select") as HTMLSelectElement;
+    return Array.from(select.options).map((opt) => opt.value);
+  };
 
   it("should render correct allowed transitions for 'saved' status", () => {
     render(<StatusSelect jobId="job-1" currentStatus="saved" />);
@@ -21,8 +35,7 @@ describe("StatusSelect component", () => {
     expect(select.disabled).toBe(false);
     expect(select.value).toBe("saved");
 
-    const options = Array.from(select.options).map((opt) => opt.value);
-    expect(options).toEqual(["saved", "applied", "rejected"]);
+    expect(renderedOptions()).toEqual(expectedOptionsFromContract("saved"));
   });
 
   it("should render correct allowed transitions for 'applied' status", () => {
@@ -33,8 +46,7 @@ describe("StatusSelect component", () => {
     expect(select.disabled).toBe(false);
     expect(select.value).toBe("applied");
 
-    const options = Array.from(select.options).map((opt) => opt.value);
-    expect(options).toEqual(["applied", "interview", "rejected"]);
+    expect(renderedOptions()).toEqual(expectedOptionsFromContract("applied"));
   });
 
   it("should render correct allowed transitions for 'interview' status", () => {
@@ -44,8 +56,7 @@ describe("StatusSelect component", () => {
     expect(select.disabled).toBe(false);
     expect(select.value).toBe("interview");
 
-    const options = Array.from(select.options).map((opt) => opt.value);
-    expect(options).toEqual(["interview", "rejected", "offer"]);
+    expect(renderedOptions()).toEqual(expectedOptionsFromContract("interview"));
   });
 
   it("should disable select component for terminal states like 'offer'", () => {
@@ -54,8 +65,7 @@ describe("StatusSelect component", () => {
     const select = screen.getByTestId("status-select") as HTMLSelectElement;
     expect(select.disabled).toBe(true);
     
-    const options = Array.from(select.options).map((opt) => opt.value);
-    expect(options).toEqual(["offer"]);
+    expect(renderedOptions()).toEqual(expectedOptionsFromContract("offer"));
   });
 
   it("should disable select component for terminal states like 'rejected'", () => {
@@ -63,6 +73,23 @@ describe("StatusSelect component", () => {
     
     const select = screen.getByTestId("status-select") as HTMLSelectElement;
     expect(select.disabled).toBe(true);
+    expect(renderedOptions()).toEqual(expectedOptionsFromContract("rejected"));
+  });
+
+  it("should only expose backend-approved manual transition options", () => {
+    for (const status of ["saved", "applied", "interview", "rejected", "offer"] as JobStatus[]) {
+      const { unmount } = render(<StatusSelect jobId={`job-${status}`} currentStatus={status} />);
+      const options = renderedOptions();
+
+      expect(options).toEqual(expectedOptionsFromContract(status));
+      expect(options).not.toContain("pending_review");
+      expect(options).not.toContain("ignored");
+      if (status !== "saved") {
+        expect(options).not.toContain("saved");
+      }
+
+      unmount();
+    }
   });
 
   it("should trigger updateJobStatus on selection change and invoke callback on success", async () => {

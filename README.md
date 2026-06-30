@@ -131,6 +131,7 @@ Job_Agent/
 |       |   |   `-- app.css        # OLED Black & Cyan theme stylesheet
 |       |   |-- test/
 |       |   |   |-- setup.ts       # Vitest setup with jsdom
+|       |   |   |-- contract.ts    # Shared loader for the generated backend API contract
 |       |   |   |-- activeBatch.test.tsx # Active batch isolation tests
 |       |   |   |-- apiContract.test.ts # API contract drift tests
 |       |   |   |-- apiClient.test.ts # API client tests
@@ -411,6 +412,30 @@ npm run typecheck
 npm test -- --run
 npm run build
 ```
+
+---
+
+## Final Frontend Verification and MVP Completion Checks (Phase 5 - Batch 05)
+
+Phase 5 Batch 05 completes the MVP verification boundary:
+
+- Frontend contract tests load `shared/api-contract.json` through a shared test helper and verify status/source unions, endpoint metadata, response schemas, and backend-approved `StatusSelect` transitions.
+- Workflow tests verify `status=tracked` dashboard requests, profile-specific active batch metrics, empty metrics without an active batch, and removal of only the selected profile's stale batch key after a 404.
+- The manual MVP path was verified for profile creation/selection, mock loading, review and score states, approve/reject, tracked status progression, batch metrics, profile isolation, refresh restoration, and a clean browser console.
+- The frontend remains FastAPI-only: it has no frontend `.env` files, provider credentials, direct OpenAI/Tavily/Qdrant/SQLite calls, or post-MVP features. There is no required Phase 6.
+
+Regenerate the backend-owned contract, then run the final frontend checks:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe scripts\export_api_contract.py
+cd ..\frontend\job-agent-ui
+npm run typecheck
+npm test -- --run
+npm run build
+```
+
+The seeded/mock dashboard path works from persisted local data without Tavily, URL fetching, or LLM extraction after data has been seeded. First-time seed or mock-load scoring still requires local Qdrant and configured embedding access.
 
 ---
 

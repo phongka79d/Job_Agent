@@ -1,6 +1,4 @@
 import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
 import {
   JOB_STATUSES,
   JD_STATUSES,
@@ -10,19 +8,10 @@ import {
   TRACKED_JOB_STATUSES,
   ALLOWED_STATUS_TRANSITIONS
 } from "../types/api";
-
-// Helper to load the shared contract file
-const loadContract = () => {
-  const contractPath = path.resolve(process.cwd(), "../../shared/api-contract.json");
-  if (!fs.existsSync(contractPath)) {
-    throw new Error(`Shared api-contract.json not found at: ${contractPath}`);
-  }
-  const fileContent = fs.readFileSync(contractPath, "utf-8");
-  return JSON.parse(fileContent);
-};
+import { loadApiContract } from "./contract";
 
 describe("API Contract Drift Tests", () => {
-  const contract = loadContract();
+  const contract = loadApiContract();
 
   it("should match job status values", () => {
     const contractJobStatuses = contract.job_statuses;

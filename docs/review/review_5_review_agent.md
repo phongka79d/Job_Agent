@@ -2034,3 +2034,609 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - (05A)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05A)
+- Task title: Complete contract and workflow tests
+- Executor status reported: complete
+- Source of Truth:
+  - `docs/plans/Plan_5.md` > `## 8. Implementation Steps`
+  - `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
+  - `shared/api-contract.json` > generated endpoint, schema, status, source, and transition data
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05A)
+- Reviewed task ID: (05A)
+- Correct selection: yes
+- Notes: The latest execution report entry is for the requested task, (05A), in Batch05.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `docs/reports/report_5_execute_agent.md`
+  - `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`
+  - `frontend/job-agent-ui/src/test/activeBatch.test.tsx`
+  - `frontend/job-agent-ui/src/test/apiContract.test.ts`
+  - `frontend/job-agent-ui/src/test/contract.ts` (untracked before review)
+- untracked files:
+  - `frontend/job-agent-ui/src/test/contract.ts`
+
+## Files Reviewed
+- `docs/tasks/task_5.md`: in scope - selected task requirements, dependency, acceptance, and checkbox state reviewed.
+- `docs/reports/report_5_execute_agent.md`: in scope - latest (05A) execution report reviewed and matched to git evidence.
+- `docs/plans/Plan_5.md`: in scope - cited implementation and verification sections reviewed.
+- `shared/api-contract.json`: in scope - generated statuses, transitions, endpoints, schemas, and source platforms checked as the contract artifact used by tests.
+- `frontend/job-agent-ui/src/test/contract.ts`: in scope - shared test-only contract loader for `../../shared/api-contract.json`.
+- `frontend/job-agent-ui/src/test/apiContract.test.ts`: in scope - refactored to use the shared loader while preserving contract drift coverage for statuses, transitions, endpoints, and schemas.
+- `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`: in scope - strengthened to assert rendered options from backend-generated allowed transitions and exclude unsupported manual statuses.
+- `frontend/job-agent-ui/src/test/activeBatch.test.tsx`: in scope - strengthened to assert summary reads by profile-specific active batch key, no-key empty metrics, and 404 removal of only the selected profile key.
+- `frontend/job-agent-ui/src/pages/DashboardPage.tsx`: in scope - implementation reality checked for `getJobs(activeProfileId, "tracked")`.
+- `frontend/job-agent-ui/src/components/StatusSelect.tsx`: in scope - implementation reality checked against tested transition options.
+- `frontend/job-agent-ui/src/components/BatchMetrics.tsx`: in scope - implementation reality checked for active batch summary and 404 key removal behavior.
+- `frontend/job-agent-ui/src/test/DashboardPage.test.tsx`: in scope - existing dashboard `status=tracked` coverage verified.
+- `frontend/job-agent-ui/src/test/JobCard.test.tsx`: in scope - existing null score and persisted `error_reason` coverage verified.
+- `frontend/job-agent-ui/src/test/IngestionPanel.test.tsx`: in scope - existing ingestion warning coverage verified by search.
+
+## Reported Files Cross-Check
+- file from execution report: `frontend/job-agent-ui/src/test/contract.ts`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: New shared contract loader removes duplicated file-read logic in tests.
+- file from execution report: `frontend/job-agent-ui/src/test/apiContract.test.ts`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Refactor preserves contract assertions and uses the shared loader.
+- file from execution report: `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Adds contract-backed option expectations for manual status select behavior.
+- file from execution report: `frontend/job-agent-ui/src/test/activeBatch.test.tsx`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Adds active batch metrics/profile isolation and 404 cleanup assertions.
+
+## Dependency Review
+- Required dependencies: (04D) complete before (05A).
+- Dependency status: satisfied; (04D) is checked in `docs/tasks/task_5.md`.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Changes are test-only and reinforce the backend-owned contract boundary using `shared/api-contract.json`; no frontend env files, backend API redesign, runtime service calls, or implementation changes were introduced.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Tests exercise actual rendered `StatusSelect` options, actual app-level active batch/profile behavior via mocked FastAPI client calls, and existing dashboard/job-card rendering behavior. No production implementation was changed for this task.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The new `StatusSelect` expectations are derived from `shared/api-contract.json`; active batch tests use focused fixtures without encoding production shortcuts. Existing endpoint/schema expectations in the contract test are appropriate client assumptions compared against the generated backend artifact.
+
+## Validations Reviewed
+- Command/check: `cd frontend/job-agent-ui; npm test -- --run`
+- Reported result: Passed, 10 test files and 73 tests.
+- Rerun result: Passed, 10 test files and 73 tests.
+- Status: passed
+- Notes: Rerun completed successfully under Vitest v4.1.9.
+
+## Acceptance Review
+- Task acceptance: Required Plan 5 frontend contract and workflow tests pass.
+- Status: satisfied
+- Evidence: Contract tests cover JobStatus, JdStatus, ParseStatus, ExtractionStatus, source platforms, tracked job statuses, allowed transitions, endpoint metadata, and schema names. Workflow tests cover dashboard `status=tracked`, active batch key isolation, profile switching/no-key empty metrics, 404 profile-specific key removal, StatusSelect backend-approved options, null scores, ingestion warnings, and persisted `Job.error_reason`.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task entry and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: not complete; Batch05 remains unchecked because (05B), (05C), and (05D) are not accepted.
+- Execution report entry: appended and accurate for (05A).
+- Review report entry: appended to EOF.
+- Other: No sibling or future task checkboxes were updated.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- The new shared `contract.ts` helper is test-only and scoped; it reduces duplicated contract loading logic across tests.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, because only (05A) is accepted and (05B)-(05D) remain incomplete.
+
+## Repair Instructions
+- None
+---
+
+# Task Review Report - (05B)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05B)
+- Task title: Run frontend build, typecheck, and contract verification
+- Executor status reported: complete
+- Source of Truth:
+  - `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
+  - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Frontend Runtime`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05B)
+- Reviewed task ID: (05B)
+- Correct selection: yes
+- Notes: The latest execution report entry is for requested task (05B) in Batch05.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `docs/reports/report_5_execute_agent.md`
+  - `docs/review/review_5_review_agent.md`
+  - `docs/tasks/task_5.md`
+  - `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`
+  - `frontend/job-agent-ui/src/test/activeBatch.test.tsx`
+  - `frontend/job-agent-ui/src/test/apiContract.test.ts`
+  - `frontend/job-agent-ui/src/test/contract.ts`
+- untracked files:
+  - `frontend/job-agent-ui/src/test/contract.ts`
+
+## Files Reviewed
+- `docs/tasks/task_5.md`: in scope - selected (05B) task requirements, dependency, acceptance, and checkbox state reviewed; only (05B) was updated after acceptance.
+- `docs/reports/report_5_execute_agent.md`: in scope - latest (05B) execution report reviewed and matched to validation evidence.
+- `docs/review/review_5_review_agent.md`: in scope - existing EOF inspected before append; prior (05A) review entry is pre-existing accepted batch work.
+- `docs/plans/Plan_5.md`: in scope - cited frontend runtime and verification sections reviewed.
+- `frontend/job-agent-ui/package.json`: in scope - required scripts and installed dependency declarations checked.
+- `frontend/job-agent-ui/vite.config.ts`: in scope - Vitest `jsdom` environment and setup file checked.
+- `shared/api-contract.json`: in scope - contract artifact checked for git diff after reported regeneration; no diff present.
+- `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`: prior accepted (05A) scope - uncommitted test change reviewed only to distinguish from selected (05B).
+- `frontend/job-agent-ui/src/test/activeBatch.test.tsx`: prior accepted (05A) scope - uncommitted test change reviewed only to distinguish from selected (05B).
+- `frontend/job-agent-ui/src/test/apiContract.test.ts`: prior accepted (05A) scope - uncommitted test change reviewed only to distinguish from selected (05B).
+- `frontend/job-agent-ui/src/test/contract.ts`: prior accepted (05A) scope - untracked test helper reviewed only to distinguish from selected (05B).
+
+## Reported Files Cross-Check
+- file from execution report: `docs/reports/report_5_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The selected task is verification-only; appending the execution report is the only reported file change for (05B).
+- file from execution report: `shared/api-contract.json`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: A1 reported the artifact was refreshed with no remaining git diff; reviewer confirmed `git diff -- shared/api-contract.json` is empty.
+
+## Dependency Review
+- Required dependencies: (05A).
+- Dependency status: satisfied; (05A) is checked in the task entry and progress tracker and has an accepted review report.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Verification stayed within Plan 5 frontend checks; package scripts match the required runtime contract; Vitest is configured with `jsdom` and `src/test/setup.ts`; no source fixes, backend redesign, frontend env files, or out-of-scope features were introduced by (05B).
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: (05B) did not require implementation changes. The actual frontend typecheck, Vitest suite, and production build were rerun successfully, and the contract artifact has no diff after the reported backend export.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: No production or test logic was changed for selected task (05B); existing contract verification tests passed against `shared/api-contract.json`.
+
+## Validations Reviewed
+- Command/check: `cd backend; python scripts/export_api_contract.py`
+- Reported result: Failed under system Python because `langchain_openai` was unavailable, then superseded by backend virtualenv run.
+- Rerun result: Not rerun by reviewer.
+- Status: reviewed
+- Notes: This command writes `shared/api-contract.json`; reviewer did not rerun write-producing contract export under A2 write restrictions and instead verified that `shared/api-contract.json` has no git diff.
+- Command/check: `cd backend; .venv\Scripts\python.exe scripts\export_api_contract.py`
+- Reported result: Passed; A1 reported `Wrote shared\api-contract.json`.
+- Rerun result: Not rerun by reviewer.
+- Status: reviewed
+- Notes: Safe evidence cross-check found no remaining diff in `shared/api-contract.json`.
+- Command/check: `frontend/job-agent-ui/package.json` script check
+- Reported result: Passed.
+- Rerun result: Passed by file inspection; `dev`, `build`, `typecheck`, `test`, and `preview` are present.
+- Status: passed
+- Notes: `build` is `tsc -b && vite build`, `typecheck` is `tsc --noEmit`, and `test` is `vitest`.
+- Command/check: `frontend/job-agent-ui/vite.config.ts` test runner check
+- Reported result: Passed.
+- Rerun result: Passed by file inspection; Vitest uses `environment: 'jsdom'` and `setupFiles: './src/test/setup.ts'`.
+- Status: passed
+- Notes: Configuration uses `defineConfig` from `vitest/config`.
+- Command/check: `cd frontend/job-agent-ui; npm run typecheck`
+- Reported result: Passed.
+- Rerun result: Passed; `tsc --noEmit` exited 0.
+- Status: passed
+- Notes: No TypeScript errors surfaced.
+- Command/check: `cd frontend/job-agent-ui; npm test -- --run`
+- Reported result: Passed, 10 test files and 73 tests.
+- Rerun result: Passed, 10 test files and 73 tests.
+- Status: passed
+- Notes: Vitest v4.1.9 completed successfully.
+- Command/check: `cd frontend/job-agent-ui; npm run build`
+- Reported result: Passed; Vite built 115 modules.
+- Rerun result: Passed; `tsc -b && vite build` exited 0 and Vite built 115 modules.
+- Status: passed
+- Notes: Build output was generated under the frontend build directory and did not create tracked source diffs.
+
+## Acceptance Review
+- Task acceptance: Build, typecheck, and tests pass, or failures are reported with actionable details.
+- Status: satisfied
+- Evidence: Reviewer reran `npm run typecheck`, `npm test -- --run`, and `npm run build` successfully. Required package scripts and Vitest jsdom setup are present. Contract export was reported complete via backend virtualenv, and `shared/api-contract.json` has no remaining diff.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task entry and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: not complete; Batch05 remains unchecked because (05C) and (05D) are not accepted.
+- Execution report entry: appended and accurate for (05B).
+- Review report entry: appended to EOF.
+- Other: No sibling or future task checkboxes were updated.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- The working tree still contains prior accepted (05A) test changes and review/task updates. These are distinct from selected task (05B), whose selected-scope changes are the execution report append, the accepted checkbox update, and this review append.
+- Reviewer did not rerun the backend contract export because it is a write-producing command, but the no-diff state of `shared/api-contract.json` supports A1's report that regeneration produced no tracked artifact change.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, because (05C) and (05D) remain incomplete.
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (05C)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05C)
+- Task title: Run manual MVP workflow verification
+- Executor status reported: complete
+- Source of Truth: `docs/tasks/task_5.md` > `(05C)`; `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`; `docs/plans/Master_Plan.md` > `## 36. Final MVP Definition`; `README.md` > `## Demo Loader, Fixtures, Seed Script, and Mock Load (Phase 4 - Batch 04)`
+- Supplemental documents: `docs/plans/Plan_5.md`; `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05C)
+- Reviewed task ID: (05C), latest matching reconciliation entry
+- Correct selection: yes
+- Notes: The latest matching entry is `Task Execution Report - (05C) Reconciliation`, appended after the earlier blocked (05C) entry. It reports status `complete` after the user supplied the missing manual-browser evidence.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_5_execute_agent.md`, `docs/review/review_5_review_agent.md`, `docs/tasks/task_5.md`, `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`, `frontend/job-agent-ui/src/test/activeBatch.test.tsx`, `frontend/job-agent-ui/src/test/apiContract.test.ts`, and untracked `frontend/job-agent-ui/src/test/contract.ts`
+- untracked files: `frontend/job-agent-ui/src/test/contract.ts`
+
+## Files Reviewed
+- `docs/tasks/task_5.md`: in scope - reviewed (05C), dependency, acceptance, and both selected checkbox locations; updated only those two (05C) checkboxes after acceptance.
+- `docs/reports/report_5_execute_agent.md`: in scope - reviewed the latest (05C) reconciliation and its retained prior blocked/API/provider evidence.
+- `docs/review/review_5_review_agent.md`: in scope - reviewed prior (05A)/(05B) entries and physical EOF before append.
+- `docs/plans/Plan_5.md`: in scope - reviewed the cited manual verification and expected MVP behavior.
+- `docs/plans/Master_Plan.md`: in scope - reviewed the cited final 12-point MVP definition.
+- `README.md`: in scope - reviewed the cited seeded/mock demo behavior and provider prerequisites.
+- `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`: prior accepted (05A) scope - not attributed to (05C).
+- `frontend/job-agent-ui/src/test/activeBatch.test.tsx`: prior accepted (05A) scope - not attributed to (05C).
+- `frontend/job-agent-ui/src/test/apiContract.test.ts`: prior accepted (05A) scope - not attributed to (05C).
+- `frontend/job-agent-ui/src/test/contract.ts`: prior accepted (05A) scope - not attributed to (05C).
+
+## Reported Files Cross-Check
+- file from execution report: `docs/reports/report_5_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: (05C) was verification-only. The reconciliation appended audit evidence and made no implementation changes. Runtime-only seeded SQLite/Qdrant data from the prior run is accurately described as ignored state.
+
+## Dependency Review
+- Required dependencies: (05B)
+- Dependency status: satisfied; (05B) is checked in both task locations and has an ACCEPTED review at EOF before this entry.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: Verification followed the React -> FastAPI -> SQLite/Qdrant MVP path; seeded/mock workflow remained the deterministic acceptance path; no architecture or implementation changes were introduced.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: This task required verification, not implementation. The user personally completed the UI checklist and reported exactly `All 12 PASS`; A1 explicitly recorded this as user-attested, not agent-observed, and retained prior live API/seed evidence.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: No production or test logic changed for (05C). Prior accepted test changes are separate (05A) work.
+
+## Validations Reviewed
+- Command/check: User manual 12-item MVP UI checklist.
+- Reported result: Passed; exactly `All 12 PASS`.
+- Rerun result: Not rerun by reviewer; this is direct user-attested manual evidence.
+- Status: passed
+- Notes: The attestation satisfies the task's User Action/manual validation. A1 did not misrepresent it as agent-observed.
+- Command/check: Prior live mock/API, seeded demo, score detail, approve/reject, status transition, metrics, raw-text ingestion, and profile-isolation checks.
+- Reported result: Passed, with provider/URL caveats.
+- Rerun result: Not rerun; reviewed as supporting evidence from the preserved prior (05C) entry.
+- Status: passed
+- Notes: Tavily-selected page `http_error` and controlled URL warning/duplicate behavior remain accurately disclosed and do not block the required seeded/mock/manual MVP path.
+
+## Acceptance Review
+- Task acceptance: Final MVP workflow succeeds or any blocker is clearly tied to user-provided credentials/local service setup.
+- Status: satisfied
+- Evidence: The user's exact `All 12 PASS` resolves the prior browser setup blocker. The report preserves prior agent-run API and seeded workflow evidence, including raw-text ingestion, and does not claim success for provider-specific URL extraction that did not succeed.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task entry and Progress Tracker.
+- Checkbox updated by reviewer: yes, both (05C) locations only.
+- Batch status: remains unchecked; (05D) remains unchecked and was not reviewed.
+- Execution report entry: latest matching reconciliation entry is appended and accurate.
+- Review report entry: appended to physical EOF.
+- Other: Prior accepted uncommitted Batch05 changes were preserved and distinguished from (05C).
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- Browser evidence is user-attested rather than agent-observed, which is acceptable for this explicitly manual User Action and is labeled accurately.
+- Provider/page-specific caveats remain open observations but are outside the deterministic seeded/mock MVP acceptance path.
+- Uncommitted frontend test changes belong to prior accepted (05A), not selected task (05C).
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, (05D) may proceed.
+- Should batch be marked complete? no, because (05D) remains incomplete.
+
+## Repair Instructions
+- None
+
+---
+
+# Task Review Report - (05D)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05D)
+- Task title: Confirm phase boundary, environment, and non-goals
+- Executor status reported: complete
+- Source of Truth: `docs/tasks/task_5.md` > `(05D)`; `docs/plans/Plan_5.md` > `## 5. Out of Scope`, `## 7. Technical Specifications` > `### Frontend Runtime`, and `## 10. Handoff Notes for Phase 6`; `docs/plans/Master_Plan.md` > `## 3. MVP Scope` and `## 32. Single Root .env`
+- Supplemental documents: `docs/plans/Plan_5.md`; `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (05D)
+- Reviewed task ID: (05D)
+- Correct selection: yes
+- Notes: The latest execution-report entry is the requested (05D) entry and reports `complete`.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_5_execute_agent.md`, `docs/review/review_5_review_agent.md`, `docs/tasks/task_5.md`, `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`, `frontend/job-agent-ui/src/test/activeBatch.test.tsx`, and `frontend/job-agent-ui/src/test/apiContract.test.ts`
+- untracked files: `frontend/job-agent-ui/src/test/contract.ts`
+
+## Files Reviewed
+- `docs/reports/report_5_execute_agent.md`: in scope - (05D) appended its audit-only execution record; earlier Batch05 entries are prior task evidence.
+- `docs/review/review_5_review_agent.md`: in scope - prior accepted Batch05 reviews were preserved; this review is appended at physical EOF.
+- `docs/tasks/task_5.md`: in scope - prior accepted (05A)-(05C) checkbox changes were preserved; only both (05D) checkboxes were updated after acceptance.
+- `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`: prior accepted (05A) scope - not attributed to (05D).
+- `frontend/job-agent-ui/src/test/activeBatch.test.tsx`: prior accepted (05A) scope - not attributed to (05D).
+- `frontend/job-agent-ui/src/test/apiContract.test.ts`: prior accepted (05A) scope - not attributed to (05D).
+- `frontend/job-agent-ui/src/test/contract.ts`: prior accepted (05A) scope - untracked helper, not attributed to (05D).
+- `frontend/job-agent-ui/package.json`: in scope for dependency inspection - unchanged; contains only the approved runtime dependency set plus standard development tooling.
+- `frontend/job-agent-ui/src/api/client.ts`: in scope for runtime-boundary inspection - unchanged; Axios targets only `http://localhost:8000`.
+- Other frontend runtime source under `frontend/job-agent-ui/src`: in scope for boundary searches - 17 TypeScript/TSX/CSS files scanned; no secret/provider endpoint or prohibited feature implementation found.
+- `docs/plans/Plan_5.md`: in scope - cited scope, runtime, and Phase 6 boundaries reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited MVP and single-root environment boundaries reviewed.
+
+## Reported Files Cross-Check
+- file from execution report: `docs/reports/report_5_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: (05D) was an audit-only task. No implementation, package, backend, shared-contract, schema, or database source file changed for this task.
+
+## Dependency Review
+- Required dependencies: (05C)
+- Dependency status: satisfied; (05C) is checked in both task locations and its latest review outcome is `ACCEPTED`.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: No frontend env files exist; browser runtime calls FastAPI through the centralized Axios client; backend provider names occur only as typed response/source fields; approved package boundaries are unchanged; no backend/shared diff exists; no prohibited feature was added; future work remains separately planned.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: (05D) required an audit rather than implementation. Repository evidence supports each reported boundary claim, and no source edit was attributed to the selected task.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The only runtime network base URL is the Plan-approved default `http://localhost:8000`; no provider credentials, provider endpoints, or frontend-owned backend logic were introduced.
+
+## Validations Reviewed
+- Command/check: Exact frontend env-path checks and recursive hidden env-file inspection.
+- Reported result: All four prohibited paths absent.
+- Rerun result: Passed; all exact `Test-Path` checks returned `False`, and no `.env*` file exists under `frontend`.
+- Status: passed
+- Notes: The project-root `.env` boundary is preserved.
+- Command/check: Runtime secret, provider URL, network API, and prohibited non-goal searches.
+- Reported result: Passed.
+- Rerun result: Passed; no backend secret name or direct OpenAI/Tavily/Qdrant/SQLite/LangGraph/LangChain endpoint/reference exists in runtime code. Provider names found are API contract/display fields only. Axios is the sole runtime network mechanism and uses the approved FastAPI base URL.
+- Status: passed
+- Notes: Static example/SVG URLs are not runtime provider calls.
+- Command/check: `frontend/job-agent-ui/package.json` and package diff inspection.
+- Reported result: Passed.
+- Rerun result: Passed; runtime dependencies are exactly Axios, Lucide React, React, React DOM, and React Router DOM; package and lockfile have no diff.
+- Status: passed
+- Notes: Required scripts are present; no heavy architecture/framework dependency was added.
+- Command/check: Complete git status, stat, diff, name-status, untracked, and backend/shared scope inspection.
+- Reported result: Passed.
+- Rerun result: Passed; six tracked files and one untracked file are fully accounted for, with no backend/shared/package diff.
+- Status: passed
+- Notes: Frontend test changes/helper are prior accepted (05A) work; documentation changes are prior accepted orchestration records plus the (05D) execution append.
+- Command/check: No-required-Phase-6 statement.
+- Reported result: Passed.
+- Rerun result: Passed; Plan 5 explicitly states there is no required Phase 6, and future enhancements require separately planned post-MVP scope.
+- Status: passed
+- Notes: No Phase 6 task was created.
+- Command/check: `cd frontend/job-agent-ui; npm test -- --run`.
+- Reported result: Previously passed under (05A)/(05B).
+- Rerun result: Passed; 10 test files and 73 tests passed.
+- Status: passed
+- Notes: Supporting regression evidence; (05D) itself introduced no runtime/test changes.
+
+## Acceptance Review
+- Task acceptance: Final frontend implementation remains within Plan 5 and master MVP boundaries.
+- Status: satisfied
+- Evidence: Environment, secret/provider, dependency, prohibited non-goal, complete diff, and Phase 6 checks all passed independently. No out-of-scope implementation is present.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task entry and Progress Tracker.
+- Checkbox updated by reviewer: yes, both (05D) locations only.
+- Batch status: remains unchecked; A3 batch-scope audit and batch commit must occur first.
+- Execution report entry: appended and accurate.
+- Review report entry: appended to physical EOF.
+- Other: Prior accepted uncommitted Batch05 changes were distinguished and preserved.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None.
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- The frontend test files and untracked contract helper are prior accepted (05A) changes, not selected-task implementation.
+- Static SVG namespace/example placeholder URLs are not direct network integrations.
+- There is no required Phase 6; post-MVP enhancements require separate planning.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes, to A3 Batch05 scope audit; there is no next implementation task or required Phase 6.
+- Should batch be marked complete? no; A3 and the batch commit must occur first.
+
+## Repair Instructions
+- None

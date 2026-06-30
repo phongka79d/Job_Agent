@@ -1648,3 +1648,469 @@ complete
 - next task ID: (05A)
 - can proceed: yes
 - handoff notes: Batch 04 is fully complete. Batch 05 can commence with final verification tests.
+
+---
+
+# Task Execution Report - (05A)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch05 - Final Frontend Verification and MVP Completion Checks
+
+## Task
+(05A) - Complete contract and workflow tests
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_5.md` > `(05A): Complete contract and workflow tests`
+- `docs/plans/Plan_5.md` > `## 8. Implementation Steps`
+- `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
+- `shared/api-contract.json` > generated endpoint, schema, status, source, and transition data
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05A)
+- Task title: Complete contract and workflow tests
+
+## Completed Work
+- Status: complete.
+- Ran the existing frontend test suite first to establish the current baseline.
+- Added a shared frontend test contract loader so contract-backed tests reuse the same `shared/api-contract.json` access path.
+- Strengthened `StatusSelect` tests so rendered options are asserted from backend-generated `allowed_status_transitions` and exclude unsupported manual states.
+- Strengthened active-batch workflow tests to cover metrics summary reads by profile-specific key, no-key empty metrics without summary calls, and 404 removal of only the selected profile's stored key.
+- Preserved existing focused coverage for contract unions, endpoint metadata, schema names, dashboard `status=tracked`, null scores, ingestion warnings, and persisted `Job.error_reason`.
+
+## Files Created or Modified
+- `frontend/job-agent-ui/src/test/contract.ts`
+- `frontend/job-agent-ui/src/test/apiContract.test.ts`
+- `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`
+- `frontend/job-agent-ui/src/test/activeBatch.test.tsx`
+
+## Tests or Validations Run
+- `cd frontend/job-agent-ui; npm test -- --run`: Passed
+- Evidence: Final run reported 10 test files passed and 73 tests passed.
+- Baseline check before edits: Passed
+- Evidence: Initial run reported 10 test files passed and 71 tests passed.
+
+## Acceptance Check
+- Task acceptance condition: Required Plan 5 frontend contract and workflow tests pass.
+- Status: satisfied
+- Evidence: `npm test -- --run` passed after adding the missing focused assertions; final output reported 10 passed test files and 73 passed tests.
+
+## Artifacts Produced
+- Focused frontend test coverage updates under `frontend/job-agent-ui/src/test/`.
+- Shared test-only API contract loader at `frontend/job-agent-ui/src/test/contract.ts`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch status updates are deferred to A2/A3 review flow.
+
+## Key Implementation Decisions
+- Reused a shared test helper for loading `shared/api-contract.json` instead of duplicating file-read logic in multiple tests.
+- Kept all changes in test scope because no component defects were found.
+
+## Risks or Open Issues
+- None identified.
+
+## Minor Issues Fixed During Execution
+- Corrected a newly added active-batch test assertion to compare summary-call counts across profile switching instead of checking the full prior call history.
+
+## Workflow Integrity Check
+- Dependency (04D) is marked complete in `docs/tasks/task_5.md`.
+- No source-of-truth conflicts or missing user actions identified.
+- Task checkbox intentionally left unchecked for orchestrated review.
+
+## Notes for Next Task
+- next task ID: (05B)
+- can proceed: yes
+- handoff notes: Frontend test coverage for (05A) passes; (05B) can run typecheck, build, and broader contract verification without needing additional (05A) work.
+
+---
+
+# Task Execution Report - (05B)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch05 - Final Frontend Verification and MVP Completion Checks
+
+## Task
+(05B) - Run frontend build, typecheck, and contract verification
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_5.md` > `(05B): Run frontend build, typecheck, and contract verification`
+- `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Frontend Runtime`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05B)
+- Task title: Run frontend build, typecheck, and contract verification
+
+## Completed Work
+- Status: complete.
+- Regenerated the backend API contract using the backend virtualenv.
+- Confirmed frontend dependencies were already installed, so `npm install` was not required.
+- Verified `package.json` has the required frontend scripts and `vite.config.ts` configures Vitest with `jsdom` and `src/test/setup.ts`.
+- Ran the required frontend typecheck, contract/test suite, and production build checks.
+- No source fixes were required.
+
+## Files Created or Modified
+- `docs/reports/report_5_execute_agent.md`
+
+## Tests or Validations Run
+- `cd backend; python scripts/export_api_contract.py`: Failed, then superseded by virtualenv run. Evidence: system Python lacked `langchain_openai`.
+- `cd backend; .venv\Scripts\python.exe scripts\export_api_contract.py`: Passed. Evidence: output reported `Wrote shared\api-contract.json`.
+- `cd frontend/job-agent-ui; npm install`: Not run. Evidence/reason: `frontend/job-agent-ui/node_modules` exists, and dependency installation is only required when dependencies are missing.
+- `frontend/job-agent-ui/package.json` script check: Passed. Evidence: `dev`, `build`, `typecheck`, `test`, and `preview` scripts are present.
+- `frontend/job-agent-ui/vite.config.ts` test runner check: Passed. Evidence: Vitest config uses `environment: 'jsdom'` and `setupFiles: './src/test/setup.ts'`.
+- `cd frontend/job-agent-ui; npm run typecheck`: Passed. Evidence: `tsc --noEmit` exited 0.
+- `cd frontend/job-agent-ui; npm test -- --run`: Passed. Evidence: Vitest reported 10 passed test files and 73 passed tests.
+- `cd frontend/job-agent-ui; npm run build`: Passed. Evidence: `tsc -b && vite build` exited 0 and Vite built 115 modules.
+
+## Acceptance Check
+- Task acceptance condition: Build, typecheck, and tests pass, or failures are reported with actionable details.
+- Status: satisfied.
+- Evidence: Backend contract export passed with the project virtualenv; frontend typecheck, Vitest contract/test suite, and production build all exited 0.
+
+## Artifacts Produced
+- Appended automated verification report in `docs/reports/report_5_execute_agent.md`.
+- Refreshed `shared/api-contract.json` via backend export; no git diff remained for that artifact.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch status updates are deferred to A2/A3 review flow.
+
+## Key Implementation Decisions
+- Used the existing backend virtualenv after system Python failed to import backend dependencies.
+- Did not run `npm install` because installed dependencies were already present and all frontend validations ran successfully.
+
+## Risks or Open Issues
+- None identified for (05B).
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Dependency (05A) is marked complete in `docs/tasks/task_5.md`.
+- Source requirements were available and consistent with the selected validation task.
+- No user action was required because the backend virtualenv and frontend dependencies were available.
+- Task checkbox intentionally left unchecked for orchestrated review.
+
+## Notes for Next Task
+- next task ID: (05C)
+- can proceed: yes
+- handoff notes: Automated frontend verification passed. Manual MVP workflow verification can proceed next under its own task scope.
+
+---
+
+# Task Execution Report - (05C)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch05 - Final Frontend Verification and MVP Completion Checks
+
+## Task
+(05C) - Run manual MVP workflow verification
+
+## Status
+blocked
+
+## Source of Truth Used
+- `docs/tasks/task_5.md` > `(05C): Run manual MVP workflow verification`
+- `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
+- `docs/plans/Master_Plan.md` > `## 36. Final MVP Definition`
+- `README.md` > `## Demo Loader, Fixtures, Seed Script, and Mock Load (Phase 4 - Batch 04)`
+
+## Supplemental Documents Used
+- None beyond the selected task's cited source-of-truth sections.
+
+## Selected Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05C)
+- Task title: Run manual MVP workflow verification
+
+## Completed Work
+- Status: blocked.
+- Confirmed dependency (05B) is checked complete.
+- Confirmed the root `.env`, backend virtualenv, Docker, Qdrant, and frontend dependencies were available without exposing secret values.
+- Ran `docker compose up -d qdrant`; the existing Qdrant container remained healthy.
+- Ran the documented reset seed successfully: 12 jobs inserted, 10 scorable jobs, 2 social/non-scorable jobs, and 10 Qdrant vectors upserted.
+- Started FastAPI on port 8000 and Vite on port 5173 successfully.
+- Attempted to attach the available browser verification surface, but browser discovery returned no available browser instances. The required UI-only checklist could not be executed without user/manual browser setup.
+- Ran the feasible live API workflow as supporting evidence: created and listed a role profile, reset-loaded mock jobs, confirmed 12 pending-review jobs ordered with 10 scorable jobs before 2 non-scorable jobs, loaded scorable and non-scorable detail data, approved one job, rejected one job, progressed the approved job through `applied` -> `interview` -> `offer`, confirmed tracked-dashboard retention, retrieved batch metrics, and confirmed a second profile had isolated empty review/tracked results.
+- Ran live raw-text ingestion successfully: one full-JD pending-review job was inserted and scored, one Qdrant vector was upserted, and batch metrics reported 1,136 tokens and estimated cost `0.00023475` USD.
+- Ran live Tavily search: the provider returned a result and one pending-review row was persisted, but extraction of the selected external URL recorded `parse_status=failed` with `error_reason=http_error`; this external-page result is documented separately from the mock/raw-text path.
+- Ran URL ingestion probes: the endpoint returned a controlled insufficient-content warning and duplicate-skip response for the probe pages; because no new job was inserted into that batch, its batch summary correctly returned 404.
+- Stopped the FastAPI and Vite helper processes. Ports 8000 and 5173 were confirmed no longer listening.
+- No source fixes were made because the available evidence did not establish an in-scope source defect.
+
+## Files Created or Modified
+- `docs/reports/report_5_execute_agent.md`
+- Runtime-only demo data in ignored SQLite/Qdrant storage was changed by seeding and workflow verification; no tracked source file was changed for (05C).
+
+## Tests or Validations Run
+- `docker version --format '{{.Server.Version}}'`: Passed. Evidence: Docker server `29.3.1` responded.
+- `docker compose up -d qdrant`: Passed. Evidence: `job_agent_qdrant_local` reported `Running`.
+- `cd backend; .venv\Scripts\python.exe scripts\seed_demo.py --reset`: Passed. Evidence: 12 inserted, 10 scorable, 2 need-review/social, 10 vectors upserted.
+- `cd backend; .venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`: Passed startup. Evidence: application startup and Qdrant collection initialization completed.
+- `cd frontend/job-agent-ui; npm run dev -- --host 127.0.0.1 --port 5173`: Passed startup. Evidence: Vite reported ready on `http://127.0.0.1:5173/`.
+- Browser attachment/discovery: Blocked. Evidence: the browser runtime reported `Browser is not available: iab`, and browser discovery returned an empty list.
+- Manual UI workflow checklist: Blocked. Evidence: no browser instance was available to click controls, inspect visible score/metrics states, verify profile-key localStorage behavior after refresh/switching, or inspect the browser console.
+- Live mock/API workflow: Passed. Evidence: profile creation/listing succeeded; mock batch `4273c681-2414-4cc1-aec8-14f742017c7b` inserted 12 jobs and upserted 10 vectors; review contained 10 scored then 2 unscored jobs; approve returned `saved`; reject returned `ignored`; tracked job remained present through `applied`, `interview`, and `offer`.
+- Scorable/non-scorable detail contract check: Passed. Evidence: the scorable job had non-null embedding, skill, location, level, base, final, and percent scores; the social job had null final score with scoring disabled.
+- Mock batch metrics: Passed. Evidence: 12 parsed jobs, 10 scorable jobs, 0 failed extractions, and accessible batch summary before and after state mutations.
+- Live raw-text ingestion: Passed. Evidence: batch `add93ada-ec4e-4c0f-a623-ca19d731cd91` inserted one full-JD scored pending-review job with non-zero token/cost metrics.
+- Live Tavily search/API ingestion: Partially passed. Evidence: search provider returned a result and batch `6f5e0d0a-c78d-4c6f-894b-0f9559797afd` persisted one pending-review row; the selected external page itself failed HTTP parsing and remained non-scorable.
+- Live URL ingestion probe: Partially passed. Evidence: endpoint returned HTTP 200 with a user-facing insufficient-content warning and duplicate skip; no new persisted job meant the new batch had no summary.
+- Profile data isolation at API boundary: Passed. Evidence: the second profile returned zero review jobs and zero tracked jobs while the first profile retained its own jobs.
+- Helper-process cleanup: Passed. Evidence: no listeners remained on ports 8000 or 5173.
+- Existing Qdrant container cleanup: Not run. Evidence/reason: container `job_agent_qdrant_local` predated this task run and remains running with container PID 5071; it was not stopped to avoid disrupting shared repository state.
+
+## Acceptance Check
+- Task acceptance condition: Final MVP workflow succeeds or any blocker is clearly tied to user-provided credentials/local service setup.
+- Status: blocked.
+- Evidence: Seeded/mock/raw-text backend workflow requirements succeeded and provider credentials were usable, but the mandatory browser-based manual checklist could not be completed because no browser instance was attached or discoverable in the current session. This is `BLOCKED_BY_USER_ACTION` for manual browser setup outside the frontend implementation.
+
+## Artifacts Produced
+- Appended this manual verification report to `docs/reports/report_5_execute_agent.md`.
+- Seeded and exercised local SQLite/Qdrant demo data for the verification run.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run and task status is blocked; A2 owns checkbox updates only after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Continued with live API verification after browser discovery failed so the report distinguishes application/data-path evidence from UI-only blockers.
+- Did not use an unrelated browser automation backend after the configured browser surface reported no available instance.
+- Did not stop the pre-existing Qdrant container because it was shared state not started by this task run.
+- Did not modify source code because no reproducible in-scope source defect was established.
+
+## Risks or Open Issues
+- `BLOCKED_BY_USER_ACTION`: attach/open an available browser instance, rerun the UI checklist, and inspect the browser console.
+- UI visibility, interaction disabled states, active-batch localStorage restoration/switching, and console cleanliness remain unverified manually in this run.
+- The live Tavily-selected page returned `http_error`; mock-load and raw-text ingestion remain the successful deterministic MVP paths.
+- URL probes produced the intended warning/duplicate behavior but did not create a new metrics-bearing batch.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Dependency (05B) is marked complete in `docs/tasks/task_5.md`.
+- The selected task contains complete source-of-truth, source requirements, acceptance, validation, and blocked-condition fields.
+- Docker, Qdrant, backend `.env`, backend virtualenv, frontend dependencies, OpenAI-backed seed/raw-text ingestion, and Tavily search were available.
+- The only task-stopping setup issue was the unavailable browser instance required for manual UI verification.
+- Task checkbox intentionally left unchecked for orchestrated review.
+
+## Notes for Next Task
+- next task ID: (05D)
+- can proceed: no
+- handoff notes: Resolve the browser attachment/setup blocker and rerun (05C). Do not begin (05D) until (05C) receives an accepted review and its dependency is satisfied.
+
+---
+
+# Task Execution Report - (05C) Reconciliation
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch05 - Final Frontend Verification and MVP Completion Checks
+
+## Task
+(05C) - Run manual MVP workflow verification
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_5.md` > `(05C): Run manual MVP workflow verification`
+- `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
+- `docs/plans/Master_Plan.md` > `## 36. Final MVP Definition`
+- `README.md` > `## Demo Loader, Fixtures, Seed Script, and Mock Load (Phase 4 - Batch 04)`
+
+## Supplemental Documents Used
+- `docs/plans/Plan_5.md`
+- `docs/plans/Master_Plan.md`
+- Prior `(05C)` blocked entry in `docs/reports/report_5_execute_agent.md`
+
+## Selected Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05C)
+- Task title: Run manual MVP workflow verification
+
+## Completed Work
+- Status: complete.
+- Reconciled the prior blocked report after the user completed the browser-based manual verification and reported exactly `All 12 PASS`.
+- Recorded the result as user-attested evidence; no claim is made that this agent observed the browser session.
+- Combined the user-attested browser result with the prior successful seed, live API workflow, score-detail, status-transition, metrics, raw-text ingestion, and profile-isolation evidence.
+- No source code was modified and (05D) was not executed.
+
+## Files Created or Modified
+- `docs/reports/report_5_execute_agent.md`
+
+## Tests or Validations Run
+- User manual Plan 5 workflow checklist: Passed (user-attested, not agent-observed). Evidence: user reported exactly `All 12 PASS` for create/select profile; reset/load mock jobs; 12 review jobs; scorable and non-scorable score details; approve to tracked dashboard; reject removal; `Saved -> Applied -> Interview -> Offer` while remaining visible; batch metrics (~12 parsed/~10 scorable); second-profile isolation; switch-back restoration; refresh active-batch restoration; and browser console without critical errors.
+- Prior live mock/API workflow: Passed (agent-run supporting evidence from the earlier report). Evidence: mock load inserted 12 jobs and 10 vectors; review ordering and score states were correct; approve/reject and tracked status transitions succeeded.
+- Prior seeded offline demo verification: Passed (agent-run supporting evidence from the earlier report). Evidence: reset seed produced 12 jobs, 10 scorable jobs, 2 non-scorable jobs, and 10 vectors without relying on live search/URL extraction for dashboard data.
+- Prior raw-text ingestion and batch metrics: Passed (agent-run supporting evidence from the earlier report). Evidence: a scored pending-review job was created and metrics contained non-zero token/cost values.
+- Live provider/URL probes: Caveats retained from the earlier report. Evidence: Tavily returned a result but its selected external page had `http_error`; URL probes returned controlled warning/duplicate behavior. These nondeterministic provider paths do not invalidate the successful required mock/seed/manual MVP workflow.
+
+## Acceptance Check
+- Task acceptance condition: Final MVP workflow succeeds or any blocker is clearly tied to user-provided credentials/local service setup.
+- Status: satisfied.
+- Evidence: The user attested that all 12 manual browser checks passed, resolving the prior browser-availability blocker; prior agent-run API and seeded offline checks independently support the underlying workflow behavior.
+
+## Artifacts Produced
+- Appended this reconciliation entry to `docs/reports/report_5_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Per the current request, A2 owns checkbox and batch progress updates after an `ACCEPTED` review.
+
+## Key Implementation Decisions
+- Treated the explicit user result as user-attested evidence and did not represent it as agent-observed browser evidence.
+- Preserved prior provider/URL caveats while distinguishing them from the deterministic seeded/mock MVP acceptance path.
+- Appended a new report entry rather than altering or deleting the prior blocked audit record.
+
+## Risks or Open Issues
+- Browser evidence is user-attested rather than agent-observed.
+- The previously documented external Tavily-selected URL `http_error` and controlled URL-warning behavior remain provider/page-specific caveats, not blockers for (05C).
+
+## Minor Issues Fixed During Execution
+- Reconciled the stale blocked status in the audit trail with the newly supplied manual verification result.
+
+## Workflow Integrity Check
+- Dependency (05B) is accepted as confirmed by the user.
+- The selected task contains complete source-of-truth, requirements, acceptance, validation, and blocked-condition fields.
+- No source conflict or remaining user-action blocker was identified.
+- Existing unrelated worktree changes were preserved.
+- Task checkbox intentionally remains unchecked for A2 review.
+
+## Notes for Next Task
+- next task ID: (05D)
+- can proceed: yes, after A2 reviews and accepts (05C)
+- handoff notes: A2 should review this reconciliation and the prior supporting evidence, then own the (05C) checkbox update. This execution did not begin (05D).
+
+---
+
+# Task Execution Report - (05D)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch05 - Final Frontend Verification and MVP Completion Checks
+
+## Task
+(05D) - Confirm phase boundary, environment, and non-goals
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_5.md` > `(05D): Confirm phase boundary, environment, and non-goals`
+- `docs/plans/Plan_5.md` > `## 5. Out of Scope`
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Frontend Runtime`
+- `docs/plans/Plan_5.md` > `## 10. Handoff Notes for Phase 6`
+- `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
+- `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
+
+## Supplemental Documents Used
+- `docs/plans/Plan_5.md`
+- `docs/plans/Master_Plan.md`
+
+## Selected Scope
+- Batch: Batch05 - Final Frontend Verification and MVP Completion Checks
+- Task ID: (05D)
+- Task title: Confirm phase boundary, environment, and non-goals
+
+## Completed Work
+- Complete. Audited the frontend environment paths, source references, runtime URL boundary, package dependencies, full changed-file set, tracked diff, untracked files, and prior review evidence.
+- Confirmed no frontend environment file exists and no frontend API key or backend-only provider endpoint is exposed.
+- Confirmed no authentication, organizations, cover-letter generation, auto-apply, authenticated social scraping, heavy analytics, or background-job feature was added.
+- Confirmed the worktree contains no backend API redesign, schema change, database change, package change, or other out-of-scope implementation change.
+- Confirmed there is no required Phase 6; future enhancements require separately planned post-MVP scope.
+
+## Files Created or Modified
+- `docs/reports/report_5_execute_agent.md` (execution report append only)
+
+## Tests or Validations Run
+- `Test-Path frontend/.env`: Passed; returned `False`.
+- `Test-Path frontend/.env.example`: Passed; returned `False`.
+- `Test-Path frontend/job-agent-ui/.env`: Passed; returned `False`.
+- `Test-Path frontend/job-agent-ui/.env.example`: Passed; returned `False`.
+- Frontend secret/provider search with `git grep`: Passed; no API-key names, provider API URLs, Qdrant endpoint, SQLite URL, LangGraph, or LangChain reference exists in runtime source. Matches were limited to API response field names and test fixtures such as token counts and Qdrant result fields.
+- Frontend URL and non-goal search with `git grep`: Passed; runtime source contains only the approved FastAPI base URL `http://localhost:8000`. Other URLs are static template documentation/SVG namespace references, not runtime network calls. No prohibited feature implementation was found.
+- `frontend/job-agent-ui/package.json` dependency inspection: Passed; dependencies remain the approved React, React DOM, React Router, Axios, and Lucide stack with standard Vite/TypeScript/Vitest/testing/lint development dependencies.
+- `git status --short`, `git diff --stat`, `git diff --name-status`, `git diff`, and `git ls-files --others --exclude-standard`: Passed; complete worktree review found only prior accepted Batch05 frontend test changes, orchestration documents, and the test contract helper.
+- `git diff --name-only -- backend shared`: Passed; produced no paths, confirming no backend or shared-contract redesign/schema/database changes.
+- `(05C)` dependency review in `docs/tasks/task_5.md` and `docs/review/review_5_review_agent.md`: Passed; `(05C)` is checked and its latest review outcome is `ACCEPTED`, explicitly permitting `(05D)` to proceed.
+- Phase boundary note search: Passed; Plan 5 states `There is no required Phase 6 in the MVP split`, and the task file states future enhancements must be separately planned.
+
+## Acceptance Check
+- Task acceptance condition: Final frontend implementation remains within Plan 5 and master MVP boundaries.
+- Status: satisfied
+- Evidence: All forbidden frontend env paths are absent; runtime frontend networking is FastAPI-only; approved dependencies remain unchanged; prohibited features and direct provider access are absent; and the complete worktree diff contains no backend, schema, database, package, or out-of-scope implementation changes.
+
+## Artifacts Produced
+- Scope-boundary verification result in this appended execution report.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: The user explicitly assigned checkbox ownership to A2 after `ACCEPTED` and prohibited marking Batch05 complete.
+
+## Key Implementation Decisions
+- Treated metric field names such as `total_tokens`, `input_tokens`, and `qdrant_upserted` as backend response-contract data, not secret exposure or direct provider access.
+- Treated documentation and SVG namespace URLs as non-runtime references; the sole runtime API base URL is the approved local FastAPI endpoint.
+- Preserved all prior accepted Batch05 worktree changes and made no source edits because no boundary defect was found.
+
+## Risks or Open Issues
+- None.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- No issue identified. `(05C)` is checked and has an `ACCEPTED` A2 review. The selected task has complete source-of-truth, requirements, acceptance, validation, and blocked-condition fields. No source conflict exists.
+
+## Notes for Next Task
+- next task ID: None; there is no required Phase 6.
+- can proceed: yes, to A2 review of `(05D)` only.
+- handoff notes: A2 should review this report and boundary evidence, then own the `(05D)` checkbox decision. Do not infer or create Phase 6 work; any future enhancement must be planned separately. Batch05 remains unmarked by A1.

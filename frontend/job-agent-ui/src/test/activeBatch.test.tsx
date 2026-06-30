@@ -8,9 +8,10 @@ import {
   parseJobUrl,
   parseJobText,
   getReviewJobs,
-  getJobs
+  getJobs,
+  getBatchSummary
 } from "../api/client";
-import type { RoleProfile, IngestionResponse } from "../types/api";
+import type { RoleProfile, IngestionResponse, BatchSummary } from "../types/api";
 
 // Mock the API client
 vi.mock("../api/client", () => {
@@ -22,6 +23,7 @@ vi.mock("../api/client", () => {
     parseJobText: vi.fn(),
     getReviewJobs: vi.fn(),
     getJobs: vi.fn(),
+    getBatchSummary: vi.fn(),
     ApiClientError: class extends Error {
       message: string;
       constructor(message: string) {
@@ -81,12 +83,25 @@ const mockIngestionResponse2: IngestionResponse = {
   warnings: [],
 };
 
+const mockBatchSummary = (batchId: string): BatchSummary => ({
+  batch_id: batchId,
+  total_parsed_jobs: 4,
+  scorable_jobs: 3,
+  failed_extractions: 1,
+  total_input_tokens: 1000,
+  total_output_tokens: 500,
+  total_tokens: 1500,
+  estimated_cost_usd: 0.02,
+  average_extraction_time_ms: 1200,
+});
+
 describe("Active Batch State and Role Isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     vi.mocked(getReviewJobs).mockResolvedValue({ jobs: [] });
     vi.mocked(getJobs).mockResolvedValue({ jobs: [] });
+    vi.mocked(getBatchSummary).mockImplementation(async (batchId) => mockBatchSummary(batchId));
   });
 
   afterEach(() => {
@@ -132,6 +147,7 @@ describe("Active Batch State and Role Isolation", () => {
     // 4. Verify localStorage has batch-abc only for prof-1
     expect(localStorage.getItem("job-agent.activeBatchId.prof-1")).toBe("batch-abc");
     expect(localStorage.getItem("job-agent.activeBatchId.prof-2")).toBeNull();
+    const summaryCallsAfterProfileOneIngestion = vi.mocked(getBatchSummary).mock.calls.length;
 
     // 5. Switch to prof-2 and verify active batch ID is cleared (becomes None)
     fireEvent.change(profileSelect, { target: { value: "prof-2" } });
@@ -140,6 +156,7 @@ describe("Active Batch State and Role Isolation", () => {
     await waitFor(() => {
       expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: None");
     });
+    expect(getBatchSummary).toHaveBeenCalledTimes(summaryCallsAfterProfileOneIngestion);
 
     // 6. Mock ingestion response for prof-2 with a different batch ID (batch-xyz)
     vi.mocked(loadMockJobs).mockResolvedValue(mockIngestionResponse2);
@@ -155,6 +172,9 @@ describe("Active Batch State and Role Isolation", () => {
     await waitFor(() => {
       expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-xyz");
     });
+    await waitFor(() => {
+      expect(getBatchSummary).toHaveBeenLastCalledWith("batch-xyz");
+    });
 
     // 7. Verify localStorage isolation holds
     expect(localStorage.getItem("job-agent.activeBatchId.prof-1")).toBe("batch-abc");
@@ -165,11 +185,17 @@ describe("Active Batch State and Role Isolation", () => {
     await waitFor(() => {
       expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-abc");
     });
+    await waitFor(() => {
+      expect(getBatchSummary).toHaveBeenLastCalledWith("batch-abc");
+    });
 
     // 9. Switch back to prof-2 and verify active batch ID reloads to batch-xyz
     fireEvent.change(profileSelect, { target: { value: "prof-2" } });
     await waitFor(() => {
       expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-xyz");
+    });
+    await waitFor(() => {
+      expect(getBatchSummary).toHaveBeenLastCalledWith("batch-xyz");
     });
   });
 
@@ -199,5 +225,31 @@ describe("Active Batch State and Role Isolation", () => {
     // Verify localStorage key for prof-2 doesn't trigger any API fetch
     const storedBatchId = localStorage.getItem("job-agent.activeBatchId.prof-2");
     expect(storedBatchId).toBeNull();
+    expect(getBatchSummary).not.toHaveBeenCalled();
+    expect(screen.getByText("No active batch metrics available.")).toBeInTheDocument();
+  });
+
+  it("should remove only the selected profile active batch key when its summary returns 404", async () => {
+    localStorage.setItem("job-agent.activeBatchId.prof-1", "stale-batch");
+    localStorage.setItem("job-agent.activeBatchId.prof-2", "other-batch");
+    vi.mocked(listRoleProfiles).mockResolvedValue({ role_profiles: mockProfiles });
+
+    const error404 = new Error("Not Found") as any;
+    error404.status = 404;
+    vi.mocked(getBatchSummary).mockRejectedValue(error404);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("profile-select")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(getBatchSummary).toHaveBeenCalledWith("stale-batch");
+      expect(screen.getByText("No active batch metrics available.")).toBeInTheDocument();
+    });
+
+    expect(localStorage.getItem("job-agent.activeBatchId.prof-1")).toBeNull();
+    expect(localStorage.getItem("job-agent.activeBatchId.prof-2")).toBe("other-batch");
   });
 });

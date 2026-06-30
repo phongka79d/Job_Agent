@@ -846,7 +846,7 @@ The final phase closes the MVP. Verification must catch contract drift, status-f
 
 ### Tasks
 
-- [ ] (05A): Complete contract and workflow tests
+- [x] (05A): Complete contract and workflow tests
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 8. Implementation Steps`
     - `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
@@ -873,7 +873,7 @@ The final phase closes the MVP. Verification must catch contract drift, status-f
   - Blocked Condition: None.
   - Files: `src/test/*.test.ts`, `src/test/*.test.tsx`, component files if defects are found.
 
-- [ ] (05B): Run frontend build, typecheck, and contract verification
+- [x] (05B): Run frontend build, typecheck, and contract verification
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Frontend Runtime`
@@ -898,7 +898,7 @@ The final phase closes the MVP. Verification must catch contract drift, status-f
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only if local toolchain/package install or required backend environment setup cannot proceed without user action.
   - Files: No source edits expected unless verification exposes defects.
 
-- [ ] (05C): Run manual MVP workflow verification
+- [x] (05C): Run manual MVP workflow verification
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
     - `docs/plans/Master_Plan.md` > `## 36. Final MVP Definition`
@@ -934,7 +934,7 @@ The final phase closes the MVP. Verification must catch contract drift, status-f
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` for missing provider credentials, unavailable local Docker/Qdrant, missing backend `.env`, or manual setup outside the frontend implementation.
   - Files: No source edits expected unless manual verification exposes defects.
 
-- [ ] (05D): Confirm phase boundary, environment, and non-goals
+- [x] (05D): Confirm phase boundary, environment, and non-goals
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 5. Out of Scope`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Frontend Runtime`
@@ -1052,7 +1052,7 @@ Optional future tracks are outside the mandatory chain.
 - [x] Batch02 - App Shell, Role Profiles, Ingestion, and Active Batch State
 - [x] Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
 - [x] Batch04 - Metrics, UI States, Responsive Design, and Demo Readiness
-- [ ] Batch05 - Final Frontend Verification and MVP Completion Checks
+- [x] Batch05 - Final Frontend Verification and MVP Completion Checks
 
 ### Task IDs
 
@@ -1086,10 +1086,10 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch05
 
-- [ ] (05A): Complete contract and workflow tests
-- [ ] (05B): Run frontend build, typecheck, and contract verification
-- [ ] (05C): Run manual MVP workflow verification
-- [ ] (05D): Confirm phase boundary, environment, and non-goals
+- [x] (05A): Complete contract and workflow tests
+- [x] (05B): Run frontend build, typecheck, and contract verification
+- [x] (05C): Run manual MVP workflow verification
+- [x] (05D): Confirm phase boundary, environment, and non-goals
 
 ## Completion Reporting Rules for Future Execution Agents
 
