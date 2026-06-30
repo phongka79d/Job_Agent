@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Annotated
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
@@ -15,6 +16,7 @@ from app.api.schemas import (
     IngestionResponse,
     JobListResponse,
     JobResponse,
+    MockLoadRequest,
     ParseJobTextRequest,
     ParseJobUrlRequest,
     SearchJobsRequest,
@@ -24,6 +26,7 @@ from app.api.schemas import (
 from app.agents.schemas import JobAgentState
 from app.core import constants
 from app.db.models import JobPost
+from app.services.demo_loader import load_mock_fixture_states, reset_mock_demo_data
 from app.services.extraction_service import extract_from_raw_text, extract_from_url
 from app.services.job_processing_service import (
     InvalidStatusTransition,
@@ -39,6 +42,11 @@ from app.services.search_service import SearchServiceError, search_service
 DEFAULT_JOB_QUERY_LIMIT = 50
 MAX_JOB_QUERY_LIMIT = 100
 DASHBOARD_STATUSES = (*constants.JOB_STATUSES, "tracked")
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+MOCK_FIXTURE_PATHS = (
+    REPOSITORY_ROOT / "mock_data" / "demo_jobs.json",
+    REPOSITORY_ROOT / "mock_data" / "messy_social_posts.json",
+)
 
 LimitQuery = Annotated[
     int,
@@ -226,6 +234,58 @@ async def search_jobs(
             warnings.append(f"Failed to process search result URL: {search_result.url}")
             continue
 
+        inserted_jobs += processing_result.inserted_jobs
+        skipped_exact_duplicates += processing_result.skipped_exact_duplicates
+        skipped_dedup_key_duplicates += processing_result.skipped_dedup_key_duplicates
+        inserted_duplicate_metadata += processing_result.inserted_duplicate_metadata
+        qdrant_upserted += processing_result.qdrant_upserted
+        qdrant_synced = qdrant_synced and processing_result.qdrant_synced
+        job_ids.extend(processing_result.job_ids)
+        warnings.extend(processing_result.warnings)
+
+    return await _build_ingestion_response(
+        session,
+        batch_id,
+        job_ids,
+        inserted_jobs=inserted_jobs,
+        skipped_exact_duplicates=skipped_exact_duplicates,
+        skipped_dedup_key_duplicates=skipped_dedup_key_duplicates,
+        inserted_duplicate_metadata=inserted_duplicate_metadata,
+        qdrant_upserted=qdrant_upserted,
+        qdrant_synced=qdrant_synced,
+        warnings=warnings,
+    )
+
+
+@router.post("/mock-load", response_model=IngestionResponse)
+async def mock_load_jobs(
+    request: MockLoadRequest,
+    session: SessionDep,
+) -> IngestionResponse:
+    if request.reset_existing_demo:
+        await reset_mock_demo_data(
+            session,
+            preserve_role_profile_id=str(request.role_profile_id),
+        )
+
+    batch_id = uuid4()
+    states = load_mock_fixture_states(
+        MOCK_FIXTURE_PATHS,
+        batch_id=str(batch_id),
+        role_profile_id=str(request.role_profile_id),
+    )
+
+    inserted_jobs = 0
+    skipped_exact_duplicates = 0
+    skipped_dedup_key_duplicates = 0
+    inserted_duplicate_metadata = 0
+    qdrant_upserted = 0
+    qdrant_synced = True
+    job_ids: list[str] = []
+    warnings: list[str] = []
+
+    for state in states:
+        processing_result = await _process_ingested_state(session, batch_id, state)
         inserted_jobs += processing_result.inserted_jobs
         skipped_exact_duplicates += processing_result.skipped_exact_duplicates
         skipped_dedup_key_duplicates += processing_result.skipped_dedup_key_duplicates

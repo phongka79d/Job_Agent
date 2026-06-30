@@ -69,6 +69,7 @@ Job_Agent/
 |   |   |   |-- cost_service.py       # Provider-neutral token, cost, and timing normalization (Batch01)
 |   |   |   |-- dedup_service.py      # Null-safe duplicate checking and key generation (Phase 3 Batch 02)
 |   |   |   |-- embedding_service.py  # Mockable OpenAI embedding provider boundary (Phase 3 Batch 01)
+|   |   |   |-- demo_loader.py      # Demo fixture adapter and safe mock-data reset helper (Phase 4 Batch 04)
 |   |   |   |-- extraction_service.py # Bounded raw-text/URL prep and graph entrypoints (Batch02/Batch03)
 |   |   |   |-- job_processing_service.py # SQLite-first processing, Qdrant scoring, and status mutation service (Phase 3 Batch 03)
 |   |   |   |-- llm_client.py         # Mockable OpenAI structured extraction client boundary (Batch03)
@@ -78,7 +79,8 @@ Job_Agent/
 |   |-- data/
 |   |   `-- .gitkeep
 |   |-- scripts/
-|   |   `-- export_api_contract.py   # Generates the frontend API contract from backend owners
+|   |   |-- export_api_contract.py   # Generates the frontend API contract from backend owners
+|   |   `-- seed_demo.py             # Seeds local demo data through the backend processing pipeline
 |   |-- tests/
 |   |   |-- __init__.py
 |   |   |-- conftest.py                    # Shared SQLite and fake provider fixtures (Phase 3 Batch 04)
@@ -100,6 +102,9 @@ Job_Agent/
 |   |-- .dockerignore             # Docker ignore configuration
 |   `-- Dockerfile                # Backend-only Docker build configuration
 |-- docker-compose.yml            # Local Qdrant container orchestration
+|-- mock_data/
+|   |-- demo_jobs.json              # Structured demo job fixtures
+|   `-- messy_social_posts.json     # Non-scorable social post fixtures
 |-- shared/
 |   `-- api-contract.json          # Generated API contract for frontend consumers
 |-- .gitignore                    # Repository ignore rules (protecting secrets and local DB)
@@ -244,6 +249,32 @@ From the `backend` directory, smoke-check the ingestion route surface:
 ```bash
 python -m compileall -q app
 python -c "from app.main import app; print([path for path in sorted(app.openapi()['paths']) if path.startswith('/api/jobs')])"
+```
+
+---
+
+## Demo Loader, Fixtures, Seed Script, and Mock Load (Phase 4 - Batch 04)
+
+Phase 4 Batch 04 adds local demo data support while keeping the same SQLite-first processing path used by live ingestion:
+
+- **Shared Demo Loader:** `backend/app/services/demo_loader.py` validates local mock JSON, converts fixtures into complete `JobAgentState` values with `input_source="mock"` and `source_platform="mock"`, and owns safe reset behavior for mock-owned SQLite rows and matching Qdrant vectors.
+- **Demo Fixtures:** `mock_data/demo_jobs.json` and `mock_data/messy_social_posts.json` provide 12 total demo inputs: 10 scorable structured jobs and 2 non-scorable social posts.
+- **Seed Script:** `backend/scripts/seed_demo.py --reset` creates or reuses the deterministic `AI Engineer Intern` role profile, loads the fixtures through the shared adapter, and processes each state through the existing Plan 3 job processing service.
+- **Mock Load API:** `POST /api/jobs/mock-load` accepts `MockLoadRequest`, optionally runs the same safe reset helper while preserving the requested role profile, loads both fixture files, and returns the standard `IngestionResponse`.
+
+First-time demo seeding still requires local Qdrant and OpenAI embedding access for scorable jobs. After seed data exists, the demo relies on persisted SQLite rows and local Qdrant vectors rather than Tavily, LLM extraction, URL fetching, browser scraping, or manual paste.
+
+From the `backend` directory, inspect the demo route and seed command:
+
+```bash
+python scripts/seed_demo.py --help
+python -c "from app.main import app; print('/api/jobs/mock-load' in app.openapi()['paths'])"
+```
+
+Run a live reset seed only when local Qdrant is running and `OPENAI_API_KEY` is configured:
+
+```bash
+python scripts/seed_demo.py --reset
 ```
 
 ---

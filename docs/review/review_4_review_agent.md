@@ -1885,3 +1885,711 @@ ACCEPTED
 
 ## Repair Instructions
 - None.
+---
+
+# Task Review Report - (04A)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
+- Task ID: (04A)
+- Task title: Implement demo loader adapter and safe reset helper
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Data Normalization Contract`; `### Mock Load Endpoint`; `### seed_demo.py`; `docs/plans/Master_Plan.md` > `## 5. Demo Mode / Mock Seeding`
+- Supplemental documents: `docs/plans/Master_Plan.md`, `README.md` only as needed; README was not needed for a blocking decision.
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04A)
+- Reviewed task ID: (04A)
+- Correct selection: yes
+- Notes: Reviewed only the requested `(04A)` report entry, not the whole Batch04. Prior Batch03 work was treated as dependency context, not as part of this review.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_4_execute_agent.md`; after acceptance, `docs/tasks/task_4.md` was updated only for `(04A)` checkboxes and this review file was appended.
+- untracked files: `backend/app/services/demo_loader.py`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(04A)` task block, dependencies, scope boundaries, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(04A)` execution report reviewed and cross-checked.
+- `backend/app/services/demo_loader.py`: in scope - selected task implementation reviewed directly because it is untracked and therefore absent from `git diff`.
+- `docs/plans/Plan_4.md`: in scope - cited mock-load, normalization, and seed reset sections reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited demo mode section reviewed.
+- `backend/app/agents/schemas.py`: in scope - existing state/schema validators and score placeholder owner checked.
+- `backend/app/services/extraction_service.py`: in scope - existing clean-text and content-hash helpers checked.
+- `backend/app/services/job_processing_service.py`: in scope - Plan 3 state validation and source-platform mapping expectations checked.
+- `backend/app/services/qdrant_service.py`: in scope - existing point delete helper checked.
+- `backend/app/db/models.py`: in scope - role profile, job post, and application ownership/filter columns checked.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/services/demo_loader.py`
+- present in git/repo: yes, untracked file exists in the repo workspace.
+- matches task scope: yes
+- notes: Implements only fixture validation/conversion and safe reset helper.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: The execution report was appended with the `(04A)` entry.
+
+## Dependency Review
+- Required dependencies: `(01A)` and `(03A)`
+- Dependency status: satisfied; both are checked complete in `docs/tasks/task_4.md` from prior accepted work.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: `demo_loader.py` is a focused service module, not route/script logic; conversion produces Plan 3-compatible `JobAgentState`; reset uses SQLite-first identifiers and the existing Qdrant delete helper; no insertion, scoring, deduplication, or Qdrant upsert behavior was added.
+- Failed: None.
+- Uncertain: Live Qdrant behavior was not rerun, but the task validation does not require a live Qdrant reset and the helper delegates to the existing service owner.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: `MockJobFixture`, `load_mock_fixture_items`, `load_mock_fixture_states`, `fixture_to_state`, and `reset_mock_demo_data` contain executable validation, conversion, and deletion logic. The rerun smoke checks exercised fixture conversion and in-memory reset behavior.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The fixed `mock` input source/source platform and deterministic demo target role are required by the task and source plan. No fixture strings, expected job IDs, score values, dedup outcomes, Qdrant upsert behavior, or route-specific payloads are hardcoded.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app/services/demo_loader.py`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Command exited successfully with no output.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -c "from app.services.demo_loader import DemoFixtureError, DemoResetResult, load_mock_fixture_states, reset_mock_demo_data; print('demo_loader imports ok')"`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Rerun imported the module and printed `demo_loader imports ok`.
+- Command/check: inline fixture conversion smoke using `fixture_to_state(...)`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Verified `input_source='mock'`, `source_platform='mock'`, normalized/capped clean text, `raw_content_hash`, invalid status rejection, and score fields initialized to `None`.
+- Command/check: temporary in-memory SQLite reset smoke with fake Qdrant deleter
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Verified mock applications, mock job posts, matching vector IDs, and one safe deterministic demo profile were deleted while non-mock jobs, preserved profile, and protected profile remained.
+- Command/check: scope scan through `git status --short`, `git diff --stat`, `git diff`, and targeted searches
+- Reported result: Scope clean
+- Rerun result: Scope clean
+- Status: passed
+- Notes: No fixtures, seed script, mock-load route, tests, schema changes, scoring/dedup changes, Qdrant upsert changes, or frontend code were added. `mock_data` does not yet exist, which is expected before `(04B)`.
+
+## Acceptance Review
+- Task acceptance: `demo_loader.py` owns mock JSON validation and conversion to complete Plan 3-compatible states.
+- Status: satisfied
+- Evidence: `MockJobFixture` validates fixture shape/status fields, `load_mock_fixture_states(...)` loads one or more fixture paths, and `fixture_to_state(...)` converts each item using the supplied `batch_id` and `role_profile_id`.
+- Task acceptance: mock conversion sets `input_source='mock'` and `source_platform='mock'`.
+- Status: satisfied
+- Evidence: `fixture_to_state(...)` validates `MOCK_INPUT_SOURCE` and `MOCK_SOURCE_PLATFORM`, stores `input_source` in state, and stores `source_platform` in `extracted_job`.
+- Task acceptance: mock conversion normalizes/caps clean text, computes `raw_content_hash`, validates statuses/sources, and initializes score fields to null.
+- Status: satisfied
+- Evidence: Conversion reuses `clean_text_content(...)`, `compute_content_hash(...)`, shared validators, `JobPostExtract`, and `score_placeholder_update(...)`; rerun smoke confirmed the behavior.
+- Task acceptance: safe reset deletes only mock-owned data and matching Qdrant vectors.
+- Status: satisfied
+- Evidence: Reset loads job IDs from `JobPost.source_platform == 'mock'`, deletes dependent `Application` rows for those IDs, calls `delete_point_if_exists` only for those IDs, deletes those `JobPost` rows, and deletes deterministic demo role profiles only when not preserved and not referenced by non-mock jobs.
+- Task acceptance: selected task stays within scope.
+- Status: satisfied
+- Evidence: No fixture files, seed script, mock-load endpoint, tests, schema changes, scoring/dedup changes, Qdrant upsert behavior, or frontend code were introduced.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task block and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 remains unchecked/incomplete; no batch checkbox was changed.
+- Execution report entry: appended and accurate for `(04A)`.
+- Review report entry: appended at EOF.
+- Other: Sibling tasks `(04B)`, `(04C)`, and `(04D)` remain unchecked. Prior Batch03 accepted changes were not treated as new `(04A)` implementation.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor report accurately describes the created module, validations, deferred Batch05 tests, scope exclusions, and the reset/profile safety caveat.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/app/services/demo_loader.py` is untracked, so reviewers must inspect the file directly until it is staged/committed.
+- Batch05 still needs focused automated tests against actual fixtures once `(04B)` creates them; this is planned and does not block `(04A)`.
+- Live Qdrant deletion was not rerun; validation used a fake deleter and verified the selected IDs passed to the existing service boundary.
+
+### Observations
+- Reset result counts Qdrant delete attempts for mock job IDs, matching the idempotent `delete_point_if_exists(...)` service contract rather than querying live vector existence.
+- The helper is 279 lines, within the task file's preferred module size guidance.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete.
+
+## Repair Instructions
+- None.
+
+---
+
+# Task Review Report - (04B)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
+- Task ID: (04B)
+- Task title: Create demo and messy social post JSON fixtures
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Demo Dataset`; `### Mock Data Normalization Contract`; `docs/plans/Master_Plan.md` > `## 5. Demo Mode / Mock Seeding`
+- Supplemental documents: `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04B)
+- Reviewed task ID: (04B)
+- Correct selection: yes
+- Notes: Reviewed only the requested `(04B)` report entry. Prior accepted uncommitted `(04A)` work was treated as dependency context, not as selected-task scope.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_4_execute_agent.md`, `docs/review/review_4_review_agent.md`, `docs/tasks/task_4.md`; untracked `backend/app/services/demo_loader.py`, `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`
+- untracked files: `backend/app/services/demo_loader.py`, `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(04B)` task block, dependency, acceptance, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(04B)` execution report reviewed and cross-checked.
+- `mock_data/demo_jobs.json`: in scope - new structured job fixture file reviewed directly because it is untracked.
+- `mock_data/messy_social_posts.json`: in scope - new social post fixture file reviewed directly because it is untracked.
+- `backend/app/services/demo_loader.py`: in scope as dependency evidence - prior accepted `(04A)` loader used to validate fixtures; not counted as `(04B)` implementation.
+- `docs/plans/Plan_4.md`: in scope - cited Demo Dataset and Mock Data Normalization Contract sections reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited Demo Mode / Mock Seeding section reviewed.
+
+## Reported Files Cross-Check
+- file from execution report: `mock_data/demo_jobs.json`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains 10 structured job fixtures: 5 marked as perfect match, 3 partial match, and 2 unrelated job fixtures.
+- file from execution report: `mock_data/messy_social_posts.json`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Contains 2 social post fixtures with `contact_for_jd` and `no_jd` JD statuses.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Execution report was appended with the `(04B)` entry.
+
+## Dependency Review
+- Required dependencies: `(04A)`
+- Dependency status: satisfied; `(04A)` is checked complete in both the task block and progress tracker, and `backend/app/services/demo_loader.py` exists.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: The task adds local JSON fixtures only and validates them through the shared `demo_loader.py` adapter; fixtures contain structured extraction fields and avoid Tavily, URL fetching, trafilatura, LLM extraction, persistence, scoring, deduplication, Qdrant, or route logic.
+- Failed: None.
+- Uncertain: None.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Both fixture files are valid JSON arrays with concrete deterministic fixture records. Loading them through `load_mock_fixture_states(...)` produced complete Plan 3-compatible states with `input_source = mock`, `source_platform = mock`, `raw_content_hash`, `parse_status = success`, and `extraction_status = success`.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The fixture category labels in `extraction_notes` are acceptable fixture metadata for review and test clarity. Runtime logic was not changed and no expected IDs, scores, dedup outcomes, API keys, secrets, or provider responses were hardcoded.
+
+## Validations Reviewed
+- Command/check: `python -m json.tool mock_data/demo_jobs.json`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: JSON syntax validated successfully.
+- Command/check: `python -m json.tool mock_data/messy_social_posts.json`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: JSON syntax validated successfully.
+- Command/check: backend virtualenv loader validation through `load_mock_fixture_states(...)`
+- Reported result: Passed with 12 states, 10 scorable, 2 non-scorable, social statuses `contact_for_jd` and `no_jd`
+- Rerun result: Passed with `{'structured_jobs': 10, 'social_posts': 2, 'total_states': 12, 'category_counts': {'perfect': 5, 'partial': 3, 'unrelated': 2}, 'jd_status_counts': {'full_jd': 7, 'partial_jd': 3, 'contact_for_jd': 1, 'no_jd': 1}, 'scorable_states': 10, 'non_scorable_states': 2, 'social_jd_statuses': ['contact_for_jd', 'no_jd'], 'social_scorable': [False, False], 'all_ascii': True, 'secrets_found': [], 'complete_state_failures': []}`
+- Status: passed
+- Notes: Rerun confirmed category counts, state counts, non-scorable social handling, ASCII-only fixture text, no obvious secret patterns, and complete state conversion.
+- Command/check: selected-scope review through `git status --short`, `git diff --stat`, `git diff`, `git ls-files --others --exclude-standard`, and `Test-Path backend\scripts\seed_demo.py`
+- Reported result: Scope clean
+- Rerun result: Scope clean for `(04B)`
+- Status: passed
+- Notes: No `(04C)` seed script, `(04D)` mock-load route, Batch05 tests, schema, scoring, dedup, Qdrant, or frontend work was added by this task. `backend/app/services/demo_loader.py` is prior accepted `(04A)` dependency work.
+
+## Acceptance Review
+- Task acceptance: Create 12 total demo inputs across `mock_data/demo_jobs.json` and `mock_data/messy_social_posts.json`.
+- Status: satisfied
+- Evidence: Rerun counted 10 structured jobs and 2 social posts, and loader returned 12 states.
+- Task acceptance: Include 5 perfect matches, 3 partial matches, 2 unrelated jobs, and 2 messy social posts.
+- Status: satisfied
+- Evidence: Structured fixture `extraction_notes` and content show 5 perfect match records, 3 partial match records, and 2 unrelated job records; social fixture file has 2 records.
+- Task acceptance: Include or closely mirror required examples.
+- Status: satisfied
+- Evidence: Fixtures include AI Engineer Intern with RAG/LangChain/FastAPI/Qdrant, LLM Application Intern with Python/OpenAI API/vector DB, Backend Intern with FastAPI/SQLite partial AI relevance, Data Analyst Intern as unrelated, and a social post requiring inbox/DM for JD.
+- Task acceptance: Mark only `full_jd` and `partial_jd` fixtures as scorable and route inbox/DM or no-JD social posts to supported statuses.
+- Status: satisfied
+- Evidence: Loader rerun produced 10 scorable states from `full_jd`/`partial_jd`, and the 2 social states are non-scorable with `contact_for_jd` and `no_jd`.
+- Task acceptance: Values are deterministic, ASCII-safe, and free of secrets.
+- Status: satisfied
+- Evidence: Fixture values are static local JSON, ASCII check passed, and targeted secret-pattern scan found no secret values.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task block and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 remains unchecked/incomplete; no batch checkbox was changed.
+- Execution report entry: appended and accurate for `(04B)`.
+- Review report entry: appended at EOF.
+- Other: Sibling tasks `(04C)` and `(04D)` remain unchecked; Batch05 tasks remain unchecked.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor report accurately states the files created, validations run, category counts, loader output, and scope exclusions.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `mock_data/demo_jobs.json` and `mock_data/messy_social_posts.json` are untracked, so reviewers must inspect the files directly until staged/committed.
+- `backend/app/services/demo_loader.py` remains untracked from prior accepted `(04A)` work; it is required dependency evidence for `(04B)` fixture validation.
+- Batch05 still owns formal automated fixture tests; this is planned and does not block `(04C)`.
+
+### Observations
+- The two unrelated jobs are still `full_jd` and therefore scorable, which aligns with the requirement for 10 scorable structured jobs while allowing ranking/scoring to show low relevance.
+- Social posts use `contact_for_jd` and `no_jd`, yielding the expected two non-scorable states.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete.
+
+## Repair Instructions
+- None.
+
+---
+
+# Task Review Report - (04C)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
+- Task ID: (04C)
+- Task title: Implement seed demo script
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### seed_demo.py`; `### Demo Offline Expectations`; `docs/plans/Master_Plan.md` > `## 34. Demo Script Pseudocode`
+- Supplemental documents: `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04C)
+- Reviewed task ID: (04C)
+- Correct selection: yes
+- Notes: Reviewed only the requested `(04C)` report entry. Prior accepted uncommitted `(04A)` and `(04B)` work was treated as dependency context, not as selected-task implementation.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `docs/reports/report_4_execute_agent.md`, `docs/review/review_4_review_agent.md`, `docs/tasks/task_4.md`; untracked `backend/app/services/demo_loader.py`, `backend/scripts/seed_demo.py`, `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`
+- untracked files: `backend/app/services/demo_loader.py`, `backend/scripts/seed_demo.py`, `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(04C)` task block, dependencies, acceptance, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(04C)` execution report reviewed and cross-checked.
+- `backend/scripts/seed_demo.py`: in scope - selected task implementation reviewed directly because it is untracked.
+- `backend/app/services/demo_loader.py`: in scope as dependency evidence - prior accepted `(04A)` loader/reset helper used by the seed script.
+- `mock_data/demo_jobs.json`: in scope as dependency evidence - prior accepted `(04B)` fixture file loaded by the seed script paths.
+- `mock_data/messy_social_posts.json`: in scope as dependency evidence - prior accepted `(04B)` fixture file loaded by the seed script paths.
+- `backend/app/api/routes_jobs.py`: in scope for boundary check - verified no `(04D)` mock-load endpoint was added by this task.
+- `docs/plans/Plan_4.md`: in scope - cited seed and offline expectation sections reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited demo script pseudocode reviewed.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/scripts/seed_demo.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Script exists and implements CLI parsing, safe reset delegation, deterministic demo role profile creation/reuse, fixture loading, Plan 3 processing, summary output, and live dependency preflight.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Execution report was appended with the `(04C)` entry.
+
+## Dependency Review
+- Required dependencies: `(04A)`, `(04B)`
+- Dependency status: satisfied; both are checked complete in `docs/tasks/task_4.md`, and the required `demo_loader.py` plus two fixture files exist.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: The seed script delegates reset to `reset_mock_demo_data(...)`, loads both fixture files through `load_mock_fixture_states(...)`, processes every state through `process_job_state(...)`, and relies on Plan 3 services for embedding, scoring, deduplication, SQLite persistence, and Qdrant upsert/sync.
+- Passed: The script preflights local Qdrant and OpenAI embedding configuration before reset/seed work, and its help output clearly separates first-time seed requirements from post-seed demo behavior.
+- Passed: The script does not implement direct `JobPost` insertion, direct Qdrant upsert, schema changes, scoring formula changes, dedup policy changes, frontend work, Batch05 tests, or the `(04D)` mock-load endpoint.
+- Failed: None.
+- Uncertain: Live `python scripts/seed_demo.py --reset` was not run, but the selected task marks live seed as optional/manual and user-action-bound when Qdrant or embedding credentials are missing.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: `parse_args`, `ensure_seed_dependencies`, `get_or_create_demo_role_profile`, `process_demo_states`, `add_processing_result`, `validate_seed_summary`, `print_seed_summary`, `seed_demo`, and `main` are executable and wired together. Safe reruns imported the script, loaded fixture states through script paths, and compiled the code.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: The deterministic demo target role, location, level, skills, and fixture paths are required by the source plan. No expected job IDs, score values, dedup outcomes, provider responses, API keys, or Qdrant point payloads are hardcoded.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m py_compile scripts\seed_demo.py`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Command exited successfully with no output.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe scripts\seed_demo.py --help`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Help documents `--reset`, post-seed behavior without Tavily/LLM extraction/URL fetching/browser scraping, and first-time requirements for local Qdrant plus OpenAI embedding access.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -c "import scripts.seed_demo as s; ..."`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Imported the script and found two fixture paths: `demo_jobs.json` and `messy_social_posts.json`.
+- Command/check: fixture loading through `DEMO_FIXTURE_PATHS` and `load_mock_fixture_states(...)`
+- Reported result: Passed with 12 states, 10 scorable, 2 non-scorable
+- Rerun result: Passed with `{'states': 12, 'scorable': 10, 'non_scorable': 2, 'paths': ['demo_jobs.json', 'messy_social_posts.json']}`
+- Status: passed
+- Notes: Validates the seed script uses the accepted fixture files and shared loader path.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app scripts\seed_demo.py`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Command exited successfully with no output.
+- Command/check: boundary grep for seed script service-owner calls, direct insertion/upsert, mock-load route, and future-batch/test scope
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: `backend/scripts/seed_demo.py` references only `load_mock_fixture_states`, `reset_mock_demo_data`, and `process_job_state` for the core seed path; no direct `JobPost` insert or direct Qdrant upsert path was found in the seed script; no `POST /api/jobs/mock-load` route or Batch05 test file was added.
+- Command/check: live `cd backend; python scripts/seed_demo.py --reset`
+- Reported result: Not run
+- Rerun result: Not run
+- Status: acceptable not run
+- Notes: This command mutates local demo data and requires user-provided local Qdrant plus OpenAI embedding access. The task's validation field defers seed tests to Batch05 and marks live seed as optional/manual.
+
+## Acceptance Review
+- Task acceptance: `backend/scripts/seed_demo.py` exists and parses `--reset`.
+- Status: satisfied
+- Evidence: Script exists; `--help` shows the `--reset` flag and exits successfully.
+- Task acceptance: reset delegates to the shared safe reset helper and does not implement unsafe direct deletion.
+- Status: satisfied
+- Evidence: `seed_demo(reset=True)` calls `reset_mock_demo_data(session, qdrant_service=qdrant_service)`; deletion logic remains in the prior accepted shared helper.
+- Task acceptance: creates or reuses the deterministic demo role profile.
+- Status: satisfied
+- Evidence: `get_or_create_demo_role_profile(...)` selects by the demo role constants and creates `AI Engineer Intern`, level `intern`, location `Ha Noi`, `accept_remote=True`, and the required skills/resume text when absent.
+- Task acceptance: loads `mock_data/demo_jobs.json` and `mock_data/messy_social_posts.json` through `load_mock_fixture_states(...)`.
+- Status: satisfied
+- Evidence: `DEMO_FIXTURE_PATHS` points to both fixture files and `process_demo_states(...)` passes those paths to `load_mock_fixture_states(...)`; rerun loaded 12 states.
+- Task acceptance: processes every state through the established Plan 3 processing owner.
+- Status: satisfied
+- Evidence: The script loops over all loaded states and awaits `process_job_state(session, state, qdrant_service=qdrant_service)` for each one.
+- Task acceptance: prints inserted jobs, scorable jobs, need-review/social jobs, and local Qdrant upsert count.
+- Status: satisfied
+- Evidence: `print_seed_summary(...)` prints `Inserted jobs`, `Scorable jobs`, `Need-review/social jobs`, and `Local Qdrant vectors upserted`.
+- Task acceptance: first-time seed requirements and post-seed offline expectations are explicit.
+- Status: satisfied
+- Evidence: CLI epilog states post-seed demo does not require Tavily, LLM extraction, URL fetching, or browser scraping, and first-time seed requires local Qdrant and OpenAI embedding access. `ensure_seed_dependencies(...)` enforces configured OpenAI key and Qdrant collection availability.
+- Task acceptance: selected task stays within scope.
+- Status: satisfied
+- Evidence: No `(04D)` mock-load endpoint, Batch05 tests, schema, scoring, dedup, direct insertion, direct Qdrant upsert, or frontend work was introduced by `(04C)`.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task block and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 remains unchecked/incomplete; no batch checkbox was changed.
+- Execution report entry: appended and accurate for `(04C)`.
+- Review report entry: appended at EOF.
+- Other: Sibling task `(04D)` remains unchecked; Batch05 tasks remain unchecked.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor report accurately states the files changed, validations run, service-owner reuse, live seed not run, and scope exclusions.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/scripts/seed_demo.py` is untracked until the batch commit, so reviewers must inspect it directly until staged/committed.
+- `backend/app/services/demo_loader.py` and `mock_data/` remain untracked from prior accepted `(04A)` and `(04B)` work.
+- Live seed was not executed; this is acceptable for `(04C)` because the task marks live first-time seed as user-action-bound and optional/manual, with mocked seed tests deferred to Batch05.
+- Batch05 still owns formal automated seed tests with temporary SQLite and mocked Qdrant/embedding.
+
+### Observations
+- `validate_seed_summary(...)` avoids treating duplicate reruns as failures, while still failing a fresh non-duplicate seed if expected Qdrant vectors were not created.
+- The script preflights dependencies before reset, reducing the chance of deleting local mock data when first-time seed prerequisites are missing.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete.
+
+## Repair Instructions
+- None.
+
+---
+
+# Task Review Report - (04D)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Execution Report Reviewed
+docs/reports/report_4_execute_agent.md
+
+## Review Report File
+docs/review/review_4_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
+- Task ID: (04D)
+- Task title: Implement mock-load endpoint using shared demo loader
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Load Endpoint`; `### Mock Data Normalization Contract`; `docs/plans/Master_Plan.md` > `## 26. API Endpoints`
+- Supplemental documents: `docs/plans/Master_Plan.md`
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04D)
+- Reviewed task ID: (04D)
+- Correct selection: yes
+- Notes: Reviewed only the requested `(04D)` report entry. Prior accepted uncommitted `(04A)`, `(04B)`, and `(04C)` work was treated as dependency context, not selected-task implementation.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `backend/app/api/routes_jobs.py`, `docs/reports/report_4_execute_agent.md`, `docs/review/review_4_review_agent.md`, `docs/tasks/task_4.md`; untracked `backend/app/services/demo_loader.py`, `backend/scripts/seed_demo.py`, `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`
+- untracked files: `backend/app/services/demo_loader.py`, `backend/scripts/seed_demo.py`, `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`
+
+## Files Reviewed
+- `docs/tasks/task_4.md`: in scope - selected `(04D)` task block, dependencies, acceptance, and progress tracker reviewed.
+- `docs/reports/report_4_execute_agent.md`: in scope - latest `(04D)` execution report reviewed and cross-checked.
+- `backend/app/api/routes_jobs.py`: in scope - selected task implementation reviewed directly.
+- `backend/app/api/schemas.py`: in scope as dependency evidence - verified `MockLoadRequest` and `IngestionResponse` schema ownership.
+- `backend/app/main.py`: in scope as route-registration evidence - verified jobs router is included under `/api`.
+- `backend/app/services/demo_loader.py`: in scope as dependency evidence - prior accepted `(04A)` loader/reset helper used by route and seed script.
+- `backend/scripts/seed_demo.py`: in scope as dependency evidence - prior accepted `(04C)` script uses the same shared loader/reset helpers.
+- `mock_data/demo_jobs.json`: in scope as dependency evidence - prior accepted `(04B)` fixture loaded by route path.
+- `mock_data/messy_social_posts.json`: in scope as dependency evidence - prior accepted `(04B)` fixture loaded by route path.
+- `docs/plans/Plan_4.md`: in scope - cited mock-load and normalization sections reviewed.
+- `docs/plans/Master_Plan.md`: in scope - cited endpoint table reviewed.
+
+## Reported Files Cross-Check
+- file from execution report: `backend/app/api/routes_jobs.py`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: File contains `POST /jobs/mock-load`, imports `MockLoadRequest`, `IngestionResponse`, `load_mock_fixture_states(...)`, and `reset_mock_demo_data(...)`, and includes both mock fixture paths.
+- file from execution report: `docs/reports/report_4_execute_agent.md`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Execution report was appended with the `(04D)` entry.
+
+## Dependency Review
+- Required dependencies: `(03A)`, `(04A)`, `(04B)`
+- Dependency status: satisfied; `(03A)`, `(04A)`, and `(04B)` are checked complete in `docs/tasks/task_4.md`, and required helpers/fixtures exist. `(04C)` is also accepted and confirms shared seed behavior, though it is not a listed dependency.
+- Missing or invalid dependency: None.
+
+## Architecture Alignment
+- Passed: `/api/jobs/mock-load` is registered through `routes_jobs.py` under the app-level `/api` prefix and appears in OpenAPI as `POST /api/jobs/mock-load`.
+- Passed: Request validation uses `MockLoadRequest`; response declaration uses `IngestionResponse`.
+- Passed: Reset is conditional on `request.reset_existing_demo`, passes `preserve_role_profile_id=str(request.role_profile_id)`, and occurs before generating the route batch ID.
+- Passed: Reset false path does not call the reset helper and relies on downstream Plan 3 deduplication.
+- Passed: The route loads `mock_data/demo_jobs.json` and `mock_data/messy_social_posts.json` through `load_mock_fixture_states(...)` and processes each state through `_process_ingested_state(...)`, which delegates to `process_job_state(...)`.
+- Passed: Counts, warnings, qdrant fields, and job IDs are accumulated into `_build_ingestion_response(...)`, the existing standard ingestion response helper that loads jobs by ID for `JobResponse` serialization.
+- Passed: No direct `job_posts` insertion, direct Qdrant upsert/delete in the route, scoring logic, dedup logic, schema changes, Batch05 tests, seed script edits, or frontend work was added by `(04D)`.
+- Failed: None.
+- Uncertain: Live HTTP mock-load was not run because scorable jobs require local Qdrant and OpenAI embedding access; this is acceptable under the task's user-action and validation fields.
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: The route is executable, appears in router and OpenAPI metadata, uses real schema/service owners, and direct mocked route calls verified reset ordering, reset false behavior, fixture loading, processing-loop calls, and accumulated response fields.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Fixture filenames are required by the source plan. The route does not hardcode expected job IDs, score values, dedup outcomes, provider responses, API keys, Qdrant point IDs, or fake success values.
+
+## Validations Reviewed
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m py_compile app\api\routes_jobs.py`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Command exited successfully with no output.
+- Command/check: router import and fixture path smoke
+- Reported result: Passed
+- Rerun result: Passed with `{'fixture_paths': ['demo_jobs.json', 'messy_social_posts.json'], 'has_mock_load': True}`
+- Status: passed
+- Notes: Verified `/jobs/mock-load` is on the router and both accepted fixture filenames are used.
+- Command/check: OpenAPI route presence and schema check
+- Reported result: Passed
+- Rerun result: Passed with `{'path': '/api/jobs/mock-load', 'request': 'MockLoadRequest', 'response': 'IngestionResponse'}`
+- Status: passed
+- Notes: Confirms app registration under `/api` and correct request/response schema references.
+- Command/check: mocked direct route smoke with `reset_existing_demo=true`
+- Reported result: Passed
+- Rerun result: Passed with call order `['reset', 'load', 'process', 'process', 'build']`
+- Status: passed
+- Notes: Verified reset precedes fixture loading, preserves the role profile ID as a string, processes each state, and accumulates counts, warnings, qdrant flags, and job IDs into the standard helper.
+- Command/check: mocked direct route smoke with `reset_existing_demo=false`
+- Reported result: Passed
+- Rerun result: Passed with call order `['load', 'process', 'process', 'build']`
+- Status: passed
+- Notes: Verified reset helper is not called when reset is false.
+- Command/check: `cd backend; .\.venv\Scripts\python.exe -m compileall -q app`
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Backend app modules compiled successfully.
+- Command/check: boundary `rg` scan for direct insert/upsert/delete, schema/test/frontend scope, and service-owner references
+- Reported result: Passed
+- Rerun result: Passed
+- Status: passed
+- Notes: Route references only shared loader/reset and Plan 3 processing/response helpers for mock-load; direct Qdrant delete remains inside prior accepted `demo_loader.py`, and direct upsert remains in existing Plan 3 `qdrant_service.py`/`job_processing_service.py` owners.
+- Command/check: `git diff --check`
+- Reported result: Passed with CRLF warnings only
+- Rerun result: Passed with CRLF warnings only
+- Status: passed
+- Notes: No whitespace errors were reported.
+- Command/check: live `POST /api/jobs/mock-load`
+- Reported result: Not run
+- Rerun result: Not run
+- Status: acceptable not run
+- Notes: Live mock-load would mutate local data and requires local Qdrant plus OpenAI embedding access for scorable jobs. The task explicitly assigns formal mocked route tests to Batch05 and marks live mock-load as user-action-bound.
+
+## Acceptance Review
+- Task acceptance: Implement `POST /api/jobs/mock-load`.
+- Status: satisfied
+- Evidence: Router contains `@router.post("/mock-load", response_model=IngestionResponse)`, and OpenAPI exposes `POST /api/jobs/mock-load`.
+- Task acceptance: Validate request through `MockLoadRequest` and return standard `IngestionResponse`.
+- Status: satisfied
+- Evidence: Route signature takes `request: MockLoadRequest`; response model is `IngestionResponse`; final return delegates to `_build_ingestion_response(...)`.
+- Task acceptance: Reset uses shared helper only when requested and preserves active role profile.
+- Status: satisfied
+- Evidence: Code calls `reset_mock_demo_data(session, preserve_role_profile_id=str(request.role_profile_id))` only inside `if request.reset_existing_demo`; mocked rerun verified reset false does not call it.
+- Task acceptance: Generate one batch ID after reset.
+- Status: satisfied
+- Evidence: `batch_id = uuid4()` is after the conditional reset call; mocked rerun confirmed call order.
+- Task acceptance: Load both fixtures through `demo_loader.py`.
+- Status: satisfied
+- Evidence: `MOCK_FIXTURE_PATHS` contains `demo_jobs.json` and `messy_social_posts.json`, and route passes it to `load_mock_fixture_states(...)`.
+- Task acceptance: Process every state through the Plan 3 service path.
+- Status: satisfied
+- Evidence: Route loops over every loaded state and calls `_process_ingested_state(...)`, which calls `process_job_state(...)`.
+- Task acceptance: Accumulate counts, warnings, qdrant flags, and full jobs into standard ingestion response.
+- Status: satisfied
+- Evidence: Route sums all `JobProcessingResult` fields, combines `qdrant_synced` with boolean AND, extends job IDs/warnings, and passes the aggregate to `_build_ingestion_response(...)`, which loads jobs and returns `IngestionResponse`.
+- Task acceptance: Stay within selected scope.
+- Status: satisfied
+- Evidence: No Batch05 tests, seed script edits, schema/model changes, scoring/dedup changes, direct route-level database insert, direct route-level Qdrant upsert/delete, frontend work, or out-of-scope infrastructure was added by `(04D)`.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked in the task block and progress tracker.
+- Checkbox updated by reviewer: yes
+- Batch status: Batch04 remains unchecked/incomplete; no batch checkbox was changed.
+- Execution report entry: appended and accurate for `(04D)`.
+- Review report entry: appended at EOF.
+- Other: Batch05 tasks remain unchecked. Prior accepted `(04A)`, `(04B)`, and `(04C)` checkboxes remain checked.
+
+## Report Accuracy
+- Accurate
+- Mismatches: None material. The executor report accurately states implementation files, service-owner reuse, validations, live mock-load not run, and scope exclusions.
+
+## Issues
+
+### Blocking
+- None.
+
+### Major
+- None.
+
+### Minor
+- None.
+
+### Warnings
+- `backend/app/services/demo_loader.py`, `backend/scripts/seed_demo.py`, and `mock_data/` remain untracked until the batch commit.
+- Live mock-load was not executed; this is acceptable for `(04D)` because live execution requires local Qdrant plus OpenAI embedding access and is explicitly user-action-bound.
+- Batch05 still owns formal mocked route tests for mock-load behavior.
+
+### Observations
+- The route keeps the API dependency away from the CLI script while still sharing the required service adapter/reset helpers with `seed_demo.py`.
+- Aggregating `qdrant_synced` with boolean AND correctly reports false if any processed state reports an unsynced Qdrant result.
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no, only if all task IDs are complete; Batch04 is now ready for the batch-level audit/approval flow, not a direct batch checkbox update by A2.
+
+## Repair Instructions
+- None.

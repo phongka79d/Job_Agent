@@ -640,7 +640,7 @@ The portfolio demo must not depend entirely on live internet search, JavaScript-
 
 ### Tasks
 
-- [ ] (04A): Implement demo loader adapter and safe reset helper
+- [x] (04A): Implement demo loader adapter and safe reset helper
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Data Normalization Contract`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Load Endpoint`
@@ -670,7 +670,7 @@ The portfolio demo must not depend entirely on live internet search, JavaScript-
   - Blocked Condition: None.
   - Files: `backend/app/services/demo_loader.py`.
 
-- [ ] (04B): Create demo and messy social post JSON fixtures
+- [x] (04B): Create demo and messy social post JSON fixtures
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Demo Dataset`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Data Normalization Contract`
@@ -698,7 +698,7 @@ The portfolio demo must not depend entirely on live internet search, JavaScript-
   - Blocked Condition: None.
   - Files: `mock_data/demo_jobs.json`, `mock_data/messy_social_posts.json`.
 
-- [ ] (04C): Implement seed demo script
+- [x] (04C): Implement seed demo script
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### seed_demo.py`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Demo Offline Expectations`
@@ -731,7 +731,7 @@ The portfolio demo must not depend entirely on live internet search, JavaScript-
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only for live first-time seeding when Qdrant or embedding credentials are missing.
   - Files: `backend/scripts/seed_demo.py`.
 
-- [ ] (04D): Implement mock-load endpoint using shared demo loader
+- [x] (04D): Implement mock-load endpoint using shared demo loader
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Load Endpoint`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Mock Data Normalization Contract`
@@ -1045,10 +1045,10 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch04
 
-- [ ] (04A): Implement demo loader adapter and safe reset helper
-- [ ] (04B): Create demo and messy social post JSON fixtures
-- [ ] (04C): Implement seed demo script
-- [ ] (04D): Implement mock-load endpoint using shared demo loader
+- [x] (04A): Implement demo loader adapter and safe reset helper
+- [x] (04B): Create demo and messy social post JSON fixtures
+- [x] (04C): Implement seed demo script
+- [x] (04D): Implement mock-load endpoint using shared demo loader
 
 #### Batch05
 
