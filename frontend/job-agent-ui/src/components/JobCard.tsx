@@ -62,12 +62,12 @@ export default function JobCard({
         
         {/* Title, Company, and Score Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-primary)", margin: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0, flex: 1 }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-primary)", margin: 0, overflowWrap: "anywhere" }}>
               {job.title || "Untitled Position"}
             </h3>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)", fontSize: "14px" }}>
-              <Building size={14} style={{ color: "var(--text-muted)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)", fontSize: "14px", overflowWrap: "anywhere" }}>
+              <Building size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span>{job.company || "Unknown Company"}</span>
             </div>
           </div>
@@ -188,7 +188,8 @@ export default function JobCard({
             gap: "16px",
             marginTop: "12px",
             paddingTop: "12px",
-            borderTop: "1px solid var(--border-color)"
+            borderTop: "1px solid var(--border-color)",
+            flexWrap: "wrap"
           }}
         >
           {/* In-card Accordion Toggle for Score Breakdown */}
@@ -229,7 +230,7 @@ export default function JobCard({
           )}
 
           {/* Workflow specific actions */}
-          <div style={{ display: "flex", gap: "8px", marginLeft: "auto", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", marginLeft: "auto", alignItems: "center", flexWrap: "wrap" }}>
             
             {/* Approve / Reject buttons for Review queue */}
             {job.status === "pending_review" && onApprove && onReject && (

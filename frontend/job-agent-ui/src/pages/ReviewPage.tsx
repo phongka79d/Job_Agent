@@ -6,9 +6,10 @@ import type { Job } from "../types/api";
 import JobCard from "../components/JobCard";
 
 export default function ReviewPage() {
-  const { activeProfileId, activeBatchId } = useOutletContext<{
+  const { activeProfileId, activeBatchId, triggerMetricsRefresh } = useOutletContext<{
     activeProfileId: string | null;
     activeBatchId: string | null;
+    triggerMetricsRefresh?: () => void;
   }>();
 
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -51,6 +52,7 @@ export default function ReviewPage() {
       await approveJob(jobId);
       // Remove immediately from the UI review queue list on success
       setJobs((prev) => prev.filter((job) => job.id !== jobId));
+      triggerMetricsRefresh?.();
     } catch (err: any) {
       setError(err.message || "Failed to approve job.");
     } finally {
@@ -65,6 +67,7 @@ export default function ReviewPage() {
       await rejectJob(jobId);
       // Remove immediately from the UI review queue list on success
       setJobs((prev) => prev.filter((job) => job.id !== jobId));
+      triggerMetricsRefresh?.();
     } catch (err: any) {
       setError(err.message || "Failed to reject job.");
     } finally {

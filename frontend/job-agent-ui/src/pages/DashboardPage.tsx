@@ -6,9 +6,10 @@ import type { Job } from "../types/api";
 import JobCard from "../components/JobCard";
 
 export default function DashboardPage() {
-  const { activeProfileId, activeBatchId } = useOutletContext<{
+  const { activeProfileId, activeBatchId, triggerMetricsRefresh } = useOutletContext<{
     activeProfileId: string | null;
     activeBatchId: string | null;
+    triggerMetricsRefresh?: () => void;
   }>();
 
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -40,6 +41,11 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  const handleStatusChange = useCallback(() => {
+    fetchJobs();
+    triggerMetricsRefresh?.();
+  }, [fetchJobs, triggerMetricsRefresh]);
 
   return (
     <div className="dashboard-page" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -124,7 +130,7 @@ export default function DashboardPage() {
             <JobCard
               key={job.id}
               job={job}
-              onStatusChange={fetchJobs}
+              onStatusChange={handleStatusChange}
             />
           ))}
         </div>

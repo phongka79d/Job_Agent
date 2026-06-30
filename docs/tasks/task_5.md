@@ -721,7 +721,7 @@ The MVP must be reliable during a portfolio demo. This batch fills in the operat
   - Blocked Condition: None.
   - Files: Existing components and UI state/rendering tests.
 
-- [ ] (04C): Implement responsive work-focused dashboard styling
+- [x] (04C): Implement responsive work-focused dashboard styling
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Visual Design Rules`
     - `docs/plans/Plan_5.md` > `## 4. Scope`
@@ -750,7 +750,7 @@ The MVP must be reliable during a portfolio demo. This batch fills in the operat
   - Blocked Condition: None.
   - Files: `src/styles/app.css`, component markup updates where needed.
 
-- [ ] (04D): Verify seeded local demo behavior and frontend boundary rules
+- [x] (04D): Verify seeded local demo behavior and frontend boundary rules
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 4. Scope`
     - `docs/plans/Plan_5.md` > `## 9. Verification & Testing Plan`
@@ -1079,10 +1079,10 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch04
 
-- [ ] (04A): Build batch metrics panel with active batch lifecycle
-- [ ] (04B): Complete loading, empty, disabled, warning, and error states
-- [ ] (04C): Implement responsive work-focused dashboard styling
-- [ ] (04D): Verify seeded local demo behavior and frontend boundary rules
+- [x] (04A): Build batch metrics panel with active batch lifecycle
+- [x] (04B): Complete loading, empty, disabled, warning, and error states
+- [x] (04C): Implement responsive work-focused dashboard styling
+- [x] (04D): Verify seeded local demo behavior and frontend boundary rules
 
 #### Batch05
 

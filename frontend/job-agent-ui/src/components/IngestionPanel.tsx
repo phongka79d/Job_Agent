@@ -179,6 +179,7 @@ export default function IngestionPanel({
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           borderBottom: "1px solid var(--border-color)",
           marginBottom: "12px",
           gap: "4px",

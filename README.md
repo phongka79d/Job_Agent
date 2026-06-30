@@ -395,6 +395,25 @@ npm run build
 
 ---
 
+## Metrics Panel, UI States, Responsive Visual System, and Demo Readiness (Phase 5 - Batch 04)
+
+Phase 5 Batch 04 completes the final UI features, layout polish, and boundary validations:
+
+- **Batch Metrics Panel (Task 04A):** Implements `src/components/BatchMetrics.tsx` which connects to the batch summary backend API. Exposes an isolated `activeBatchId` lifecycle, clearing state gracefully on 404s and preventing cross-profile leakage. Uses `triggerMetricsRefresh` context to reload scores when jobs are approved/rejected/changed.
+- **UI States & Warnings (Task 04B):** Solidifies disabled states for in-flight mutations, displays ingestion `warnings` from the backend in the Ingestion panel, and displays persisted `error_reason` messages securely inside the Job card.
+- **Responsive Layout & Design Polish (Task 04C):** Fine-tunes horizontal flex boxes (`flex-wrap`) across toolbars and navigation tabs, and adds global media queries (`@media (max-width: 768px)`) shifting the app container into a mobile-friendly column-flow layout without text overlap.
+- **Demo Readiness Verification (Task 04D):** Validated that the frontend relies exclusively on the FastAPI endpoints without invoking external providers directly from the browser code, ensuring true boundary separation. Tested heavily under jsdom mocking with zero `.env` dependencies in the browser code.
+
+From the `frontend/job-agent-ui` directory, verify and run the full test suite:
+
+```bash
+npm run typecheck
+npm test -- --run
+npm run build
+```
+
+---
+
 ## Scoring & Embedding Foundations (Phase 3 - Batch 01)
 
 Phase 3 Batch 01 implements the deterministic scoring calculations, skill alias normalization, clean embedding text construction, and mockable embedding provider boundary:

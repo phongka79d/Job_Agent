@@ -107,6 +107,10 @@ describe("IngestionPanel", () => {
     expect(screen.getByText(/Ingestion Complete/i)).toBeInTheDocument();
     expect(screen.getByText(/batch-123/i)).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument(); // jobs extracted
+
+    // Check warnings
+    expect(screen.getByText("Ingestion Warnings")).toBeInTheDocument();
+    expect(screen.getByText("Low-priority source warning")).toBeInTheDocument();
   });
 
   it("should parse job URL and render Plan 5 specific user-facing warning if parse_status is needs_manual_input", async () => {

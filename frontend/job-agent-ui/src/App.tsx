@@ -7,11 +7,13 @@ import RoleProfilePanel from './components/RoleProfilePanel';
 import IngestionPanel from './components/IngestionPanel';
 import type { RoleProfile } from './types/api';
 import { loadActiveBatchId, saveActiveBatchId } from './utils/activeBatchStorage';
+import BatchMetrics from './components/BatchMetrics';
 import './styles/app.css';
 
 function App() {
   const [activeProfile, setActiveProfile] = useState<RoleProfile | null>(null);
   const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
+  const [metricsRefreshCount, setMetricsRefreshCount] = useState(0);
 
   const handleProfileChange = (profile: RoleProfile) => {
     setActiveProfile(profile);
@@ -28,6 +30,11 @@ function App() {
       // Store response.batch_id as activeBatchId in component state and localStorage
       saveActiveBatchId(activeProfile.id, batchId);
     }
+    triggerMetricsRefresh();
+  };
+
+  const triggerMetricsRefresh = () => {
+    setMetricsRefreshCount((c) => c + 1);
   };
 
 
@@ -42,13 +49,19 @@ function App() {
         activeProfileId={activeProfile?.id || null}
         onIngestionSuccess={handleIngestionSuccess}
       />
+      
+      <BatchMetrics
+        activeProfileId={activeProfile?.id || null}
+        activeBatchId={activeBatchId}
+        refreshTrigger={metricsRefreshCount}
+      />
     </div>
   );
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppShell sidebarContent={sidebar} activeBatchId={activeBatchId} activeProfileId={activeProfile?.id || null} />}>
+        <Route path="/" element={<AppShell sidebarContent={sidebar} activeBatchId={activeBatchId} activeProfileId={activeProfile?.id || null} triggerMetricsRefresh={triggerMetricsRefresh} />}>
           <Route index element={<ReviewPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
         </Route>

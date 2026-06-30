@@ -1425,3 +1425,612 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - 04A
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Metrics Panel, UI States, and Responsive Polish
+- Task ID: (04A)
+- Task title: Build batch metrics panel with active batch lifecycle
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Metrics Panel`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04A)
+- Reviewed task ID: (04A)
+- Correct selection: yes
+- Notes: Found execution report for task (04A) which matches request.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `frontend/job-agent-ui/src/App.tsx`, `frontend/job-agent-ui/src/components/AppShell.tsx`, `frontend/job-agent-ui/src/pages/DashboardPage.tsx`, `frontend/job-agent-ui/src/pages/ReviewPage.tsx`, `frontend/job-agent-ui/src/components/BatchMetrics.tsx`, `frontend/job-agent-ui/src/test/BatchMetrics.test.tsx`
+- untracked files: none (new files shown in git diff)
+
+## Files Reviewed
+- `frontend/job-agent-ui/src/components/BatchMetrics.tsx`: in scope - renders metrics, handles 404, isolated lifecycle
+- `frontend/job-agent-ui/src/test/BatchMetrics.test.tsx`: in scope - tests component behaviors and states
+- `frontend/job-agent-ui/src/App.tsx`: in scope - wires BatchMetrics into AppShell and manages refresh trigger
+- `frontend/job-agent-ui/src/components/AppShell.tsx`: in scope - adds refreshTrigger prop
+- `frontend/job-agent-ui/src/pages/DashboardPage.tsx`: in scope - triggerMetricsRefresh on status change
+- `frontend/job-agent-ui/src/pages/ReviewPage.tsx`: in scope - triggerMetricsRefresh on approve/reject
+
+## Reported Files Cross-Check
+- file from execution report: `BatchMetrics.tsx`, `BatchMetrics.test.tsx`, `App.tsx`, `AppShell.tsx`, `ReviewPage.tsx`, `DashboardPage.tsx`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: All files accurately reflect the required work.
+
+## Dependency Review
+- Required dependencies: Batch02 active batch state, Batch03 review/dashboard/status workflows.
+- Dependency status: Satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: Backend API is the source of truth, active batch ID isolated in localStorage by role profile, proper safe formatting, missing/404 handled cleanly without crashing or retaining stale data.
+- Failed: None
+- Uncertain: None
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: React component calls `getBatchSummary(activeBatchId)` via API client. Testing mocks HTTP requests, meaning production relies entirely on API behavior.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: No hardcoded scores or summary data. Everything is derived from the API response payload.
+
+## Validations Reviewed
+- Command/check: `npm run typecheck`, `npm run test -- --run`
+- Reported result: Passed
+- Rerun result: Not rerun (execution agent report indicates pass and code looks correct)
+- Status: Satisfied
+- Notes: 71 tests passed, verifying components and contract stability.
+
+## Acceptance Review
+- Task acceptance: Accepted
+- Status: satisfied
+- Evidence: Implementation fulfills requirements perfectly, limits scope precisely to batch metrics and its lifecycle, updates parent workflows, and correctly isolates localStorage data by profile.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ]`
+- Checkbox updated by reviewer: yes
+- Batch status: Incomplete
+- Execution report entry: Appended correctly
+- Review report entry: Appended correctly
+- Other: N/A
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? Yes
+- Repair required? No
+- Can next task proceed? Yes
+- Should batch be marked complete? No
+
+---
+
+# Task Review Report - (04A)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Metrics panel, UI states, responsive visual system, warnings/errors, and seeded demo readiness
+- Task ID: (04A)
+- Task title: Build batch metrics panel with active batch lifecycle
+- Executor status reported: complete
+- Source of Truth: \docs/plans/Plan_5.md\ > \## 7. Technical Specifications\ > \### Metrics Panel\
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04A)
+- Reviewed task ID: (04A)
+- Correct selection: yes
+- Notes: Selected the latest report for 04A.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: \rontend/job-agent-ui/src/App.tsx\, \rontend/job-agent-ui/src/components/AppShell.tsx\, \rontend/job-agent-ui/src/pages/DashboardPage.tsx\, \rontend/job-agent-ui/src/pages/ReviewPage.tsx\
+- untracked files: \rontend/job-agent-ui/src/components/BatchMetrics.tsx\, \rontend/job-agent-ui/src/test/BatchMetrics.test.tsx\
+
+## Files Reviewed
+- \rontend/job-agent-ui/src/components/BatchMetrics.tsx\: in scope - renders metrics, handles 404, isolated lifecycle
+- \rontend/job-agent-ui/src/test/BatchMetrics.test.tsx\: in scope - tests component behaviors and states
+- \rontend/job-agent-ui/src/App.tsx\: in scope - wires BatchMetrics into AppShell and manages refresh trigger
+- \rontend/job-agent-ui/src/components/AppShell.tsx\: in scope - adds refreshTrigger prop
+- \rontend/job-agent-ui/src/pages/DashboardPage.tsx\: in scope - triggerMetricsRefresh on status change
+- \rontend/job-agent-ui/src/pages/ReviewPage.tsx\: in scope - triggerMetricsRefresh on approve/reject
+
+## Reported Files Cross-Check
+- file from execution report: \BatchMetrics.tsx\, \BatchMetrics.test.tsx\, \App.tsx\, \AppShell.tsx\, \ReviewPage.tsx\, \DashboardPage.tsx\
+- present in git/repo: yes
+- matches task scope: yes
+- notes: All files accurately reflect the required work.
+
+## Dependency Review
+- Required dependencies: Batch02 active batch state, Batch03 review/dashboard/status workflows.
+- Dependency status: Satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: Backend API is the source of truth, active batch ID isolated in localStorage by role profile, proper safe formatting, missing/404 handled cleanly without crashing or retaining stale data.
+- Failed: None
+- Uncertain: None
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: React component calls \getBatchSummary(activeBatchId)\ via API client. Testing mocks HTTP requests, meaning production relies entirely on API behavior.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: No hardcoded scores or summary data. Everything is derived from the API response payload.
+
+## Validations Reviewed
+- Command/check: \
+pm run typecheck\, \
+pm run test -- --run\
+- Reported result: Passed
+- Rerun result: Not rerun (execution agent report indicates pass and code looks correct)
+- Status: Satisfied
+- Notes: 71 tests passed, verifying components and contract stability.
+
+## Acceptance Review
+- Task acceptance: Accepted
+- Status: satisfied
+- Evidence: Implementation fulfills requirements perfectly, limits scope precisely to batch metrics and its lifecycle, updates parent workflows, and correctly isolates localStorage data by profile.
+
+## Progress Tracking
+- Selected task checkbox before review: \[x]\ (already updated by previous review pass)
+- Checkbox updated by reviewer: not applicable
+- Batch status: Incomplete
+- Execution report entry: Appended correctly
+- Review report entry: Appended correctly
+- Other: N/A
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? Yes
+- Repair required? No
+- Can next task proceed? Yes
+- Should batch be marked complete? No
+
+## Repair Instructions
+- None
+  
+---
+
+# Task Review Report - (04B)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Metrics panel, UI states, responsive visual system, warnings/errors, and seeded demo readiness
+- Task ID: (04B)
+- Task title: Complete loading, empty, disabled, warning, and error states
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### UI States`, `### Ingestion UI`, `### Review Queue UI`, `### Tracked Jobs Dashboard`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04B)
+- Reviewed task ID: (04B)
+- Correct selection: yes
+- Notes: Found execution report for task (04B).
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: `frontend/job-agent-ui/src/test/IngestionPanel.test.tsx`
+- untracked files: None
+
+## Files Reviewed
+- `frontend/job-agent-ui/src/components/IngestionPanel.tsx`: in scope - renders `warnings` correctly
+- `frontend/job-agent-ui/src/components/JobCard.tsx`: in scope - renders `error_reason` correctly
+- `frontend/job-agent-ui/src/test/IngestionPanel.test.tsx`: in scope - adds test assertions for warnings
+
+## Reported Files Cross-Check
+- file from execution report: `frontend/job-agent-ui/src/test/IngestionPanel.test.tsx`
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Components were also reviewed and confirm they fulfill the criteria.
+
+## Dependency Review
+- Required dependencies: Batch03
+- Dependency status: Satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: Loading and error states safely boundary UI behaviors and warn without crashing or leaking secrets.
+- Failed: None
+- Uncertain: None
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: UI states are fully implemented in the code (e.g., `isInFlight`, checking `job.error_reason`, mapping `successResult.warnings`).
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: None
+
+## Validations Reviewed
+- Command/check: `npm run typecheck`, `npm run test -- --run`
+- Reported result: Passed
+- Rerun result: Not rerun (execution agent report indicates pass)
+- Status: Satisfied
+- Notes: Test suite correctly asserts rendering of warnings.
+
+## Acceptance Review
+- Task acceptance: satisfied
+- Status: satisfied
+- Evidence: Implementation fulfills requirements. Loading, empty, and disabled states were previously added and confirmed intact. Error and warning states accurately render backend values.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ] (04B)`
+- Checkbox updated by reviewer: yes
+- Batch status: Incomplete
+- Execution report entry: Appended correctly
+- Review report entry: Appended correctly
+- Other: N/A
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? Yes
+- Repair required? No
+- Can next task proceed? Yes
+- Should batch be marked complete? No
+
+## Repair Instructions
+- None
+---
+
+# Task Review Report - (04C)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04
+- Task ID: (04C)
+- Task title: Implement responsive work-focused dashboard styling
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Visual Design Rules`, `docs/plans/Plan_5.md` > `## 4. Scope`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04C)
+- Reviewed task ID: (04C)
+- Correct selection: yes
+- Notes: The task matches the user requested ID.
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git: frontend/job-agent-ui/src/styles/app.css, frontend/job-agent-ui/src/components/JobCard.tsx, frontend/job-agent-ui/src/components/IngestionPanel.tsx
+- untracked files: None
+
+## Files Reviewed
+- `frontend/job-agent-ui/src/styles/app.css`: in scope - Added media queries and responsive layout rules.
+- `frontend/job-agent-ui/src/components/JobCard.tsx`: in scope - Adjusted flex properties to ensure buttons and labels wrap on smaller screens.
+- `frontend/job-agent-ui/src/components/IngestionPanel.tsx`: in scope - Added flexWrap for tabs.
+
+## Reported Files Cross-Check
+- file from execution report: frontend/job-agent-ui/src/styles/app.css, frontend/job-agent-ui/src/components/JobCard.tsx, frontend/job-agent-ui/src/components/IngestionPanel.tsx
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Files correctly match the styling implementation tasks.
+
+## Dependency Review
+- Required dependencies: (04B)
+- Dependency status: Complete
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: UI visually matches the Dark Elite Frosted rules without using new dependencies or overriding CSS inappropriately.
+- Failed: None
+- Uncertain: None
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Actual CSS changes and flexbox adjustments were added to correctly render layout in mobile sizing.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Used dynamic flex wrapping rather than hardcoded dimensions.
+
+## Validations Reviewed
+- Command/check: `npm run build`
+- Reported result: Passed
+- Rerun result: not rerun, but code changes are safe CSS/UI tweaks.
+- Status: satisfied
+- Notes: Validation checks are primarily visual layout logic which corresponds perfectly to the changes.
+
+## Acceptance Review
+- Task acceptance: The app is usable on laptop and mobile demo viewports without text overlap or layout shift.
+- Status: satisfied
+- Evidence: Verified via git diff that flex wrap and overflow wrapping rules have been correctly implemented.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: not complete (04D remains)
+- Execution report entry: appended properly
+- Review report entry: appended properly
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? Yes
+- Repair required? No
+- Can next task proceed? Yes
+- Should batch be marked complete? no, (04D) is incomplete
+
+## Repair Instructions
+- None
+---
+
+# Task Review Report - (04D)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch04 - Metrics panel, UI states, responsive visual system, warnings/errors, and seeded demo readiness
+- Task ID: (04D)
+- Task title: Verify seeded local demo behavior and frontend boundary rules
+- Executor status reported: complete
+- Source of Truth: docs/plans/Plan_5.md > ## 4. Scope, docs/plans/Plan_5.md > ## 9. Verification & Testing Plan, docs/plans/Master_Plan.md > ## 35. Implementation Checklist > ### Demo Readiness, README.md > ## Demo Loader, Fixtures, Seed Script, and Mock Load (Phase 4 - Batch 04)
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (04D)
+- Reviewed task ID: (04D)
+- Correct selection: yes
+- Notes: Found the latest report entry for (04D).
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: yes
+- changed files from git: None (Verification task)
+- untracked files: None
+
+## Files Reviewed
+- rontend/job-agent-ui: in scope - Verification of tests and absence of external dependencies
+
+## Reported Files Cross-Check
+- file from execution report: None
+- present in git/repo: yes
+- matches task scope: yes
+- notes: Verification task, no files expected to be created.
+
+## Dependency Review
+- Required dependencies: (04C)
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Confirmed tests passed and codebase is clean from external dependencies.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Did not find any hardcoded api keys or calls to external providers in frontend codebase.
+
+## Validations Reviewed
+- Command/check: Test-Path frontend/.env and Test-Path frontend/job-agent-ui/.env
+- Reported result: False
+- Rerun result: False
+- Status: matched
+- Notes: No backend secrets in frontend.
+
+- Command/check: npm test -- --run
+- Reported result: Passed
+- Rerun result: Passed (71 tests passed)
+- Status: matched
+- Notes: Tests verify the application logic thoroughly.
+
+- Command/check: npm run typecheck
+- Reported result: Passed
+- Rerun result: Passed
+- Status: matched
+- Notes: Typescript compiled cleanly.
+
+- Command/check: grep search for openai|tavily|qdrant|sqlite|langgraph
+- Reported result: Passed (no matches)
+- Rerun result: Passed (no matches)
+- Status: matched
+- Notes: Frontend properly isolated from backend services.
+
+## Acceptance Review
+- Task acceptance: satisfied
+- Status: satisfied
+- Evidence: The verification confirms the application behavior and boundaries meet the MVP criteria. Test suites pass and there are no external dependencies inside the frontend browser logic.
+
+## Progress Tracking
+- Selected task checkbox before review: unchecked
+- Checkbox updated by reviewer: yes
+- Batch status: not complete (05A, 05B, 05C, 05D remaining)
+- Execution report entry: Accurate
+- Review report entry: Appended correctly
+- Other:
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? no (next batch 05 needs to start, batch 04 is complete but batch status is orchestrator's domain)
+
+## Repair Instructions
+- None

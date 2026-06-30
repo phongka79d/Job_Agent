@@ -5,9 +5,10 @@ interface AppShellProps {
   sidebarContent?: React.ReactNode;
   activeBatchId?: string | null;
   activeProfileId?: string | null;
+  triggerMetricsRefresh?: () => void;
 }
 
-export default function AppShell({ sidebarContent, activeBatchId, activeProfileId }: AppShellProps) {
+export default function AppShell({ sidebarContent, activeBatchId, activeProfileId, triggerMetricsRefresh }: AppShellProps) {
   return (
     <div className="app-container">
       {/* Sidebar for role profile selection/creation and ingestion controls */}
@@ -70,7 +71,7 @@ export default function AppShell({ sidebarContent, activeBatchId, activeProfileI
         </header>
         
         <section className="content-viewport">
-          <Outlet context={{ activeProfileId, activeBatchId }} />
+          <Outlet context={{ activeProfileId, activeBatchId, triggerMetricsRefresh }} />
         </section>
       </main>
     </div>
