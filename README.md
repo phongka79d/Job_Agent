@@ -120,19 +120,26 @@ Job_Agent/
 |       |   |-- components/
 |       |   |   |-- AppShell.tsx   # Glassmorphic layout wrapper
 |       |   |   |-- IngestionPanel.tsx # Search, URL, Text, and Mock controls
-|       |   |   `-- RoleProfilePanel.tsx # Role creation & selection form
+|       |   |   |-- JobCard.tsx        # Reusable job display card with match scores & warning alerts
+|       |   |   |-- RoleProfilePanel.tsx # Role creation & selection form
+|       |   |   |-- ScoreBreakdown.tsx # Null-safe detailed score component (no UI scoring)
+|       |   |   `-- StatusSelect.tsx   # Contract-based status transition select dropdown
 |       |   |-- pages/
-|       |   |   |-- DashboardPage.tsx # Tracked jobs dashboard placeholder
-|       |   |   `-- ReviewPage.tsx # Review queue placeholder
+|       |   |   |-- DashboardPage.tsx  # Tracked jobs dashboard (fetching status=tracked)
+|       |   |   `-- ReviewPage.tsx     # Review queue with approve/reject mutations
 |       |   |-- styles/
 |       |   |   `-- app.css        # OLED Black & Cyan theme stylesheet
 |       |   |-- test/
 |       |   |   |-- setup.ts       # Vitest setup with jsdom
+|       |   |   |-- activeBatch.test.tsx # Active batch isolation tests
 |       |   |   |-- apiContract.test.ts # API contract drift tests
 |       |   |   |-- apiClient.test.ts # API client tests
+|       |   |   |-- DashboardPage.test.tsx # Dashboard routing and filtering tests
 |       |   |   |-- IngestionPanel.test.tsx # Ingestion behavior tests
+|       |   |   |-- JobCard.test.tsx # Job card display and interaction tests
+|       |   |   |-- ReviewPage.test.tsx # Review queue approve/reject mutation tests
 |       |   |   |-- RoleProfilePanel.test.tsx # Profile workflow tests
-|       |   |   `-- activeBatch.test.tsx # Active batch isolation tests
+|       |   |   `-- StatusSelect.test.tsx # Allowed transitions unit tests
 |       |   |-- types/
 |       |   |   `-- api.ts         # TypeScript API models & transition types
 |       |   |-- utils/
@@ -357,6 +364,26 @@ Phase 5 Batch 02 implements the core application shell, role profile selection, 
 - **Ingestion Controls & Warnings (Task 02C):** Implements `src/components/IngestionPanel.tsx` containing search, URL, text, and mock-load ingestion controls. Features inline API disabled states, warning displays (such as low-content manual input prompts), and validation error surfacing.
 - **Active Batch Isolation (Task 02D):** Implements `src/utils/activeBatchStorage.ts` to isolate active batch IDs per profile in localStorage using the key prefix `job-agent.activeBatchId.{role_profile_id}`. Prevents cross-profile batch leaks and avoids non-contract backend queries.
 - **Verification and Testing:** Includes automated Vitest unit/component tests (`RoleProfilePanel.test.tsx`, `IngestionPanel.test.tsx`, and `activeBatch.test.tsx`) asserting mock client triggers, disabled states, contract compliance, and localStorage separation.
+
+From the `frontend/job-agent-ui` directory, verify and run the tests:
+
+```bash
+npm run typecheck
+npm test -- --run
+npm run build
+```
+
+---
+
+## Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows (Phase 5 - Batch 03)
+
+Phase 5 Batch 03 implements the core human-in-the-loop review and application tracking UI:
+
+- **Review Queue (Task 03B):** Implements `src/pages/ReviewPage.tsx` fetching pending jobs matching `status=pending_review` via the FastAPI review route. Displays card-based approve and reject mutation actions.
+- **Tracked Jobs Dashboard (Task 03C):** Implements `src/pages/DashboardPage.tsx` using `status=tracked` query filtering to display saved, applied, interview, rejected, and offer jobs. Retains jobs in score order and prevents premature frontend status filtering.
+- **Job Cards & Null-Safe Scores (Task 03A):** Implements `src/components/JobCard.tsx` and `src/components/ScoreBreakdown.tsx` to render title, company, location, source platform, and detailed score breakdown (similarity, skill overlap, location, level, and confidence). Integrates persisted job `error_reason` warnings. Renders non-scorable or unscored jobs safely as `Not scored` without recalculating scores in the browser.
+- **Status Workflows & Allowed Transitions (Task 03D):** Implements `src/components/StatusSelect.tsx` to control manual status updates. Disables option changes in terminal states (`rejected`, `offer`) and limits choices to contract-approved transitions dynamically fetched from `shared/api-contract.json`.
+- **Verification and Testing:** Includes Vitest component unit tests checking card styling, conditional button disables, contract transition validations, status-revert helpers, and loading/empty UI states.
 
 From the `frontend/job-agent-ui` directory, verify and run the tests:
 

@@ -4,9 +4,10 @@ import { Briefcase, ClipboardList, Layers } from 'lucide-react';
 interface AppShellProps {
   sidebarContent?: React.ReactNode;
   activeBatchId?: string | null;
+  activeProfileId?: string | null;
 }
 
-export default function AppShell({ sidebarContent, activeBatchId }: AppShellProps) {
+export default function AppShell({ sidebarContent, activeBatchId, activeProfileId }: AppShellProps) {
   return (
     <div className="app-container">
       {/* Sidebar for role profile selection/creation and ingestion controls */}
@@ -69,7 +70,7 @@ export default function AppShell({ sidebarContent, activeBatchId }: AppShellProp
         </header>
         
         <section className="content-viewport">
-          <Outlet />
+          <Outlet context={{ activeProfileId, activeBatchId }} />
         </section>
       </main>
     </div>

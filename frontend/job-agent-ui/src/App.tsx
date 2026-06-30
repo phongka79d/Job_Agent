@@ -48,7 +48,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppShell sidebarContent={sidebar} activeBatchId={activeBatchId} />}>
+        <Route path="/" element={<AppShell sidebarContent={sidebar} activeBatchId={activeBatchId} activeProfileId={activeProfile?.id || null} />}>
           <Route index element={<ReviewPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
         </Route>

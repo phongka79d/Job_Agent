@@ -735,3 +735,514 @@ complete
 - next task ID: (03A)
 - can proceed: yes
 - handoff notes: Active batch state isolation has been implemented and thoroughly tested. The project completes Batch02 and is ready for Batch03 with task (03A) to build the shared Job Card component and display the detailed matching score breakdown component.
+
+---
+
+# Task Execution Report - (03A)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+
+## Task
+(03A) - Build shared job card and score breakdown components
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Review Queue UI`
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Score Breakdown`
+- `docs/plans/Master_Plan.md` > `## 14. Visual Score Breakdown in UI`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03A)
+- Task title: Build shared job card and score breakdown components
+
+## Completed Work
+- Created the shared score breakdown component [src/components/ScoreBreakdown.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/ScoreBreakdown.tsx) to format matching score match metrics. Implemented matching score formatters (`formatDecimalScore`, `formatPercentScore`) converting decimal value to percentage (e.g. `0.85` -> `85%`) and rendering null values or non-scorable state as `"Not scored"`.
+- Handled non-scorable jobs (`should_score_similarity` is false) by enforcing `"Not scored"` values for the entire score breakdown factors including Final Score.
+- Created the reusable job card display component [src/components/JobCard.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/JobCard.tsx) which includes title, company, location, final score percent, JD status, current status, source platform, and warnings/errors display from `error_reason`.
+- Designed the score breakdown on `JobCard` to render as an in-card accordion collapsible section to avoid layout shifts for outer lists.
+- Implemented and added Vitest rendering unit tests in [src/test/JobCard.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/JobCard.test.tsx) which check:
+  - Rendering job details correctly on the card.
+  - Handling null score fields and showing "Not scored".
+  - Handling non-scorable jobs (`should_score_similarity = false`) showing "Not scored" for all factors.
+  - Rendering and toggling the score breakdown accordion.
+  - Displaying the job `error_reason` warning box if present.
+  - Rendering approve/reject button controls when status is `pending_review` and action handlers are provided, including checking disabled states while loading.
+- Verified that all unit tests in the project (47 tests) run and pass successfully.
+
+## Files Created or Modified
+- [frontend/job-agent-ui/src/components/ScoreBreakdown.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/ScoreBreakdown.tsx) (Created)
+- [frontend/job-agent-ui/src/components/JobCard.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/JobCard.tsx) (Created)
+- [frontend/job-agent-ui/src/test/JobCard.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/JobCard.test.tsx) (Created)
+
+## Tests or Validations Run
+- `npm test -- --run src/test/JobCard.test.tsx`: Passed (7 tests passed)
+- `npm test -- --run`: Passed (All 47 unit tests passed cleanly)
+- `npm run typecheck`: Passed (No compilation errors)
+- `npm run build`: Passed (Production build successfully bundled)
+
+## Acceptance Check
+- Task acceptance condition: Review and dashboard pages can reuse one backend-value-only job display surface.
+- Status: satisfied
+- Evidence: Built `JobCard` component that accepts parameters/props dynamically like `onApprove`, `onReject`, and `statusControl` allowing both the Review page and Tracked Dashboard page to reuse a single display surface cleanly.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: This is an orchestrated run. Task checkbox updates are managed by the Review Agent (A2) after review is ACCEPTED.
+
+## Key Implementation Decisions
+- Formatted matching scores correctly checking if `should_score_similarity` is false or final score is null to safely display "Not scored" without recalculating values in the frontend.
+- Added support for warning/error box inside the `JobCard` rendering `error_reason` with a danger styling.
+- Styled components to align with the "Dark Elite Frosted" visual system with backdrop filter blur, thin low-opacity borders, and cyan accent for scores.
+- Implemented score breakdown as an in-card collapsible accordion panel to prevent layout shifts.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- Fixed duplicate matching elements error in tests where "85%" and "100%" matched multiple DOM text elements (resolved using `getAllByText`).
+
+## Workflow Integrity Check
+- No issues identified. Built strictly in scope of (03A).
+
+## Notes for Next Task
+- next task ID: (03B)
+- can proceed: yes
+- handoff notes: Component `JobCard` and `ScoreBreakdown` are built, styled, and fully tested. Next task (03B) can proceed to build the review queue page displaying pending review jobs with approve/reject actions using these components.
+
+---
+
+# Task Execution Report - (03B)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+
+## Task
+(03B) - Build review queue and approve/reject actions
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Review Queue UI`
+- `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
+- `README.md` > `## Core FastAPI Routes and App Wiring (Phase 4 - Batch 02)`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03B)
+- Task title: Build review queue and approve/reject actions
+
+## Completed Work
+- Implemented the `ReviewPage` component in `src/pages/ReviewPage.tsx` using `useOutletContext` to read the active profile ID and active batch ID from the App layout.
+- Added fetch logic using `getReviewJobs(activeProfileId)` to fetch pending jobs.
+- Implemented filtering: filters jobs based on `activeBatchId` and `pending_review` status from the API (i.e. `job.status === "pending_review"` or `job.jd_status === "pending_review"`).
+- Passed `onApprove` and `onReject` handlers to `JobCard`.
+- Disabled action buttons during in-flight operations (tracked using an `actionLoading` map state per jobId) and handles success by immediately removing the job from the local list.
+- Safely surfaced backend mutation errors by rendering the error message in a warning panel.
+- Handled empty states when there is no active batch, no profile is selected, or no pending review jobs match the filter.
+- Updated the Approve button in `JobCard.tsx` to have an Emerald accent outline to align with the visual specification.
+- Wrote comprehensive unit tests in `src/test/ReviewPage.test.tsx` verifying:
+  - Initial fetch and list rendering.
+  - Correct filtering using the current batch ID.
+  - Empty state rendering when no batch is active or no jobs are returned.
+  - Clicking Approve/Reject fires the corresponding API call and immediately removes the job from the UI list.
+  - Error display and state preservation when actions fail.
+
+## Files Created or Modified
+- [frontend/job-agent-ui/src/pages/ReviewPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/ReviewPage.tsx) (Modified)
+- [frontend/job-agent-ui/src/components/JobCard.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/JobCard.tsx) (Modified)
+- [frontend/job-agent-ui/src/test/ReviewPage.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/ReviewPage.test.tsx) (Created)
+
+## Tests or Validations Run
+- `npm run typecheck`: Passed (No compilation errors)
+- `npm test -- --run src/test/ReviewPage.test.tsx`: Passed (7 tests passed)
+- `npm test -- --run`: Passed (All 54 tests in the frontend passed successfully)
+- `npm run build`: Passed (Production build compiled cleanly)
+
+## Acceptance Check
+- Task acceptance condition: Review queue correctly renders pending jobs for the active batch and actions immediately modify backend state and update UI.
+- Status: satisfied
+- Evidence: All vitest cases passed successfully. Approving/rejecting calls the backend API and immediately filters out the job from the local page state.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: In orchestrated runs, the checkbox and batch status are updated by the reviewer agent (A2) upon acceptance, not the execution agent (A1).
+
+## Key Implementation Decisions
+- Used `useOutletContext` from `react-router-dom` to cleanly propagate `activeProfileId` and `activeBatchId` from `App.tsx` down to nested router page components (`ReviewPage`, `DashboardPage`) without using broad state management libraries.
+- Maintained `actionLoading` as a key-value record (`Record<string, boolean>`) to track in-flight mutation states per job ID, ensuring that only the specific job card undergoing action has its buttons disabled, keeping the rest of the list interactive.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- Styled both Approve and Reject buttons as consistent outlines (Approve has an Emerald outline, Reject has a Rose outline) to give a cohesive, premium look.
+
+## Workflow Integrity Check
+- No issues identified. Built strictly in scope of (03B).
+
+## Notes for Next Task
+- next task ID: (03C)
+- can proceed: yes
+- handoff notes: The review queue page and approve/reject actions are fully built and tested. The next task (03C) can proceed to build the Tracked Jobs Dashboard using `status=tracked` filtering.
+
+---
+
+# Task Execution Report - (03B) Repair
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+
+## Task
+(03B) - Build review queue and approve/reject actions (Repair)
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Review Queue UI`
+- `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
+- `README.md` > `## Core FastAPI Routes and App Wiring (Phase 4 - Batch 02)`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03B)
+- Task title: Build review queue and approve/reject actions (Repair)
+
+## Completed Work
+- Modified the job filtering logic in `ReviewPage.tsx` to remove the redundant and incorrect check on `job.jd_status === "pending_review"`. Now only `job.status === "pending_review"` is compared, as `"pending_review"` is a valid `JobStatus` but not a `JdStatus`.
+- Fixed the mock `job-2` object in `ReviewPage.test.tsx` by setting its `jd_status` to `"full_jd"` (a valid `JdStatus`) and setting its `status` to `"pending_review"`.
+- Verified compilation and test status of all frontend modules. All 54 tests pass cleanly, and the production build compiles without warning or error.
+
+## Files Created or Modified
+- [frontend/job-agent-ui/src/pages/ReviewPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/ReviewPage.tsx) (Modified)
+- [frontend/job-agent-ui/src/test/ReviewPage.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/ReviewPage.test.tsx) (Modified)
+
+## Tests or Validations Run
+- `npm run typecheck`: Passed
+- `npm test -- --run`: Passed (All 54 tests passed)
+- `npm run build`: Passed (Production build generated cleanly)
+
+## Acceptance Check
+- Task acceptance condition: Filter compares status instead of jd_status for pending review queue, and mocks are corrected.
+- Status: satisfied
+- Evidence: Visual inspection of code changes and successful Vitest run where all 54 tests passed.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: In orchestrated runs, task checkbox updates are managed by the Review Agent (A2) after review is ACCEPTED.
+
+## Key Implementation Decisions
+- Adhered strictly to the API contract definitions: status is of union type `JobStatus` containing `"pending_review"`, while `jd_status` is of union type `JdStatus` which does not contain `"pending_review"`. Removing this comparison prevents TypeScript compilation issues or logical errors regarding drift from the API contract schema.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified. Built strictly in scope of (03B) Repair.
+
+## Notes for Next Task
+- next task ID: (03C)
+- can proceed: yes
+- handoff notes: The review queue page filter has been corrected and verified. The next task (03C) can proceed to build the Tracked Jobs Dashboard using `status=tracked` filtering.
+
+---
+
+# Task Execution Report - (03C)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+
+## Task
+(03C) - Build tracked jobs dashboard using backend tracked status
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
+- `README.md` > `## Core FastAPI Routes and App Wiring (Phase 4 - Batch 02)`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03C)
+- Task title: Build tracked jobs dashboard using backend tracked status
+
+## Completed Work
+- Replaced the placeholder component `DashboardPage` in [src/pages/DashboardPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/DashboardPage.tsx) with a fully implemented tracked jobs dashboard page.
+- Implemented state retrieval using `useOutletContext` to obtain the `activeProfileId` and `activeBatchId` from the main app layout.
+- Added data fetching using the API client function `getJobs(activeProfileId, "tracked")` to fetch jobs that match the tracked status collection from the backend.
+- Implemented local batch filtering (`job.batch_id === activeBatchId`) to isolate jobs to the active batch, preserving batch-level metrics integrity.
+- Rendered the filtered jobs list in a vertical flow using the reusable `<JobCard />` component, which automatically displays the job's current status badge.
+- Added user-facing loading state spinner using Lucide's `Loader` and error messages utilizing `AlertCircle`.
+- Structured empty states to prompt role profile selection, active batch initialization, or indicate when no tracked jobs are available for the active batch.
+- Created the Vitest unit test suite in [src/test/DashboardPage.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/DashboardPage.test.tsx) verifying initial loading state, active profile/batch restrictions, local filtering by active batch ID, and empty states.
+- Verified that all unit tests in the project (59 tests) compile and pass successfully.
+
+## Files Created or Modified
+- [frontend/job-agent-ui/src/pages/DashboardPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/DashboardPage.tsx) (Modified)
+- [frontend/job-agent-ui/src/test/DashboardPage.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/DashboardPage.test.tsx) (Created)
+
+## Tests or Validations Run
+- | command/check | Status | evidence or reason |
+  | --- | --- | --- |
+  | `npm run typecheck` | Passed | No compilation errors |
+  | `npx vitest run` | Passed | All 59 unit tests passed cleanly |
+  | `npm run build` | Passed | Production build successfully bundled without errors |
+
+## Acceptance Check
+- Task acceptance condition: Tracked Jobs Dashboard successfully displays only tracked jobs for the active batch.
+- Status: satisfied
+- Evidence: Automated unit tests verified that when jobs with multiple batch IDs are returned, only the jobs matching `activeBatchId` are rendered on the page, and the API is correctly queried with `status="tracked"`.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: In orchestrated runs, the checkbox and batch status are updated by the reviewer agent (A2) upon acceptance, not the execution agent (A1).
+
+## Key Implementation Decisions
+- Used local filtering on the retrieved jobs list to avoid multiple API roundtrips while preserving strict batch isolation.
+- Maintained consistency with `ReviewPage.tsx` error surfacing and loading indicators to deliver a cohesive Dark Elite Frosted UI/UX experience.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- No issues identified. Built strictly in scope of (03C).
+
+## Notes for Next Task
+- next task ID: (03D)
+- can proceed: yes
+- handoff notes: The tracked jobs dashboard component and tests are fully built, verified, and passing. The next task (03D) can proceed to build the status transition select control and the manual status modification workflow.
+
+---
+
+# Task Execution Report - (03C) Repair
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+
+## Task
+(03C) - Build tracked jobs dashboard using backend tracked status (Repair)
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
+- `shared/api-contract.json` > `job_statuses`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03C) Repair
+- Task title: Build tracked jobs dashboard using backend tracked status (Repair)
+
+## Completed Work
+- Modified the unit test mock data in [src/test/DashboardPage.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/DashboardPage.test.tsx): changed the `status` of mock `job-2` from `"interviewing"` to `"interview"`. This ensures mock status strictly aligns with `JobStatus` options defined in the API contract (where `"interview"` is the proper job state representation, while `"interviewing"` is a query state filter).
+- Re-run type check, test runner, and production compilation to ensure frontend build stays completely green.
+
+## Files Created or Modified
+- [frontend/job-agent-ui/src/test/DashboardPage.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/DashboardPage.test.tsx) (Modified)
+
+## Tests or Validations Run
+- | command/check | Status | evidence or reason |
+  | --- | --- | --- |
+  | `npm run typecheck` | Passed | Types verified, no compilation errors |
+  | `npm test -- --run` | Passed | All 59 tests passed cleanly (including 5 DashboardPage tests) |
+  | `npm run build` | Passed | Production client build succeeded |
+
+## Acceptance Check
+- Task acceptance condition: Mock job status must conform to backend contract types, and build must succeed without type check failures.
+- Status: satisfied
+- Evidence: Successfully executed `npm run build` and `npm run test -- --run`. All tests passed, and types verify perfectly.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: In orchestrated runs, task checkbox updates are managed by the Review Agent (A2) after review is ACCEPTED.
+
+## Key Implementation Decisions
+- Adjusted mock job status value to match `"interview"`, maintaining full conformance to API type contracts in the front-end tests.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- None
+
+## Workflow Integrity Check
+- Checked type definitions to verify backend contract alignment.
+
+## Notes for Next Task
+- next task ID: (03D)
+- can proceed: yes
+- handoff notes: The tracked jobs dashboard status repair is complete and successfully tested. The next task (03D) can proceed to build the status transition select control and the manual status modification workflow.
+
+---
+
+# Task Execution Report - (03D)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Report File
+docs/reports/report_5_execute_agent.md
+
+## Batch
+Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+
+## Task
+(03D) - Build status select and manual status update workflow
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
+- `shared/api-contract.json` > `allowed_status_transitions` and `tracked_job_statuses`
+- `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
+
+## Supplemental Documents Used
+- None
+
+## Selected Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03D)
+- Task title: Build status select and manual status update workflow
+
+## Completed Work
+- Created the `StatusSelect` component in [src/components/StatusSelect.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/StatusSelect.tsx) which encapsulates status change dropdown logic, allowed transitions filtering, and visual status badges.
+- Embedded `StatusSelect` on each tracked job card inside [src/components/JobCard.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/JobCard.tsx) by rendering it by default when the job is in a tracked status (not in `pending_review` or `ignored`).
+- Integrated status transition logic from `ALLOWED_STATUS_TRANSITIONS` defined in `src/types/api.ts` which mirrors `shared/api-contract.json`:
+  - `saved` -> `["applied", "rejected"]`
+  - `applied` -> `["interview", "rejected"]`
+  - `interview` -> `["rejected", "offer"]`
+- Handled terminal states `rejected` and `offer` (and `ignored` which is filtered out from display) by disabling the select control.
+- Implemented `updateJobStatus` mutation handler using Axios client. On error, it displays the error inline below the select control and reverts the dropdown selection value to its previous state. On success, it calls the `onStatusChangeSuccess` callback.
+- Linked the success callback in [src/pages/DashboardPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/DashboardPage.tsx) to `fetchJobs` to reload the dashboard jobs upon successful status changes.
+- Added comprehensive unit tests in [src/test/StatusSelect.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/StatusSelect.test.tsx) testing:
+  - Correct allowed target transitions rendering for various source states.
+  - Correct disabling behavior for terminal states (`offer`, `rejected`).
+  - API status update triggering upon user change and invocation of success callback.
+  - UI error fallback/reversion to the previous status value upon API failure.
+- Verified that all unit/integration tests (66 tests) compile and pass successfully, and typescript typecheck passes without errors.
+
+## Files Created or Modified
+- [frontend/job-agent-ui/src/components/StatusSelect.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/StatusSelect.tsx) (Created)
+- [frontend/job-agent-ui/src/components/JobCard.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/JobCard.tsx) (Modified)
+- [frontend/job-agent-ui/src/pages/DashboardPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/DashboardPage.tsx) (Modified)
+- [frontend/job-agent-ui/src/test/StatusSelect.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/StatusSelect.test.tsx) (Created)
+
+## Tests or Validations Run
+- | command/check | Status | evidence or reason |
+  | --- | --- | --- |
+  | `npm run typecheck` | Passed | Types verified, no compilation errors |
+  | `npm test -- --run src/test/StatusSelect.test.tsx` | Passed | 7 unit tests passed cleanly |
+  | `npm test -- --run` | Passed | All 66 tests passed cleanly (including 7 new StatusSelect tests, 7 JobCard tests, and 5 DashboardPage tests) |
+  | `npm run build` | Passed | Production client build succeeded |
+
+## Acceptance Check
+- Task acceptance condition: Manual status transitions match the backend contract and refresh from backend after mutation.
+- Status: satisfied
+- Evidence: 7 vitest unit tests verify that the select control filters the correct transitions mirroring the contract, and successfully triggers the API and parent reload callback, reverting back upon error. All 7 tests passed successfully.
+
+## Artifacts Produced
+- None
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: In orchestrated runs, task checkbox updates are managed by the Review Agent (A2) after review is ACCEPTED; A1 does not modify the checkbox.
+
+## Key Implementation Decisions
+- Replaced the shorthand `background` style property with the React-safe `backgroundColor` in the styling of `select` inside `StatusSelect.tsx` to avoid conflicting shorthand rendering warnings in Vitest.
+- Bound state sync via `useEffect` in `StatusSelect.tsx` to automatically reflect external changes on `currentStatus` in case of parent list refresh.
+- Handled terminal states dynamically by checking if `targets.length === 0`, cleanly eliminating hardcoded state checks.
+
+## Risks or Open Issues
+- None
+
+## Minor Issues Fixed During Execution
+- Fixed React style conflict console warnings in test runners.
+
+## Workflow Integrity Check
+- No issues identified. Built strictly in scope of (03D).
+
+## Notes for Next Task
+- next task ID: (04A)
+- can proceed: yes
+- handoff notes: Status select workflow and manual status updates are fully implemented and tested. Batch03 is now complete. The next batch (Batch04) can start with task (04A) to build the Batch Cost and Performance Metrics Panel.

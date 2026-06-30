@@ -487,7 +487,7 @@ The final MVP depends on users reviewing pending jobs, approving or rejecting th
 
 ### Tasks
 
-- [ ] (03A): Build shared job card and score breakdown components
+- [x] (03A): Build shared job card and score breakdown components
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Review Queue UI`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
@@ -516,7 +516,7 @@ The final MVP depends on users reviewing pending jobs, approving or rejecting th
   - Blocked Condition: None.
   - Files: `src/components/JobCard.tsx`, `src/components/ScoreBreakdown.tsx`, optional formatter helper, rendering tests.
 
-- [ ] (03B): Build review queue and approve/reject actions
+- [x] (03B): Build review queue and approve/reject actions
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Review Queue UI`
     - `docs/plans/Master_Plan.md` > `## 19. Human-in-the-Loop Rules`
@@ -545,7 +545,7 @@ The final MVP depends on users reviewing pending jobs, approving or rejecting th
   - Blocked Condition: None.
   - Files: `src/components/ReviewQueue.tsx`, `src/pages/ReviewPage.tsx`, `src/components/JobCard.tsx`, tests.
 
-- [ ] (03C): Build tracked jobs dashboard using backend tracked status
+- [x] (03C): Build tracked jobs dashboard using backend tracked status
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
     - `docs/plans/Plan_5.md` > `## 8. Implementation Steps`
@@ -573,7 +573,7 @@ The final MVP depends on users reviewing pending jobs, approving or rejecting th
   - Blocked Condition: None.
   - Files: `src/pages/DashboardPage.tsx`, `src/components/JobCard.tsx`, dashboard tests.
 
-- [ ] (03D): Build status select and manual status update workflow
+- [x] (03D): Build status select and manual status update workflow
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
     - `shared/api-contract.json` > `allowed_status_transitions` and `tracked_job_statuses`
@@ -1072,10 +1072,10 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch03
 
-- [ ] (03A): Build shared job card and score breakdown components
-- [ ] (03B): Build review queue and approve/reject actions
-- [ ] (03C): Build tracked jobs dashboard using backend tracked status
-- [ ] (03D): Build status select and manual status update workflow
+- [x] (03A): Build shared job card and score breakdown components
+- [x] (03B): Build review queue and approve/reject actions
+- [x] (03C): Build tracked jobs dashboard using backend tracked status
+- [x] (03D): Build status select and manual status update workflow
 
 #### Batch04
 

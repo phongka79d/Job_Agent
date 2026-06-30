@@ -1276,3 +1276,152 @@ ACCEPTED
 
 ## Repair Instructions
 - None
+
+---
+
+# Task Review Report - (03D)
+
+## Source Task File
+docs/tasks/task_5.md
+
+## Execution Report Reviewed
+docs/reports/report_5_execute_agent.md
+
+## Review Report File
+docs/review/review_5_review_agent.md
+
+## Final Outcome
+ACCEPTED
+
+## Reviewed Scope
+- Batch: Batch03 - Review Queue, Tracked Dashboard, Score Breakdown, and Status Workflows
+- Task ID: (03D)
+- Task title: Build status select and manual status update workflow
+- Executor status reported: complete
+- Source of Truth: `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Tracked Jobs Dashboard`
+- Supplemental documents: None
+
+## Latest Report Selection
+- Latest report entry found: yes
+- Requested task ID, if any: (03D)
+- Reviewed task ID: (03D)
+- Correct selection: yes
+- Notes: None
+
+## Git Diff Evidence
+- git status reviewed: yes
+- git diff reviewed: yes
+- recent commits reviewed: not needed
+- changed files from git:
+  - `frontend/job-agent-ui/src/pages/DashboardPage.tsx`
+- untracked files:
+  - `frontend/job-agent-ui/src/components/StatusSelect.tsx`
+  - `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`
+
+## Files Reviewed
+- `frontend/job-agent-ui/src/components/StatusSelect.tsx`: in scope - verified correct dropdown choices matching ALLOWED_STATUS_TRANSITIONS and state update handler with error fallback.
+- `frontend/job-agent-ui/src/components/JobCard.tsx`: in scope - verified integration of `<StatusSelect />` for non-pending and non-ignored job statuses.
+- `frontend/job-agent-ui/src/pages/DashboardPage.tsx`: in scope - verified that `onStatusChangeSuccess` triggers parent list re-fetching.
+- `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`: in scope - verified all 7 unit tests covering rendering, allowed transitions, terminal states, and api/revert states.
+
+## Reported Files Cross-Check
+- file from execution report: `frontend/job-agent-ui/src/components/StatusSelect.tsx`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: None
+- file from execution report: `frontend/job-agent-ui/src/test/StatusSelect.test.tsx`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: None
+- file from execution report: `frontend/job-agent-ui/src/components/JobCard.tsx`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: None
+- file from execution report: `frontend/job-agent-ui/src/pages/DashboardPage.tsx`
+  - present in git/repo: yes
+  - matches task scope: yes
+  - notes: None
+
+## Dependency Review
+- Required dependencies: (03C)
+- Dependency status: satisfied
+- Missing or invalid dependency: None
+
+## Architecture Alignment
+- Passed: yes
+- Failed: no
+- Uncertain: no
+
+## Implementation Reality
+- Real implementation: yes
+- Stub or fake logic found: no
+- Evidence: Dropdown transition paths reflect the backend-generated contract. The select element updates status dynamically and triggers re-fetch on success.
+
+## Hardcoding Review
+- Hardcoding found: no
+- Evidence: Dynamic option rendering based on `ALLOWED_STATUS_TRANSITIONS` constant from the types/api module.
+
+## Validations Reviewed
+- Command/check: `npm run typecheck`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: satisfied
+  - Notes: None
+- Command/check: `npm test -- --run src/test/StatusSelect.test.tsx`
+  - Reported result: Passed (7 tests passed)
+  - Rerun result: Passed (7 tests passed)
+  - Status: satisfied
+  - Notes: None
+- Command/check: `npm test -- --run`
+  - Reported result: Passed (66 tests passed)
+  - Rerun result: Passed (66 tests passed)
+  - Status: satisfied
+  - Notes: None
+- Command/check: `npm run build`
+  - Reported result: Passed
+  - Rerun result: Passed
+  - Status: satisfied
+  - Notes: Production client build compiles successfully.
+
+## Acceptance Review
+- Task acceptance: satisfied
+- Status: satisfied
+- Evidence: Successful Vitest execution, complete type verification, and correct transition state mapping.
+
+## Progress Tracking
+- Selected task checkbox before review: `[ ] (03D)`
+- Checkbox updated by reviewer: yes
+- Batch status: complete
+- Execution report entry: appended
+- Review report entry: appended
+- Other: None
+
+## Report Accuracy
+- Accurate
+- Mismatches: None
+
+## Issues
+
+### Blocking
+- None
+
+### Major
+- None
+
+### Minor
+- None
+
+### Warnings
+- None
+
+### Observations
+- None
+
+## Decision
+- Accept selected task? yes
+- Repair required? no
+- Can next task proceed? yes
+- Should batch be marked complete? yes (all tasks in Batch03 are complete and accepted)
+
+## Repair Instructions
+- None
