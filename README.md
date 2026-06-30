@@ -117,12 +117,26 @@ Job_Agent/
 |       |-- src/
 |       |   |-- api/
 |       |   |   `-- client.ts      # Typed FastAPI client with safe error surfacing
+|       |   |-- components/
+|       |   |   |-- AppShell.tsx   # Glassmorphic layout wrapper
+|       |   |   |-- IngestionPanel.tsx # Search, URL, Text, and Mock controls
+|       |   |   `-- RoleProfilePanel.tsx # Role creation & selection form
+|       |   |-- pages/
+|       |   |   |-- DashboardPage.tsx # Tracked jobs dashboard placeholder
+|       |   |   `-- ReviewPage.tsx # Review queue placeholder
+|       |   |-- styles/
+|       |   |   `-- app.css        # OLED Black & Cyan theme stylesheet
 |       |   |-- test/
 |       |   |   |-- setup.ts       # Vitest setup with jsdom
 |       |   |   |-- apiContract.test.ts # API contract drift tests
-|       |   |   `-- apiClient.test.ts # API client tests
+|       |   |   |-- apiClient.test.ts # API client tests
+|       |   |   |-- IngestionPanel.test.tsx # Ingestion behavior tests
+|       |   |   |-- RoleProfilePanel.test.tsx # Profile workflow tests
+|       |   |   `-- activeBatch.test.tsx # Active batch isolation tests
 |       |   |-- types/
 |       |   |   `-- api.ts         # TypeScript API models & transition types
+|       |   |-- utils/
+|       |   |   `-- activeBatchStorage.ts # Per-profile batch localStorage helper
 |       |   |-- App.tsx
 |       |   `-- main.tsx
 |       `-- vite.config.ts
@@ -330,6 +344,26 @@ From the `frontend/job-agent-ui` directory, verify and run the tests:
 npm install
 npm run typecheck
 npm test -- --run
+```
+
+---
+
+## App Shell, Role Profiles, Ingestion, and Active Batch State (Phase 5 - Batch 02)
+
+Phase 5 Batch 02 implements the core application shell, role profile selection, ingestion forms, and profile-specific active batch isolation:
+
+- **App Shell & Theme (Task 02A):** Creates `src/components/AppShell.tsx` and custom stylesheet `src/styles/app.css` with OLED Black, Glassmorphism, and Cyan highlights matching the Dark Elite Frosted design system. Configures client-side routing via React Router DOM for Review Queue and Tracked Jobs Dashboard.
+- **Role Profile UI (Task 02B):** Builds `src/components/RoleProfilePanel.tsx` supporting role profile creation (role title, level, location, remote option, skills comma-separated, and resume text) and switching, connecting directly to FastAPI.
+- **Ingestion Controls & Warnings (Task 02C):** Implements `src/components/IngestionPanel.tsx` containing search, URL, text, and mock-load ingestion controls. Features inline API disabled states, warning displays (such as low-content manual input prompts), and validation error surfacing.
+- **Active Batch Isolation (Task 02D):** Implements `src/utils/activeBatchStorage.ts` to isolate active batch IDs per profile in localStorage using the key prefix `job-agent.activeBatchId.{role_profile_id}`. Prevents cross-profile batch leaks and avoids non-contract backend queries.
+- **Verification and Testing:** Includes automated Vitest unit/component tests (`RoleProfilePanel.test.tsx`, `IngestionPanel.test.tsx`, and `activeBatch.test.tsx`) asserting mock client triggers, disabled states, contract compliance, and localStorage separation.
+
+From the `frontend/job-agent-ui` directory, verify and run the tests:
+
+```bash
+npm run typecheck
+npm test -- --run
+npm run build
 ```
 
 ---

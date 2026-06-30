@@ -17,7 +17,6 @@ import {
   ApiClientError,
   normalizeError
 } from "../api/client";
-import axios from "axios";
 
 // Spy on the Axios instance methods
 const spyPost = vi.spyOn(apiClient, "post");

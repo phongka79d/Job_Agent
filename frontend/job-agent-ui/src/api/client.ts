@@ -1,5 +1,5 @@
 import axios from "axios";
-import {
+import type {
   RoleProfile,
   RoleProfileCreateRequest,
   RoleProfileListResponse,
@@ -53,14 +53,15 @@ export function normalizeError(error: any): ApiClientError {
         message = data.detail;
       } else if (Array.isArray(data.detail)) {
         // FastAPI validation error array mapping
-        validationErrors = data.detail.map((err: any) => {
+        const mappedErrors: Array<{ path: string; message: string }> = data.detail.map((err: any) => {
           const path = Array.isArray(err.loc) ? err.loc.join(".") : String(err.loc || "");
           return {
             path,
             message: err.msg || "Validation error"
           };
         });
-        message = `Validation Error: ${validationErrors.map(e => `${e.path}: ${e.message}`).join("; ")}`;
+        validationErrors = mappedErrors;
+        message = `Validation Error: ${mappedErrors.map((e: { path: string; message: string }) => `${e.path}: ${e.message}`).join("; ")}`;
       } else if (data.message) {
         message = data.message;
       }

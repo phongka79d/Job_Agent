@@ -315,7 +315,7 @@ Review, dashboard, and metrics behavior depends on the active role profile and a
 
 ### Tasks
 
-- [ ] (02A): Build compact app shell and navigation
+- [x] (02A): Build compact app shell and navigation
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Pages and Navigation`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Visual Design Rules`
@@ -341,7 +341,7 @@ Review, dashboard, and metrics behavior depends on the active role profile and a
   - Blocked Condition: None.
   - Files: `src/App.tsx`, `src/components/AppShell.tsx`, `src/pages/DashboardPage.tsx`, `src/pages/ReviewPage.tsx`, `src/styles/app.css`, `src/main.tsx`.
 
-- [ ] (02B): Build role profile creation and selection UI
+- [x] (02B): Build role profile creation and selection UI
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Role Profile UI`
     - `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
@@ -367,7 +367,7 @@ Review, dashboard, and metrics behavior depends on the active role profile and a
   - Blocked Condition: None.
   - Files: `src/components/RoleProfilePanel.tsx`, `src/App.tsx`, `src/types/api.ts`, `src/api/client.ts`.
 
-- [ ] (02C): Build ingestion controls and warning display
+- [x] (02C): Build ingestion controls and warning display
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Ingestion UI`
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Active Batch Handling`
@@ -397,7 +397,7 @@ Review, dashboard, and metrics behavior depends on the active role profile and a
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only when live external credentials are needed for a manual live search/URL validation; mock-load and seeded-data UI must remain testable without them.
   - Files: `src/components/IngestionPanel.tsx`, `src/App.tsx`, `src/api/client.ts`, `src/types/api.ts`.
 
-- [ ] (02D): Implement active role and active batch state isolation
+- [x] (02D): Implement active role and active batch state isolation
   - Source of Truth:
     - `docs/plans/Plan_5.md` > `## 7. Technical Specifications` > `### Active Batch Handling`
     - `docs/plans/Plan_5.md` > `## 8. Implementation Steps`
@@ -1066,9 +1066,9 @@ Optional future tracks are outside the mandatory chain.
 #### Batch02
 
 - [ ] (02A): Build compact app shell and navigation
-- [ ] (02B): Build role profile creation and selection UI
+- [x] (02B): Build role profile creation and selection UI
 - [ ] (02C): Build ingestion controls and warning display
-- [ ] (02D): Implement active role and active batch state isolation
+- [x] (02D): Implement active role and active batch state isolation
 
 #### Batch03
 
