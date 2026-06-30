@@ -107,14 +107,14 @@ complete
 - Task title: Scaffold the Vite React TypeScript app and install required dependencies
 
 ## Completed Work
-- Khởi tạo thành công thư mục `frontend/job-agent-ui`.
-- Chạy lệnh `npm create vite@latest` để scaffold ứng dụng sử dụng template React TypeScript (`react-ts`).
-- Cài đặt các dependencies runtime bắt buộc: `react-router-dom`, `axios`, và `lucide-react`.
-- Cài đặt các dependencies cho kiểm thử (devDependencies): `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, và `jsdom`.
-- Cấu hình file [vite.config.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/vite.config.ts) để tích hợp Vitest, thiết lập môi trường `jsdom` và chỉ định file `src/test/setup.ts`.
-- Tạo file setup kiểm thử [src/test/setup.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/setup.ts) để import `@testing-library/jest-dom`.
-- Cập nhật [package.json](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/package.json) để thêm các scripts `typecheck` (`tsc --noEmit`) và `test` (`vitest`).
-- Xác nhận không có bất kỳ file `.env` hoặc `.env.example` nào được sinh ra ở các thư mục frontend.
+- Successfully initialized the `frontend/job-agent-ui` directory.
+- Ran the `npm create vite@latest` command to scaffold the application using the React TypeScript (`react-ts`) template.
+- Installed required runtime dependencies: `react-router-dom`, `axios`, and `lucide-react`.
+- Installed test dependencies (devDependencies): `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, and `jsdom`.
+- Configured [vite.config.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/vite.config.ts) to integrate Vitest, set up the `jsdom` environment, and specify the `src/test/setup.ts` file.
+- Created the test setup file [src/test/setup.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/setup.ts) to import `@testing-library/jest-dom`.
+- Updated [package.json](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/package.json) to add `typecheck` (`tsc --noEmit`) and `test` (`vitest`) scripts.
+- Confirmed that no `.env` or `.env.example` files were generated in the frontend directories.
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/package.json](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/package.json) (Modified)
@@ -123,13 +123,13 @@ complete
 
 ## Tests or Validations Run
 - `npm run typecheck`: Passed
-- `npm test -- --run` (với smoke test nháp): Passed (Môi trường jsdom và Testing Library hoạt động đúng)
-- `Test-Path` checks: Passed (Xác nhận không tồn tại bất kỳ file `.env` hay `.env.example` nào ở các thư mục `frontend/` và `frontend/job-agent-ui/`)
+- `npm test -- --run` (with draft smoke test): Passed (jsdom environment and Testing Library work correctly)
+- `Test-Path` checks: Passed (Confirmed that no `.env` or `.env.example` files exist in the `frontend/` and `frontend/job-agent-ui/` directories)
 
 ## Acceptance Check
 - Task acceptance condition: `npm install` completes and package scripts are present.
 - Status: satisfied
-- Evidence: `npm install` hoàn thành sạch sẽ. `package.json` chứa đầy đủ các scripts: `dev`, `build`, `typecheck`, `test`, và `preview`. Lệnh `npm run typecheck` chạy không có lỗi.
+- Evidence: `npm install` completed cleanly. `package.json` contains all the scripts: `dev`, `build`, `typecheck`, `test`, and `preview`. The `npm run typecheck` command ran without errors.
 
 ## Artifacts Produced
 - None
@@ -137,11 +137,11 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Đây là một phần chạy được điều phối (orchestrated run). Việc cập nhật checkbox thuộc trách nhiệm của A2 (Task Review Agent) sau khi ACCEPTED, không phải của A1.
+- reason: This is an orchestrated run. Updating the checkbox is the responsibility of A2 (Task Review Agent) after being ACCEPTED, not A1.
 
 ## Key Implementation Decisions
-- Sử dụng Vitest thay vì Jest để tối ưu hóa hiệu năng và tích hợp tốt nhất với Vite.
-- Thêm cờ tham chiếu `/// <reference types="vitest" />` ở đầu `vite.config.ts` để tránh lỗi kiểu dữ liệu TypeScript khi cấu hình Vitest mà không cần thay đổi quá nhiều ở `tsconfig.json`.
+- Used Vitest instead of Jest for performance optimization and the best integration with Vite.
+- Added reference directive `/// <reference types="vitest" />` at the top of `vite.config.ts` to avoid TypeScript type errors when configuring Vitest without changing too much in `tsconfig.json`.
 
 ## Risks or Open Issues
 - None
@@ -150,12 +150,12 @@ complete
 - None
 
 ## Workflow Integrity Check
-- Không phát hiện vấn đề bất thường nào về tính toàn vẹn của quy trình. Thư mục frontend được scaffold sạch sẽ và cấu hình đúng chuẩn thiết kế.
+- No abnormal issues identified regarding process integrity. The frontend directory was scaffolded cleanly and configured to design standards.
 
 ## Notes for Next Task
 - next task ID: (01C)
 - can proceed: yes
-- handoff notes: Foundation của ứng dụng đã sẵn sàng. Task tiếp theo (01C) có thể bắt đầu định nghĩa các kiểu dữ liệu TypeScript cho API trong `src/types/api.ts` và viết kiểm thử so sánh kiểu dữ liệu với file `shared/api-contract.json` mà không gặp xung đột về hạ tầng/cấu hình.
+- handoff notes: Application foundation is ready. The next task (01C) can start defining TypeScript types for the API in `src/types/api.ts` and writing data type comparison tests with the `shared/api-contract.json` file without infrastructure/configuration conflicts.
 
 
 ---
@@ -191,24 +191,24 @@ complete
 - Task title: Add TypeScript API types and contract drift tests
 
 ## Completed Work
-- Tạo file [src/types/api.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/types/api.ts) chứa toàn bộ các kiểu dữ liệu TypeScript cho API và các hằng số hỗ trợ runtime UI (`JOB_STATUSES`, `JD_STATUSES`, `PARSE_STATUSES`, `EXTRACTION_STATUSES`, `SOURCE_PLATFORMS`, `TRACKED_JOB_STATUSES`, `ALLOWED_STATUS_TRANSITIONS`).
-- Tạo file kiểm thử drift contract [src/test/apiContract.test.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/apiContract.test.ts) để đối chiếu kiểu dữ liệu, các hằng số, transitions và danh sách endpoint của client với `shared/api-contract.json`.
-- Xác nhận các test chạy qua hoàn toàn mà không có lỗi.
-- Đảm bảo không có các file cấu hình `.env` hoặc `.env.example` bị sinh ra trong các thư mục frontend.
+- Created the [src/types/api.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/types/api.ts) file containing all TypeScript types for the API and supporting runtime UI constants (`JOB_STATUSES`, `JD_STATUSES`, `PARSE_STATUSES`, `EXTRACTION_STATUSES`, `SOURCE_PLATFORMS`, `TRACKED_JOB_STATUSES`, `ALLOWED_STATUS_TRANSITIONS`).
+- Created the contract drift test file [src/test/apiContract.test.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/apiContract.test.ts) to compare types, constants, transitions, and client endpoints with `shared/api-contract.json`.
+- Confirmed all tests passed completely without errors.
+- Ensured no `.env` or `.env.example` configuration files were generated in the frontend directories.
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/types/api.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/types/api.ts) (Created)
 - [frontend/job-agent-ui/src/test/apiContract.test.ts](file:///C:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/apiContract.test.ts) (Created)
 
 ## Tests or Validations Run
-- Chạy kiểm thử vitest: `npm test -- --run src/test/apiContract.test.ts` -> Passed (9 test cases passed)
-- Chạy typecheck: `npm run typecheck` -> Passed (tsc biên dịch thành công)
-- `Test-Path` checks: Passed (Xác nhận không tồn tại bất kỳ file `.env` hay `.env.example` nào ở các thư mục `frontend/` và `frontend/job-agent-ui/`)
+- Ran vitest: `npm test -- --run src/test/apiContract.test.ts` -> Passed (9 test cases passed)
+- Ran typecheck: `npm run typecheck` -> Passed (tsc compiled successfully)
+- `Test-Path` checks: Passed (Confirmed that no `.env` or `.env.example` files exist in the `frontend/` and `frontend/job-agent-ui/` directories)
 
 ## Acceptance Check
 - Task acceptance condition: Type unions, endpoint assumptions, and transition data cannot drift silently from the generated backend contract.
 - Status: satisfied
-- Evidence: 9 bài test tự động được viết trong `apiContract.test.ts` đã chạy và passed hoàn toàn. Mọi sự thay đổi (drift) từ backend contract đối với endpoint, status, platform, schemas hoặc transitions đều sẽ lập tức làm hỏng bài kiểm thử và được phát hiện sớm.
+- Evidence: 9 automated tests written in `apiContract.test.ts` ran and passed completely. Any changes (drift) from the backend contract regarding endpoints, statuses, platforms, schemas, or transitions will immediately fail the tests and be detected early.
 
 ## Artifacts Produced
 - None
@@ -216,11 +216,11 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Đây là một phần chạy được điều phối (orchestrated run). Việc cập nhật checkbox thuộc trách nhiệm của A2 (Task Review Agent) sau khi ACCEPTED, không phải của A1.
+- reason: This is an orchestrated run. Updating the checkbox is the responsibility of A2 (Task Review Agent) after being ACCEPTED, not A1.
 
 ## Key Implementation Decisions
-- Sử dụng các stable arrays và maps cho status, platform, transitions ngay trong file type `api.ts` để vừa làm dữ liệu runtime cho React component vừa làm nguồn đối chiếu kiểm thử contract.
-- Viết kiểm thử `apiContract.test.ts` bao phủ toàn bộ endpoints, schemas, transitions, status unions đảm bảo tính ổn định tuyệt đối trước các thay đổi từ Backend.
+- Used stable arrays and maps for statuses, platforms, and transitions directly in the `api.ts` type file to serve as both UI runtime data for React components and as the reference source for contract test comparisons.
+- Wrote `apiContract.test.ts` tests covering all endpoints, schemas, transitions, and status unions to ensure absolute stability against backend changes.
 
 ## Risks or Open Issues
 - None
@@ -229,12 +229,12 @@ complete
 - None
 
 ## Workflow Integrity Check
-- Quy trình chuẩn xác, các file kiểu dữ liệu và kiểm thử được đặt đúng thư mục mục tiêu như đặc tả trong Plan_5.md.
+- Accurate process, type files and tests are placed in the correct target directories as specified in Plan_5.md.
 
 ## Notes for Next Task
 - next task ID: (01D)
 - can proceed: yes
-- handoff notes: Foundation type layer và contract test đã sẵn sàng. Task tiếp theo (01D) có thể xây dựng Axios API client (`src/api/client.ts`) với đầy đủ các hàm API được gán kiểu chính xác dựa trên các kiểu dữ liệu từ `src/types/api.ts`.
+- handoff notes: Foundation type layer and contract tests are ready. The next task (01D) can build the Axios API client (`src/api/client.ts`) with all API functions correctly typed based on types from `src/types/api.ts`.
 
 
 ---
@@ -271,27 +271,27 @@ complete
 - Task title: Add a typed FastAPI client with safe error surfacing
 
 ## Completed Work
-- Đã kiểm tra và xác nhận không có API client nào tồn tại trước đó trước khi tạo `src/api/client.ts`.
-- Tạo một Axios instance `apiClient` với base URL mặc định là `http://localhost:8000`.
-- Triển khai toàn bộ 13 hàm API client tương ứng với các endpoints của backend: `createRoleProfile`, `listRoleProfiles`, `searchJobs`, `parseJobUrl`, `parseJobText`, `loadMockJobs`, `getReviewJobs`, `approveJob`, `rejectJob`, `updateJobStatus`, `getJobs`, `getJobDetail`, và `getBatchSummary`.
-- Triển khai custom class `ApiClientError` và helper function `normalizeError` để chuẩn hóa toàn bộ lỗi của Axios/FastAPI (bao gồm cả lỗi validation có cấu trúc mảng từ FastAPI) thành đối tượng lỗi an toàn mà không swallow hoặc làm mất thông tin lỗi gốc.
-- Đảm bảo không sử dụng hoặc tham chiếu bất kỳ secrets nào của backend trong code frontend client.
-- Tạo file kiểm thử API client [src/test/apiClient.test.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/apiClient.test.ts) gồm 18 ca kiểm thử bao phủ toàn bộ các paths, query params, body parameters và hành vi chuẩn hóa lỗi.
-- Chạy kiểm thử thành công, đạt kết quả 100% pass (tổng cộng 27 tests).
+- Checked and confirmed no API client existed prior to creating `src/api/client.ts`.
+- Created an Axios instance `apiClient` with a default base URL of `http://localhost:8000`.
+- Implemented all 13 API client functions corresponding to backend endpoints: `createRoleProfile`, `listRoleProfiles`, `searchJobs`, `parseJobUrl`, `parseJobText`, `loadMockJobs`, `getReviewJobs`, `approveJob`, `rejectJob`, `updateJobStatus`, `getJobs`, `getJobDetail`, and `getBatchSummary`.
+- Implemented the custom class `ApiClientError` and helper function `normalizeError` to normalize all Axios/FastAPI errors (including structured array validation errors from FastAPI) into safe error objects without swallowing or losing original error information.
+- Ensured no backend secrets are used or referenced in the frontend client code.
+- Created the API client test file [src/test/apiClient.test.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/apiClient.test.ts) containing 18 test cases covering all paths, query parameters, body parameters, and error normalization behavior.
+- Ran tests successfully with a 100% pass rate (27 tests total).
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/api/client.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/api/client.ts) (Created)
 - [frontend/job-agent-ui/src/test/apiClient.test.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/apiClient.test.ts) (Created)
 
 ## Tests or Validations Run
-- Chạy `npm run typecheck` thành công (không lỗi biên dịch tsc).
-- Chạy `npm test -- --run` thành công (tất cả 27 bài test bao gồm 18 bài test API client mới và 9 bài test contract drift cũ đều PASSED).
-- Chạy kiểm tra các tệp `.env` ở frontend thông qua lệnh PowerShell: Tất cả đều không tồn tại (False).
+- Ran `npm run typecheck` successfully (no tsc compilation errors).
+- Ran `npm test -- --run` successfully (all 27 tests, including 18 new API client tests and 9 old contract drift tests, PASSED).
+- Ran frontend `.env` checks via PowerShell command: none exist (False).
 
 ## Acceptance Check
 - Task acceptance condition: UI components can call all required backend endpoints through typed functions only.
 - Status: satisfied
-- Evidence: 13 endpoints API được bọc trong các hàm typed đầy đủ và tương thích hoàn toàn với schema của backend. Kiểm thử Vitest cho API client đã chạy thành công và mô phỏng chính xác các phản hồi thành công và lỗi từ API.
+- Evidence: 13 API endpoints are wrapped in fully typed functions compatible with the backend schema. Vitest tests for the API client ran successfully, mocking success and error responses from the API.
 
 ## Artifacts Produced
 - None
@@ -299,25 +299,25 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Trong orchestrated runs, việc cập nhật checkbox trong file task thuộc về A2 (Task Review Agent) sau khi ACCEPTED, A1 không tự ý sửa checkbox.
+- reason: In orchestrated runs, updating the checkbox in the task file is managed by A2 (Task Review Agent) after being ACCEPTED; A1 does not modify the checkbox.
 
 ## Key Implementation Decisions
-- Triển khai custom class `ApiClientError` kế thừa từ `Error` chứa các thuộc tính `status`, `validationErrors` (đã được bóc tách từ `detail` mảng của FastAPI) giúp cho frontend hiển thị chi tiết lỗi ở các component form một cách dễ dàng và an toàn.
-- Cấu hình Axios instance tập trung để dễ dàng cấu hình headers và base URL trong tương lai nếu cần, nhưng vẫn tuân thủ việc không dùng env file ở frontend.
+- Implemented the custom class `ApiClientError` inheriting from `Error` with `status` and `validationErrors` attributes (extracted from FastAPI's `detail` array) to easily and safely display detailed validation errors in form components.
+- Configured a centralized Axios instance to easily configure headers and base URL in the future if needed, while still adhering to the rule of not using env files in the frontend.
 
 ## Risks or Open Issues
-- Không có rủi ro nào được xác định.
+- None
 
 ## Minor Issues Fixed During Execution
-- Sửa lỗi tham số `ArtifactMetadata` trong lệnh gọi viết file để không gán metadata cho tệp mã nguồn kiểm thử (chỉ dùng cho artifact lưu trong thư mục appData).
+- Fixed the `ArtifactMetadata` parameter in the write-file call to avoid assigning metadata to source code test files (only used for artifacts saved in the appData directory).
 
 ## Workflow Integrity Check
-- Không phát hiện bất kỳ sự sai lệch nào. Cấu trúc thư mục và API client tuân thủ hoàn toàn theo đặc tả kỹ thuật của Plan_5.md.
+- No deviation identified. Folder structure and API client strictly comply with the technical specification of Plan_5.md.
 
 ## Notes for Next Task
 - next task ID: (02A)
 - can proceed: yes
-- handoff notes: Batch01 đã hoàn thành đầy đủ tất cả các task scaffold, types, contract test và API client. Dự án đã sẵn sàng chuyển sang Batch02 bắt đầu bằng việc xây dựng layout ứng dụng shell và cấu trúc điều hướng React Router trong task (02A).
+- handoff notes: Batch01 is fully complete with all scaffold, types, contract tests, and API client tasks. The project is ready to move to Batch02, starting with building the app shell layout and React Router navigation in task (02A).
 
 ---
 
@@ -352,13 +352,13 @@ complete
 - Task title: Build compact app shell and navigation
 
 ## Completed Work
-- Đã tạo stylesheet cơ sở [src/styles/app.css](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/styles/app.css) với các CSS variables cho background (OLED black `#020617`), surface (glass panel `rgba(255, 255, 255, 0.06)` với `backdrop-blur`), borders (`rgba(255, 255, 255, 0.08)`), accent (cyan `#22d3ee`), muted text colors, squircle corners, layout và buttons tương ứng chủ đề thiết kế Dark Elite Frosted.
-- Đã tạo các page component rỗng (page shells) [src/pages/DashboardPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/DashboardPage.tsx) và [src/pages/ReviewPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/ReviewPage.tsx) tập trung công việc, không chứa thông tin marketing copy hay hero layouts.
-- Đã xây dựng component layout [src/components/AppShell.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/AppShell.tsx) có navigation sidebar và top tabs để di chuyển giữa Review Queue và Tracked Jobs Dashboard sử dụng `react-router-dom`. Giao diện giữ nguyên các sidebar placeholders dành cho role profile controls và ingestion panels.
-- Đã cấu hình và wire React Router trong [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx) để dẫn hướng các views con trong AppShell.
-- Đã cập nhật [src/main.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/main.tsx) để loại bỏ import stylesheet index.css mặc định cũ, tránh xung đột về kiểu dáng.
-- Đã dọn dẹp các compile warning/error liên quan đến verbatimModuleSyntax (type imports) trong API client, unused imports/variables ở cả code và tests, và cấu hình lại `vite.config.ts` để sử dụng `defineConfig` từ `vitest/config`.
-- Chạy biên dịch sản phẩm `npm run build` và kiểm thử tự động `npx vitest run` thành công rực rỡ (tất cả 27 tests đều passed).
+- Created the baseline stylesheet [src/styles/app.css](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/styles/app.css) with CSS variables for background (OLED black `#020617`), surface (glass panel `rgba(255, 255, 255, 0.06)` with `backdrop-blur`), borders (`rgba(255, 255, 255, 0.08)`), accent (cyan `#22d3ee`), muted text colors, squircle corners, layout, and buttons corresponding to the Dark Elite Frosted design theme.
+- Created empty page components (page shells) [src/pages/DashboardPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/DashboardPage.tsx) and [src/pages/ReviewPage.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/pages/ReviewPage.tsx) focused on functionality, containing no marketing copy or hero layouts.
+- Built the layout component [src/components/AppShell.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/AppShell.tsx) with a navigation sidebar and top tabs to move between Review Queue and Tracked Jobs Dashboard using `react-router-dom`. The interface retains sidebar placeholders for role profile controls and ingestion panels.
+- Configured and wired React Router in [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx) to route sub-views within AppShell.
+- Updated [src/main.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/main.tsx) to remove the old default index.css import to avoid styling conflicts.
+- Cleaned up compiler warnings/errors related to verbatimModuleSyntax (type imports) in the API client, unused imports/variables in both code and tests, and reconfigured `vite.config.ts` to use `defineConfig` from `vitest/config`.
+- Successfully ran production compilation `npm run build` and automated testing `npx vitest run` (all 27 tests passed).
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/styles/app.css](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/styles/app.css) (Created)
@@ -373,14 +373,14 @@ complete
 - [frontend/job-agent-ui/vite.config.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/vite.config.ts) (Modified config import)
 
 ## Tests or Validations Run
-- `npm run typecheck`: Passed (Biên dịch thành công không có lỗi)
-- `npm run build`: Passed (Build bundle thành công mà không có lỗi nào)
-- `npx vitest run`: Passed (Tất cả 27 bài test, bao gồm cả drift contract test và client unit tests, đều passed 100%)
+- `npm run typecheck`: Passed (Compiled successfully without errors)
+- `npm run build`: Passed (Bundle built successfully without any errors)
+- `npx vitest run`: Passed (All 27 tests, including drift contract tests and client unit tests, passed 100%)
 
 ## Acceptance Check
 - Task acceptance condition: The app opens directly into a usable dashboard/review layout.
 - Status: satisfied
-- Evidence: Ứng dụng chạy trực tiếp vào giao diện AppShell gọn gàng với trang mặc định là Review Queue, và menu chuyển đổi qua Tracked Jobs Dashboard hoạt động hoàn toàn ổn định thông qua React Router Link.
+- Evidence: The application runs directly into a clean AppShell interface with the default page as Review Queue, and navigation to the Tracked Jobs Dashboard is fully stable via React Router Link.
 
 ## Artifacts Produced
 - None
@@ -388,28 +388,27 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Đây là một orchestrated run. Việc check checkbox thuộc về Task Review Agent (A2) sau khi ACCEPTED, A1 không tự ý cập nhật checkbox.
+- reason: This is an orchestrated run. Checking the checkbox belongs to the Task Review Agent (A2) after ACCEPTED; A1 does not update the checkbox.
 
 ## Key Implementation Decisions
-- Sử dụng các hằng số CSS variables trong `styles/app.css` để đảm bảo định dạng màu sắc OLED black, glass panels, cyan accent màu sắc nhất quán chuẩn Dark Elite Frosted.
-- Loại bỏ index.css cũ khỏi main.tsx để bảo vệ tính toàn vẹn của layout full-viewport mà không bị ảnh hưởng bởi chiều rộng tối đa 1126px của template Vite cũ.
-- Tinh chỉnh các kiểu import trong `client.ts` (`import type`) để tuân thủ thiết lập nghiêm ngặt `verbatimModuleSyntax` khi biên dịch.
+- Used CSS variable constants in `styles/app.css` to ensure OLED black, glass panels, and cyan accent colors are consistent with the Dark Elite Frosted standard.
+- Removed the old index.css from main.tsx to protect the integrity of the full-viewport layout without being affected by the 1126px max-width from the old Vite template.
+- Refined import styles in `client.ts` (`import type`) to comply with strict `verbatimModuleSyntax` compilation settings.
 
 ## Risks or Open Issues
 - None
 
 ## Minor Issues Fixed During Execution
-- Sửa lỗi thiếu Node.js type definitions (`fs`, `path`, `process`) trong TypeScript biên dịch môi trường test của frontend bằng cách thêm `node` vào config types trong `tsconfig.app.json`.
-- Sửa lỗi Vite config TypeScript type mismatch bằng cách import `defineConfig` từ `vitest/config` thay cho `vite`.
+- Fixed missing Node.js type definitions (`fs`, `path`, `process`) in the frontend test TypeScript compilation environment by adding `node` to config types in `tsconfig.app.json`.
+- Fixed Vite config TypeScript type mismatch by importing `defineConfig` from `vitest/config` instead of `vite`.
 
 ## Workflow Integrity Check
-- No issue identified. Layout ứng dụng đã được phân chia theo đúng các files trong đặc tả kỹ thuật và sẵn sàng tích hợp các controls profile và ingestion ở các task tiếp theo.
+- No issue identified. The application layout is divided exactly according to the files in the technical specification and ready to integrate profile and ingestion controls in subsequent tasks.
 
 ## Notes for Next Task
 - next task ID: (02B)
 - can proceed: yes
-- handoff notes: App shell và navigation điều hướng đã chạy ổn định. Task (02B) có thể bắt đầu xây dựng RoleProfilePanel trên phần sidebar để người dùng tạo mới hoặc lựa chọn cấu hình role profile thực tế từ backend.
-
+- handoff notes: App shell and navigation are stable. Task (02B) can start building the RoleProfilePanel on the sidebar for users to create or select actual role profiles from the backend.
 
 ---
 
@@ -444,13 +443,13 @@ complete
 - Task title: Build role profile creation and selection UI
 
 ## Completed Work
-- Đã tạo component `RoleProfilePanel` trong [src/components/RoleProfilePanel.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/RoleProfilePanel.tsx) để liệt kê, chọn và tạo mới profile vai trò (role profile).
-- Triển khai form tạo mới role profile với đầy đủ các trường: target role, level, location, accept remote (checkbox), skills (comma-separated), và resume/profile text.
-- Xử lý chia chuỗi nhập kỹ năng (skills input) bằng dấu phẩy, loại bỏ khoảng trắng thừa (trim) và lọc các chuỗi rỗng trước khi gửi payload lên API.
-- Sau khi tạo thành công, tự động chọn profile mới làm active và gọi API `listRoleProfiles` để làm mới danh sách.
-- Tích hợp `RoleProfilePanel` vào sidebar của ứng dụng trong [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx), thay thế placeholder cũ.
-- Thiết lập cơ chế thông báo cho active-batch state logic khi active role profile thay đổi (bằng cách reset hoặc tải lại `activeBatchId` tương ứng của profile đó từ `localStorage` sử dụng khóa `job-agent.activeBatchId.{role_profile_id}`).
-- Đã viết unit/component tests trong [src/test/RoleProfilePanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/RoleProfilePanel.test.tsx) để kiểm tra các hành vi: render danh sách, empty state, chuyển đổi form hiển thị, chọn profile, tự động chọn profile đầu tiên và validate/submit form thành công.
+- Created the `RoleProfilePanel` component in [src/components/RoleProfilePanel.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/RoleProfilePanel.tsx) to list, select, and create new role profiles.
+- Implemented the role profile creation form with all fields: target role, level, location, accept remote (checkbox), skills (comma-separated), and resume/profile text.
+- Processed the skills input string by splitting on commas, trimming whitespace, and filtering out empty strings before sending the payload to the API.
+- Automatically selected the new profile as active and called the `listRoleProfiles` API to refresh the list upon successful creation.
+- Integrated `RoleProfilePanel` into the application sidebar in [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx), replacing the old placeholder.
+- Established a notification mechanism for the active-batch state logic when the active role profile changes (by resetting or reloading the corresponding `activeBatchId` of that profile from `localStorage` using the key `job-agent.activeBatchId.{role_profile_id}`).
+- Wrote unit/component tests in [src/test/RoleProfilePanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/RoleProfilePanel.test.tsx) to verify behaviors: list rendering, empty state, form visibility toggling, profile selection, automatic selection of the first profile, and successful form validation/submission.
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/components/RoleProfilePanel.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/RoleProfilePanel.tsx) (Created)
@@ -460,12 +459,12 @@ complete
 ## Tests or Validations Run
 - `npm run typecheck`: Passed
 - `npm run build`: Passed
-- `npm test -- --run`: Passed (Tất cả 32 tests đều pass, trong đó có 5 tests của `RoleProfilePanel.test.tsx` mới tạo)
+- `npm test -- --run`: Passed (All 32 tests passed, including 5 tests from the newly created `RoleProfilePanel.test.tsx`)
 
 ## Acceptance Check
 - Task acceptance condition: User can create or select a role profile and downstream components receive the active backend ID.
 - Status: satisfied
-- Evidence: Component `RoleProfilePanel` kết nối trực tiếp với backend client để tải và tạo profile. Khi người dùng tương tác, active profile ID được truyền về state trung tâm tại `App.tsx` giúp các thành phần khác có thể tiêu thụ. Mọi hành vi được xác thực đầy đủ qua 5 unit test tự động.
+- Evidence: The `RoleProfilePanel` component connects directly to the backend client to load and create profiles. When the user interacts, the active profile ID is passed back to the centralized state in `App.tsx` for consumption by other components. All behaviors are fully verified via 5 automated unit tests.
 
 ## Artifacts Produced
 - None
@@ -473,26 +472,26 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Đây là một phần chạy được điều phối (orchestrated run). Việc cập nhật checkbox thuộc trách nhiệm của A2 (Task Review Agent) sau khi ACCEPTED, không phải của A1.
+- reason: This is an orchestrated run. Updating the checkbox is the responsibility of A2 (Task Review Agent) after being ACCEPTED, not A1.
 
 ## Key Implementation Decisions
-- Triển khai logic localStorage cho activeBatchId tương thích ngược với task 02D ngay trong handler thay đổi profile của `App.tsx` (`handleProfileChange`) để đảm bảo không bị rò rỉ batch ID giữa các profile khác nhau.
-- Tận dụng CSS variables của giao diện Dark Elite Frosted có sẵn để định hình form và danh sách tương thích hoàn hảo mà không sinh thêm CSS ad-hoc.
-- Xóa import `Check` không sử dụng từ thư viện `lucide-react` trong `RoleProfilePanel.tsx` để vượt qua kiểm tra compile nghiêm ngặt của Vite production build.
+- Implemented localStorage logic for activeBatchId compatible with task 02D directly in the profile change handler of `App.tsx` (`handleProfileChange`) to ensure batch IDs do not leak between different profiles.
+- Leveraged existing Dark Elite Frosted CSS variables to shape the form and list for perfect styling integration without writing ad-hoc CSS.
+- Removed the unused `Check` import from the `lucide-react` library in `RoleProfilePanel.tsx` to pass Vite's strict production build compilation check.
 
 ## Risks or Open Issues
 - None
 
 ## Minor Issues Fixed During Execution
-- Sửa lỗi cảnh báo compiler về biến import không dùng (`Check` từ `lucide-react`) giúp quá trình build production thành công sạch sẽ.
+- Fixed the compiler warning about the unused imported variable (`Check` from `lucide-react`) to ensure clean production builds.
 
 ## Workflow Integrity Check
-- No issue identified. Thiết kế của RoleProfilePanel bám sát technical specifications và source requirements trong Plan_5.md.
+- No issue identified. The design of RoleProfilePanel closely follows the technical specifications and source requirements in Plan_5.md.
 
 ## Notes for Next Task
 - next task ID: (02C)
 - can proceed: yes
-- handoff notes: Role profile workflow đã hoàn thành. Task (02C) có thể tiếp tục xây dựng các điều khiển nhập liệu (Ingestion Controls) để người dùng thực hiện parse URL, parse text hoặc mock-load dựa trên profile đang hoạt động.
+- handoff notes: Role profile workflow is complete. Task (02C) can proceed to build the Ingestion Controls for users to perform URL parsing, text parsing, or mock loading based on the active profile.
 
 ---
 
@@ -529,14 +528,14 @@ complete
 - Task title: Build ingestion controls and warning display
 
 ## Completed Work
-- Tạo component `IngestionPanel` trong [src/components/IngestionPanel.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/IngestionPanel.tsx) để thực hiện bốn cơ chế nhập liệu công việc: Tìm kiếm công việc qua Tavily/Public Search (`searchJobs`), phân tích URL công việc thủ công (`parseJobUrl`), phân tích văn bản mô tả công việc thủ công (`parseJobText`), và tải dữ liệu demo/mock (`loadMockJobs`).
-- Triển khai tabs điều hướng trực quan giữa các biểu mẫu Search, URL, Text, và Demo để giao diện luôn gọn gàng và dễ sử dụng.
-- Tự động khoá (disabled) tất cả các form controls và buttons khi không có active role profile hoặc khi đang gửi yêu cầu API (in-flight state) để tránh xung đột dữ liệu.
-- Tích hợp vùng hiển thị lỗi (safe error state) để hiển thị chi tiết các lỗi validation hoặc lỗi dịch vụ từ backend ném ra mà không làm lộ lọt secrets backend.
-- Hiển thị danh sách cảnh báo `IngestionResponse.warnings` trả về từ API ở vùng kết quả ingestion.
-- Đặc biệt, khi phân tích URL trả về trạng thái low-content (`parse_status === "needs_manual_input"`), hiển thị chính xác cảnh báo yêu cầu người dùng nhập liệu thủ công từ Plan 5.
-- Kết nối `IngestionPanel` vào sidebar trong [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx), thay thế placeholder cũ và kết nối callback `onIngestionSuccess` để cập nhật `activeBatchId` ở state App.
-- Viết bộ kiểm thử unit test tự động trong [src/test/IngestionPanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/IngestionPanel.test.tsx) bao phủ các workflows, trạng thái disabled, cảnh báo low-content URL, hiển thị lỗi và kích hoạt các callbacks API thành công.
+- Created the `IngestionPanel` component in [src/components/IngestionPanel.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/IngestionPanel.tsx) to implement four job ingestion mechanisms: Tavily/Public Search (`searchJobs`), manual URL parsing (`parseJobUrl`), manual raw text parsing (`parseJobText`), and demo/mock data loading (`loadMockJobs`).
+- Implemented visual tabs navigation between Search, URL, Text, and Demo forms to keep the interface tidy and easy to use.
+- Automatically disabled all form controls and buttons when there is no active role profile or during API requests (in-flight state) to prevent data conflicts.
+- Integrated a safe error display area to show detailed validation errors or service errors thrown from the backend without exposing backend secrets.
+- Displayed the list of `IngestionResponse.warnings` returned from the API in the ingestion result area.
+- Specifically, when URL parsing returns a low-content status (`parse_status === "needs_manual_input"`), accurately display the manual input warning required by Plan 5.
+- Connected `IngestionPanel` to the sidebar in [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx), replacing the old placeholder and linking the `onIngestionSuccess` callback to update `activeBatchId` in the App state.
+- Wrote an automated unit test suite in [src/test/IngestionPanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/IngestionPanel.test.tsx) covering workflows, disabled states, low-content URL warnings, error displays, and successful API callback triggers.
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/components/IngestionPanel.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/components/IngestionPanel.tsx) (Created)
@@ -546,12 +545,12 @@ complete
 ## Tests or Validations Run
 - `npm run typecheck`: Passed
 - `npm run build`: Passed
-- `npm test -- --run`: Passed (Tất cả 38 tests đều pass 100%, bao gồm 6 tests mới viết của `IngestionPanel.test.tsx`)
+- `npm test -- --run`: Passed (All 38 tests passed 100%, including 6 newly written tests for `IngestionPanel.test.tsx`)
 
 ## Acceptance Check
 - Task acceptance condition: All four ingestion actions call the backend and expose warnings/errors without direct provider calls.
 - Status: satisfied
-- Evidence: 6 bài test vitest tự động kiểm tra chính xác hành vi gọi API thông qua apiClient, trạng thái disabled khi không có profile, hiển thị cảnh báo low-content từ Plan 5 khi `parse_status: "needs_manual_input"`, và hiển thị an toàn các lỗi validation. Lệnh `npm test -- --run` chạy thành công tuyệt đối.
+- Evidence: 6 automated vitest tests accurately check the API call behavior via apiClient, disabled state when no profile is active, low-content warning display from Plan 5 when `parse_status === "needs_manual_input"`, and safe display of validation errors. The `npm test -- --run` command passed completely.
 
 ## Artifacts Produced
 - None
@@ -559,12 +558,12 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Đây là một orchestrated run. Việc cập nhật checkbox thuộc trách nhiệm của Review Agent (A2) sau khi review ACCEPTED, A1 không tự ý sửa checkbox.
+- reason: This is an orchestrated run. Updating the checkbox is the responsibility of the Review Agent (A2) after being ACCEPTED; A1 does not modify the checkbox.
 
 ## Key Implementation Decisions
-- Triển khai cơ chế tabs giúp IngestionPanel cực kỳ gọn gàng trên thanh sidebar, chỉ hiển thị đúng form đang thao tác.
-- Kiểm tra trực tiếp các jobs trong response từ `parseJobUrl` để phát hiện `parse_status === "needs_manual_input"` và hiển thị cảnh báo hướng dẫn người dùng nhập tay văn bản.
-- Giữ logic hoàn toàn biệt lập, chỉ tương tác với backend thông qua API client, đảm bảo không có logic nhà cung cấp (provider logic) hay cấu hình giới hạn cứng trong client code.
+- Implemented a tab mechanism to keep `IngestionPanel` extremely tidy on the sidebar, showing only the active form.
+- Checked jobs in the response from `parseJobUrl` directly to detect `parse_status === "needs_manual_input"` and display the warning directing users to manually input text.
+- Kept the logic completely isolated, interacting with the backend only through the API client, ensuring no provider logic or hardcoded limitations in the client code.
 
 ## Risks or Open Issues
 - None
@@ -573,12 +572,12 @@ complete
 - None
 
 ## Workflow Integrity Check
-- Không có vấn đề nào được xác định. Cấu trúc IngestionPanel và các kiểu dữ liệu, API client được bọc hoàn hảo và kiểm thử thành công.
+- No issues identified. The IngestionPanel structure, data types, and API client are perfectly wrapped and successfully tested.
 
 ## Notes for Next Task
 - next task ID: (02D)
 - can proceed: yes
-- handoff notes: Ingestion controls và warning display đã hoàn thành và tích hợp vào App.tsx. Task tiếp theo (02D) có thể tiếp tục triển khai logic lưu trữ active batch ID cô lập theo từng role profile vào localStorage và kiểm thử hành vi chuyển đổi profile cô lập batch ID.
+- handoff notes: Ingestion controls and warning display are completed and integrated into App.tsx. The next task (02D) can proceed to implement active batch ID storage isolated by role profile in localStorage, and test profile switching behavior with batch ID isolation.
 
 ---
 
@@ -612,21 +611,21 @@ complete
 - Task title: Build ingestion controls and warning display
 
 ## Completed Work
-- Loại bỏ kiểu import không sử dụng `Job` khỏi [src/test/IngestionPanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/IngestionPanel.test.tsx) để sửa lỗi biên dịch nghiêm ngặt khi build production.
-- Đã chạy xác thực biên dịch TypeScript (`npm run typecheck`), chạy kiểm thử Vitest (`npm test -- --run`) và build sản phẩm (`npm run build`) thành công sạch sẽ.
+- Removed the unused import `Job` from [src/test/IngestionPanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/IngestionPanel.test.tsx) to fix strict compilation errors during production builds.
+- Successfully ran TypeScript compilation validation (`npm run typecheck`), Vitest tests (`npm test -- --run`), and production build (`npm run build`) cleanly.
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/test/IngestionPanel.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/IngestionPanel.test.tsx) (Modified)
 
 ## Tests or Validations Run
 - `npm run typecheck`: Passed
-- `npm test -- --run`: Passed (Tất cả 38 tests đều pass)
-- `npm run build`: Passed (Build production hoàn tất không có lỗi)
+- `npm test -- --run`: Passed (All 38 tests passed)
+- `npm run build`: Passed (Production build completed without errors)
 
 ## Acceptance Check
 - Task acceptance condition: Build complete production and testing passes without unused type errors.
 - Status: satisfied
-- Evidence: Kết quả chạy `npm run build` thành công, các file build trong thư mục `dist` được xuất ra sạch sẽ.
+- Evidence: Successful execution of `npm run build`, build files in the `dist` folder are output cleanly.
 
 ## Artifacts Produced
 - None
@@ -634,25 +633,24 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Đây là một orchestrated run. Việc cập nhật checkbox được quản lý bởi Review Agent (A2) sau khi review ACCEPTED.
+- reason: This is an orchestrated run. Updating the checkbox is managed by the Review Agent (A2) after review is ACCEPTED.
 
 ## Key Implementation Decisions
-- Loại bỏ unused type import để tuân thủ quy tắc verbatimModuleSyntax nghiêm ngặt của dự án.
+- Removed unused type import to comply with the project's strict `verbatimModuleSyntax` rules.
 
 ## Risks or Open Issues
 - None
 
 ## Minor Issues Fixed During Execution
-- Loại bỏ unused type import `Job` trong file test.
+- Removed the unused `Job` type import in the test file.
 
 ## Workflow Integrity Check
-- Quy trình đã được sửa đổi và kiểm tra cẩn thận theo yêu cầu từ A2.
+- The process was modified and carefully checked as requested by A2.
 
 ## Notes for Next Task
 - next task ID: (02D)
 - can proceed: yes
-- handoff notes: Đã sửa xong lỗi cảnh báo build của (02C). Task tiếp theo (02D) có thể tiếp tục triển khai.
-
+- handoff notes: Fixed build warning errors for (02C). The next task (02D) can now proceed.
 
 ---
 
@@ -686,15 +684,15 @@ complete
 - Task title: Implement active role and active batch state isolation
 
 ## Completed Work
-- Tạo file local helper [src/utils/activeBatchStorage.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/utils/activeBatchStorage.ts) nhằm mục đích trừu tượng hóa khóa lưu trữ (`job-agent.activeBatchId.{role_profile_id}`) cho active batch ID theo từng profile và thực hiện các chức năng load, save, clear và get key.
-- Cập nhật [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx) sử dụng helper trên để tải lại active batch ID tương ứng khi người dùng chọn hoặc đổi role profile.
-- Đảm bảo reset trạng thái `activeBatchId` (state và UI) về `null` (hiển thị `"None"`) khi một profile không có active batch ID được lưu trong localStorage, từ đó cũng sẽ reset các metrics view phụ thuộc sau này.
-- Đảm bảo không gọi bất cứ API backend nào để lấy latest-batch tự chế, chỉ tin tưởng thông tin lưu trong localStorage và component state.
-- Viết unit tests chuyên biệt trong [src/test/activeBatch.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/activeBatch.test.tsx) để kiểm chứng:
-  - Việc gán active batch ID cho profile này hoàn toàn cô lập và không rò rỉ hay ghi đè sang profile khác.
-  - Việc đổi profile cập nhật chính xác active batch ID hiển thị, lấy đúng key từ localStorage tương ứng.
-  - Không gọi bất kỳ backend latest-batch endpoint nào.
-- Đã chạy kiểm thử tự động Vitest và typecheck TypeScript thành công 100%.
+- Created the local helper file [src/utils/activeBatchStorage.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/utils/activeBatchStorage.ts) to abstract the storage key (`job-agent.activeBatchId.{role_profile_id}`) for active batch IDs by profile, and implemented load, save, clear, and key retrieval functions.
+- Updated [src/App.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/App.tsx) using the helper above to reload the corresponding active batch ID when the user selects or changes a role profile.
+- Ensured the `activeBatchId` state (and UI) resets to `null` (displaying `"None"`) when a profile has no active batch ID stored in localStorage, which will also reset dependent metrics views later.
+- Ensured no backend API is called to retrieve a mock latest batch, relying only on localStorage and component state.
+- Wrote dedicated unit tests in [src/test/activeBatch.test.tsx](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/test/activeBatch.test.tsx) to verify:
+  - Setting active batch ID for this profile is completely isolated and does not leak or overwrite other profiles.
+  - Profile switching accurately updates the displayed active batch ID, retrieving the correct key from localStorage.
+  - No backend latest-batch endpoint is called.
+- Successfully ran Vitest automated testing and TypeScript typecheck with 100% success.
 
 ## Files Created or Modified
 - [frontend/job-agent-ui/src/utils/activeBatchStorage.ts](file:///c:/Users/ACER/OtherProjects/Job_Agent/frontend/job-agent-ui/src/utils/activeBatchStorage.ts) (Created)
@@ -705,12 +703,12 @@ complete
 - `npm run typecheck`: Passed
 - `npm run build`: Passed
 - `npm test -- --run src/test/activeBatch.test.tsx`: Passed (2 tests passed)
-- `npm test -- --run`: Passed (Tất cả 40 tests trong toàn dự án đều passed thành công)
+- `npm test -- --run`: Passed (All 40 tests in the entire project passed successfully)
 
 ## Acceptance Check
 - Task acceptance condition: Active batch state persists per profile and cannot leak across profiles.
 - Status: satisfied
-- Evidence: 2 test cases viết trong `activeBatch.test.tsx` kiểm thử tỉ mỉ hành vi isolation và switching profile, chạy và passed thành công. Ngoài ra, việc lưu trữ sử dụng prefix `job-agent.activeBatchId.{role_profile_id}` đảm bảo dữ liệu phân tách tuyệt đối giữa các profiles.
+- Evidence: 2 test cases written in `activeBatch.test.tsx` meticulously test the isolation and profile switching behaviors, running and passing successfully. Additionally, storage using the prefix `job-agent.activeBatchId.{role_profile_id}` ensures absolute separation of data between profiles.
 
 ## Artifacts Produced
 - None
@@ -718,11 +716,11 @@ complete
 ## Progress Update
 - task checkbox updated: no
 - batch status updated: no
-- reason: Trong orchestrated runs, việc check checkbox trong file task được quản lý bởi Review Agent (A2) sau khi review ACCEPTED.
+- reason: In orchestrated runs, checking the checkbox in the task file is managed by the Review Agent (A2) after review is ACCEPTED.
 
 ## Key Implementation Decisions
-- Trừu tượng hóa logic localStorage vào file helper riêng biệt (`src/utils/activeBatchStorage.ts`) để tuân thủ nguyên tắc SRP (Single Responsibility Principle), giúp code trong `App.tsx` gọn gàng hơn.
-- Gán `activeBatchId` thành `null` (ở component state) khi không tìm thấy batch ID được lưu cho profile được chọn nhằm reset metrics view sạch sẽ.
+- Abstracted the localStorage logic into a separate helper file (`src/utils/activeBatchStorage.ts`) to comply with SRP (Single Responsibility Principle), keeping `App.tsx` cleaner.
+- Set `activeBatchId` to `null` (in component state) when no batch ID is found for the selected profile to reset the metrics view cleanly.
 
 ## Risks or Open Issues
 - None
@@ -731,13 +729,9 @@ complete
 - None
 
 ## Workflow Integrity Check
-- Không phát hiện bất kỳ sự sai lệch nào. Triển khai bám sát technical specifications và source requirements.
+- No deviation identified. Implementation closely follows technical specifications and source requirements.
 
 ## Notes for Next Task
 - next task ID: (03A)
 - can proceed: yes
-- handoff notes: Active batch state isolation đã được triển khai và kiểm thử kỹ lượng. Dự án đã hoàn thành Batch02 và sẵn sàng tiến hành Batch03 với task (03A) xây dựng component Job Card dùng chung và hiển thị chi tiết điểm số khớp (score breakdown component).
-
-
-
-
+- handoff notes: Active batch state isolation has been implemented and thoroughly tested. The project completes Batch02 and is ready for Batch03 with task (03A) to build the shared Job Card component and display the detailed matching score breakdown component.

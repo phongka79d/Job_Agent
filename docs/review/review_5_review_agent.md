@@ -1141,7 +1141,7 @@ ACCEPTED
 - Task ID: (02D)
 - Task title: Implement active role and active batch state isolation
 - Executor status reported: complete
-- Source of Truth: `docs/plans/Plan_5.md` > `### Active Batch Handling` và `## 8. Implementation Steps`
+- Source of Truth: `docs/plans/Plan_5.md` > `### Active Batch Handling` and `## 8. Implementation Steps`
 - Supplemental documents: None
 
 ## Latest Report Selection
