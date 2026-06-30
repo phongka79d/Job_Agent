@@ -112,6 +112,20 @@ Job_Agent/
 |   `-- messy_social_posts.json     # Non-scorable social post fixtures
 |-- shared/
 |   `-- api-contract.json          # Generated API contract for frontend consumers
+|-- frontend/
+|   `-- job-agent-ui/              # Vite React TypeScript frontend scaffold
+|       |-- src/
+|       |   |-- api/
+|       |   |   `-- client.ts      # Typed FastAPI client with safe error surfacing
+|       |   |-- test/
+|       |   |   |-- setup.ts       # Vitest setup with jsdom
+|       |   |   |-- apiContract.test.ts # API contract drift tests
+|       |   |   `-- apiClient.test.ts # API client tests
+|       |   |-- types/
+|       |   |   `-- api.ts         # TypeScript API models & transition types
+|       |   |-- App.tsx
+|       |   `-- main.tsx
+|       `-- vite.config.ts
 |-- .gitignore                    # Repository ignore rules (protecting secrets and local DB)
 |-- .env.example                  # Environment configuration template
 |-- README.md                     # Project overview and setup documentation
@@ -297,6 +311,25 @@ From the `backend` directory, run the focused Phase 4 verification target:
 
 ```bash
 python -m pytest tests/test_api_contract_export.py tests/test_routes_role_profiles.py tests/test_routes_jobs.py tests/test_routes_batches.py tests/test_seed_demo.py
+```
+
+---
+
+## Frontend Scaffold and API Contract Foundation (Phase 5 - Batch 01)
+
+Phase 5 Batch 01 establishes the React + TypeScript frontend scaffold and the typed API contract layer:
+
+- **Frontend Scaffold:** Built under `frontend/job-agent-ui` using Vite with React and TypeScript. Configured Vitest, jsdom, and testing library helpers for component and unit testing.
+- **TypeScript API Types:** `frontend/job-agent-ui/src/types/api.ts` defines all types for jobs, role profiles, and ingestion responses, strictly mapping fields and nullable properties to the backend schemas.
+- **Contract Drift Tests:** `frontend/job-agent-ui/src/test/apiContract.test.ts` validates that the frontend API types, constants, endpoints, and allowed status transitions match the backend-generated `shared/api-contract.json` contract.
+- **FastAPI Client:** `frontend/job-agent-ui/src/api/client.ts` implements a typed Axios client for all 13 FastAPI endpoints, including custom API error class `ApiClientError` to normalize structured FastAPI validation error arrays.
+
+From the `frontend/job-agent-ui` directory, verify and run the tests:
+
+```bash
+npm install
+npm run typecheck
+npm test -- --run
 ```
 
 ---
