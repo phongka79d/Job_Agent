@@ -710,3 +710,375 @@ complete
 - next task ID: (03A)
 - can proceed: yes
 - handoff notes: After A2 accepts (02E), Batch02 app wiring is complete and Batch03 can start ingestion route work against the registered `/api` app surface.
+
+---
+
+# Task Execution Report - (03A)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Report File
+docs/reports/report_4_execute_agent.md
+
+## Batch
+Batch03 - Manual and Search Ingestion Routes
+
+## Task
+(03A) - Implement standard ingestion response shaping and parse-text endpoint
+
+## Status
+complete
+
+## Source of Truth Used
+- docs/tasks/task_4.md > Mandatory Batch03 - Manual and Search Ingestion Routes > (03A)
+- docs/plans/Plan_4.md > ## 7. Technical Specifications > ### Parse Routes
+- docs/plans/Plan_4.md > ## 7. Technical Specifications > ### Common API Response Shapes
+- docs/plans/Master_Plan.md > ## 4.1. LangGraph State Tracking
+- README.md > ## Extraction Architecture & Workflows (Phase 2)
+
+## Supplemental Documents Used
+- docs/plans/Master_Plan.md
+- README.md
+
+## Selected Scope
+- Batch: Batch03 - Manual and Search Ingestion Routes
+- Task ID: (03A)
+- Task title: Implement standard ingestion response shaping and parse-text endpoint
+
+## Completed Work
+- Status: complete.
+- Implemented `POST /api/jobs/parse-text` in `backend/app/api/routes_jobs.py`.
+- The route validates through the existing `ParseJobTextRequest` schema, creates one UUID batch ID per request, calls Plan 2 `extract_from_raw_text` with `input_source` owned by the extraction entrypoint, and passes the resulting state to Plan 3 `process_job_state`.
+- Added route-local ingestion response shaping that loads any returned Plan 3 `job_ids` from SQLite and returns the existing `IngestionResponse` shape with counts, Qdrant sync fields, serialized job rows, and warnings.
+- Kept route logic free of score math, deduplication decisions, and Qdrant operations.
+
+## Files Created or Modified
+- backend/app/api/routes_jobs.py
+- docs/reports/report_4_execute_agent.md
+
+## Tests or Validations Run
+- `.\.venv\Scripts\python.exe -m compileall -q app`: Passed
+- `.\.venv\Scripts\python.exe -c "from app.api.routes_jobs import router; print([route.path for route in router.routes])"`: Passed; output included `/jobs/parse-text`
+- `.\.venv\Scripts\python.exe -m pytest tests/test_job_persistence.py tests/test_extraction_graph.py`: Passed; 19 passed
+- `python -c "from app.main import app; ..."` using the non-venv interpreter: Blocked; active interpreter lacked `sqlalchemy`
+- `.\.venv\Scripts\python.exe -c "from app.main import app; ... app.routes ..."`: Not used as acceptance evidence; this FastAPI version exposes included routers as deferred internal router entries without direct `path` attributes in `app.routes`
+
+## Acceptance Check
+- Task acceptance condition: Raw text ingestion inserts visible pending-review jobs through the established pipeline.
+- Status: satisfied
+- Evidence: The route uses the existing raw-text extraction entrypoint and Plan 3 processing service, then fetches returned persisted job rows for `IngestionResponse`. Existing Plan 3 persistence tests and extraction graph tests passed under the project virtualenv.
+
+## Artifacts Produced
+- Parse-text route implementation in `backend/app/api/routes_jobs.py`
+- Appended execution report in `docs/reports/report_4_execute_agent.md`
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch updates are reserved for A2 after an ACCEPTED review.
+
+## Key Implementation Decisions
+- Reused existing `ParseJobTextRequest`, `IngestionResponse`, `extract_from_raw_text`, and `process_job_state` instead of defining route-local schemas or processing logic.
+- Added a small private response-shaping helper in the route module so Plan 3 count fields and `job_ids` are adapted consistently without duplicating scoring, deduplication, or Qdrant behavior.
+- Loaded jobs by Plan 3 returned `job_ids` and preserved returned ID order where rows are present.
+
+## Risks or Open Issues
+- Focused ingestion route tests are intentionally deferred to Batch05 per the selected task validation field.
+- Live scorable ingestion still depends on the existing embedding/Qdrant service behavior from Plan 3.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Dependencies (01B), (02B), and (02E) were checked complete in `docs/tasks/task_4.md` before implementation.
+- Existing processing result, job serialization, extraction, and response schemas were searched before adding route code.
+- No source-of-truth conflict, missing dependency, required user action, or architecture concern was identified.
+- Scope stayed within (03A): no parse-url behavior, search behavior, Batch05 tests, task checkbox updates, commits, or sibling tasks were implemented.
+
+## Notes for Next Task
+- next task ID: (03B)
+- can proceed: yes
+- handoff notes: The parse-text path now provides the standard ingestion response adapter that later ingestion endpoints can reuse if A2 accepts this implementation.
+---
+
+# Task Execution Report - (03B)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Report File
+docs/reports/report_4_execute_agent.md
+
+## Batch
+Batch03 - Manual and Search Ingestion Routes
+
+## Task
+(03B) - Implement parse-url endpoint with MVP URL safety limits
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Parse Routes`
+- `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners`
+- `docs/plans/Master_Plan.md` > `## 27. URL Parsing Security Note`
+- `docs/plans/Master_Plan.md` > `## 28. Input Size and Retry Limits`
+
+## Supplemental Documents Used
+- README.md
+
+## Selected Scope
+- Batch: Batch03 - Manual and Search Ingestion Routes
+- Task ID: (03B)
+- Task title: Implement parse-url endpoint with MVP URL safety limits
+
+## Completed Work
+- Status: complete.
+- Implemented `POST /api/jobs/parse-url` in `backend/app/api/routes_jobs.py`.
+- Added API-boundary scheme validation for `http` and `https` URLs.
+- Reused the existing URL extraction entrypoint with `input_source="manual_url"` so request timeout, response-size limits, trafilatura extraction, low-content fallback, and parser warnings remain owned by Plan 2 services.
+- Passed the resulting extraction state through the existing Plan 3 `process_job_state` pipeline.
+- Reused and extended the existing ingestion response shaping path so parse-url returns standard counts, fetched persisted jobs, Qdrant sync fields, and ingestion warnings.
+- Added the required production SSRF mitigation note near the parse-url route.
+
+## Files Created or Modified
+- backend/app/api/routes_jobs.py
+- docs/reports/report_4_execute_agent.md
+
+## Tests or Validations Run
+- `python -m compileall -q backend/app/api/routes_jobs.py`: Passed. Evidence: command exited successfully with no output.
+- `cd backend; python -c "from app.api.routes_jobs import router, parse_job_url; print('routes_jobs import ok')"`: Blocked in default interpreter. Evidence: `ModuleNotFoundError: No module named 'sqlalchemy'`.
+- `cd backend; pytest tests/test_url_cleaning.py tests/test_extraction_graph.py -q`: Blocked in default interpreter. Evidence: `ModuleNotFoundError: No module named 'sqlalchemy'` while loading `tests/conftest.py`.
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app\api\routes_jobs.py`: Passed. Evidence: command exited successfully with no output.
+- `cd backend; .\.venv\Scripts\python.exe -c "from app.api.routes_jobs import router, parse_job_url; print([route.path for route in router.routes])"`: Passed. Evidence: output included `/jobs/parse-url` along with existing job routes.
+- `cd backend; .\.venv\Scripts\python.exe -m pytest tests\test_url_cleaning.py tests\test_extraction_graph.py -q`: Passed. Evidence: `17 passed in 3.36s`.
+
+## Acceptance Check
+- Task acceptance condition: URL ingestion handles low-content pages with safe warnings and persists appropriate records through Plan 3.
+- Status: satisfied.
+- Evidence: parse-url generates one batch ID, validates `http`/`https`, calls `extract_from_url(..., input_source="manual_url")`, passes the returned state to `process_job_state`, and returns `_build_ingestion_response(...)` with Plan 3 counts, loaded jobs, and warnings. Existing URL extraction tests verify low-content pages produce `needs_manual_input` with `user_warning`; existing extraction graph tests verify manual-input URL states skip LLM extraction and remain terminal before Plan 3 persistence.
+
+## Artifacts Produced
+- Parse-url API route in `backend/app/api/routes_jobs.py`.
+- Appended execution report in `docs/reports/report_4_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch updates are reserved for A2 after an ACCEPTED review.
+
+## Key Implementation Decisions
+- Reused `ParseJobUrlRequest`, `IngestionResponse`, `extract_from_url`, and `process_job_state` instead of adding route-local schemas, custom HTML parsing, browser rendering, or duplicate processing logic.
+- Added `_process_ingested_state` in the existing route module to avoid duplicating the parse-text processing/result-adaptation block for parse-url.
+- Kept the MVP SSRF boundary exactly as required: route-level `http`/`https` validation plus existing extraction-service timeout and response-size limits, with the required production note.
+- Did not add Tavily search behavior, Playwright, custom parser code, route tests, task checkbox updates, or commits.
+
+## Risks or Open Issues
+- Dedicated parse-url route tests remain deferred to Batch05 per the selected task validation field.
+- The default PATH Python is not a valid backend validation environment because it lacks installed backend dependencies; project venv validation passed.
+
+## Minor Issues Fixed During Execution
+- None.
+
+## Workflow Integrity Check
+- Dependency `(03A)` was checked complete in `docs/tasks/task_4.md` before implementation.
+- Existing URL validators, schema request types, extraction entrypoints, ingestion response shaping, processing result warnings, and Plan 3 processing were searched before editing.
+- No missing source-of-truth fields, dependency issue, required user action, or architecture conflict was identified.
+- Current working tree had pre-existing uncommitted changes in `backend/app/api/routes_jobs.py`, `docs/reports/report_4_execute_agent.md`, `docs/review/review_4_review_agent.md`, and `docs/tasks/task_4.md`; they were not reverted.
+
+## Notes for Next Task
+- next task ID: (03C)
+- can proceed: yes
+- handoff notes: The parse-url route now exposes the existing URL extraction and Plan 3 ingestion path for manual URLs. Search-service work should remain separate and may later reuse the same parse-url processing path without duplicating extraction or persistence logic.
+
+---
+
+# Task Execution Report - (03C)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Report File
+docs/reports/report_4_execute_agent.md
+
+## Batch
+Batch03 - Manual and Search Ingestion Routes
+
+## Task
+(03C) - Implement Tavily search service
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_4.md` > `(03C): Implement Tavily search service`
+- `docs/plans/Plan_4.md` > `## 4. Scope`
+- `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Search Route`
+- `docs/plans/Master_Plan.md` > `## 2. Final MVP Stack`
+- `docs/plans/Master_Plan.md` > `## 6. Input Sources`
+- `docs/plans/Master_Plan.md` > `## 32. Single Root .env`
+
+## Supplemental Documents Used
+- `docs/plans/Master_Plan.md`
+- `README.md` not read; the selected task and cited source sections were sufficient for this narrow service task.
+
+## Selected Scope
+- Batch: Batch03 - Manual and Search Ingestion Routes
+- Task ID: (03C)
+- Task title: Implement Tavily search service
+
+## Completed Work
+- Status: complete.
+- Created `backend/app/services/search_service.py` as a small mockable Tavily service boundary.
+- Added `TavilySearchService.search_jobs(...)`, `SearchResult`, `TavilyClientProtocol`, and `SearchServiceError`.
+- The service clamps requested `max_urls` to backend `settings.MAX_URLS_PER_BATCH` before calling Tavily.
+- The service reads `TAVILY_API_KEY`, `MAX_URLS_PER_BATCH`, and request timeout from backend settings only.
+- The service normalizes public `http`/`https` result URLs, strips URL fragments, and returns safe result metadata only.
+- The service raises safe `SearchServiceError` messages for missing configuration, missing Tavily dependency, invalid provider responses, and provider failures.
+- Kept the service free of persistence, extraction, scoring, deduplication, Qdrant logic, and route behavior.
+
+## Files Created or Modified
+- `backend/app/services/search_service.py`
+- `docs/reports/report_4_execute_agent.md`
+
+## Tests or Validations Run
+- `cd backend; .\.venv\Scripts\python.exe -m compileall -q app\services\search_service.py`: Passed
+- `cd backend; $env:PYTHONPATH='.'; .\.venv\Scripts\python.exe -c "from app.services.search_service import SearchResult, SearchServiceError, TavilySearchService, search_service; print('search_service import passed')"`: Passed; output included `search_service import passed`.
+- `cd backend; $env:PYTHONPATH='.'; <fake Tavily client smoke via stdin> | .\.venv\Scripts\python.exe -`: Passed; output included `fake search smoke passed` after verifying mockability, max URL clamping, URL fragment stripping, invalid URL filtering, and safe metadata coercion.
+- Optional live Tavily validation: Not run; not explicitly requested and the task only blocks on absent key when live validation is explicitly requested.
+
+## Acceptance Check
+- Task acceptance condition: Search service can be mocked in tests and never exposes the Tavily key.
+- Status: satisfied
+- Evidence: `TavilySearchService` accepts an injected client implementing `TavilyClientProtocol`; the fake-client smoke test passed without a real key. The service never returns, prints, or logs `TAVILY_API_KEY`; it only passes the secret value into `AsyncTavilyClient` when no mock client is injected.
+
+## Artifacts Produced
+- Mockable Tavily search service at `backend/app/services/search_service.py`.
+- Appended execution report in `docs/reports/report_4_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch updates are reserved for A2 after an ACCEPTED review.
+
+## Key Implementation Decisions
+- Used `AsyncTavilyClient` behind a lazy client factory so importing the service does not require live credentials or a network call.
+- Kept only client injection as the mock seam; production credentials and limits are read from backend settings only.
+- Returned a minimal `SearchResult` dataclass with URL, title, content snippet, score, and published date; omitted raw content, images, answer payloads, credentials, and provider internals.
+- Implemented provider failures as `SearchServiceError` so the future route task can convert them to HTTP 502 without leaking secrets.
+
+## Risks or Open Issues
+- Live Tavily behavior was not validated because live validation was optional and not explicitly requested.
+- Focused route and service tests are still deferred to Batch05 per the selected task validation field.
+- Existing uncommitted modifications in `backend/app/api/routes_jobs.py`, `docs/reports/report_4_execute_agent.md`, `docs/review/review_4_review_agent.md`, and `docs/tasks/task_4.md` were present before this task and were not reverted.
+
+## Minor Issues Fixed During Execution
+- Narrowed the service constructor after review so credentials and configured limits come from backend settings only while preserving mock-client injection.
+
+## Workflow Integrity Check
+- Dependency `(01A)` was checked complete in `docs/tasks/task_4.md` before implementation.
+- Existing search/Tavily helpers, settings, constants, API schemas, route code, extraction support for `input_source = "tavily"`, and requirements were searched before adding the service.
+- No missing source-of-truth fields, dependency issue, required user action, or architecture conflict was identified.
+- Did not implement sibling task `(03D)`, `/api/jobs/search` route behavior, authenticated LinkedIn/Facebook crawling, persistence, extraction, scoring, deduplication, Qdrant logic, tests from Batch05, task checkbox updates, or commits.
+
+## Notes for Next Task
+- next task ID: (03D)
+- can proceed: yes
+- handoff notes: The search endpoint can import `search_service` or instantiate `TavilySearchService` with a mock client in tests, call `search_jobs(...)`, process returned URLs through the existing parse-url pipeline using `input_source = "tavily"`, and convert `SearchServiceError` to HTTP 502.
+---
+
+# Task Execution Report - (03D)
+
+## Source Task File
+docs/tasks/task_4.md
+
+## Report File
+docs/reports/report_4_execute_agent.md
+
+## Batch
+Batch03 - Manual and Search Ingestion Routes
+
+## Task
+(03D) - Implement search endpoint using parse-url pipeline
+
+## Status
+complete
+
+## Source of Truth Used
+- `docs/tasks/task_4.md` > `(03D): Implement search endpoint using parse-url pipeline`
+- `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Search Route`
+- `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
+- `docs/plans/Master_Plan.md` > `## 26. API Endpoints`
+
+## Supplemental Documents Used
+- `README.md`
+
+## Selected Scope
+- Batch: Batch03 - Manual and Search Ingestion Routes
+- Task ID: (03D)
+- Task title: Implement search endpoint using parse-url pipeline
+
+## Completed Work
+- Status: complete.
+- Implemented `POST /api/jobs/search` in `backend/app/api/routes_jobs.py`.
+- The endpoint validates payloads through `SearchJobsRequest`, creates one request-scoped batch ID, calls the accepted `search_service.search_jobs(...)`, and relies on the service clamp for `MAX_URLS_PER_BATCH`.
+- Each returned URL is processed synchronously through `extract_from_url(..., input_source="tavily")` and the existing Plan 3 `process_job_state` path.
+- Aggregates inserted, duplicate, duplicate metadata, Qdrant, job ID, and warning counts into the accepted standard `IngestionResponse` shape.
+- Continues processing later URLs after per-result extraction/processing failures and records a transient warning for the failed result URL.
+- Converts Tavily/search service failures before URL processing to HTTP 502 with a safe provider message.
+- Did not add queues, workers, cron, Celery, Redis, durable search tables, route-local scoring, dedup logic, persistence internals, or Qdrant operations.
+
+## Files Created or Modified
+- `backend/app/api/routes_jobs.py`
+- `docs/reports/report_4_execute_agent.md`
+
+## Tests or Validations Run
+- `python -m compileall -q app`: Passed with system Python. Evidence: command exited 0.
+- `python -c "from app.main import app; paths=sorted(app.openapi()['paths']); print('/api/jobs/search' in paths); print([p for p in paths if 'jobs/search' in p])"`: Failed with system Python. Evidence: missing dependency `sqlalchemy` in the system interpreter.
+- `python -c "from app.api.routes_jobs import search_jobs; from app.api.schemas import SearchJobsRequest, IngestionResponse; print('search route imports ok')"`: Failed with system Python. Evidence: missing dependency `sqlalchemy` in the system interpreter.
+- `.\.venv\Scripts\python.exe -m compileall -q app`: Passed. Evidence: command exited 0.
+- `.\.venv\Scripts\python.exe -c "from app.main import app; paths=sorted(app.openapi()['paths']); print('/api/jobs/search' in paths); print([p for p in paths if 'jobs/search' in p])"`: Passed. Evidence: output included `True` and `['/api/jobs/search']`.
+- `.\.venv\Scripts\python.exe -c "from app.api.routes_jobs import search_jobs; from app.api.schemas import SearchJobsRequest, IngestionResponse; print('search route imports ok')"`: Passed. Evidence: output `search route imports ok`.
+- `rg -i "celery|redis|backgroundtasks|cron|worker|queue" backend/app`: Passed with note. Evidence: no background infrastructure matches; only existing mock-response queue docstrings in `backend/app/services/llm_client.py`.
+- `git diff --check -- backend/app/api/routes_jobs.py`: Passed. Evidence: no whitespace errors; Git warned only that LF will be replaced by CRLF next time Git touches the file.
+- Live Tavily validation: Not run; not explicitly requested and would require `TAVILY_API_KEY`.
+
+## Acceptance Check
+- Task acceptance condition: Search returns one batch summary and job list for processed URLs without queue infrastructure.
+- Status: satisfied
+- Evidence: `POST /api/jobs/search` is exposed in OpenAPI, creates one `batch_id`, processes all Tavily result URLs through the parse-url extraction and Plan 3 persistence pipeline, aggregates the standard ingestion response including `jobs`, and scope scan found no added queue/worker infrastructure.
+
+## Artifacts Produced
+- Search endpoint in `backend/app/api/routes_jobs.py`.
+- Appended execution report in `docs/reports/report_4_execute_agent.md`.
+
+## Progress Update
+- task checkbox updated: no
+- batch status updated: no
+- reason: Orchestrated run; checkbox and batch updates are reserved for A2 after an ACCEPTED review.
+
+## Key Implementation Decisions
+- Reused the accepted ingestion response helpers from `(03A)` and the accepted parse-url extraction/processing path from `(03B)` instead of adding search-specific persistence or scoring behavior.
+- Reused the accepted `(03C)` `search_service` and did not duplicate Tavily API calls in the route.
+- Left provider result count clamping in `search_service.py`, which already clamps to `settings.MAX_URLS_PER_BATCH`.
+- Allowed route-level aggregation only for request summary counts and warnings; business decisions remain in extraction and Plan 3 services.
+
+## Risks or Open Issues
+- Focused ingestion/search route tests are intentionally deferred to Batch05 per the task validation field.
+- Live Tavily behavior was not validated because live validation was not explicitly requested and requires a configured `TAVILY_API_KEY`.
+- Existing uncommitted repository changes from earlier tasks were present and were not reverted.
+
+## Minor Issues Fixed During Execution
+- Refactored the existing single-state ingestion helper so parse-text, parse-url, and search all reuse the same Plan 3 processing and response shaping path.
+
+## Workflow Integrity Check
+- Dependencies `(03B)` and `(03C)` were checked complete in `docs/tasks/task_4.md` before implementation.
+- Existing route helpers, schemas, extraction service, job processing service, and search service were inspected before editing.
+- `grep` was requested by repository instructions but was unavailable in this PowerShell environment; `rg` was used as the fallback search tool.
+- No missing source-of-truth fields, dependency issue, required user action, or architecture conflict was identified.
+
+## Notes for Next Task
+- next task ID: (04A)
+- can proceed: yes
+- handoff notes: Batch03 route work is ready for A2 review. Batch04 can proceed after `(03D)` is accepted; Batch05 will add mocked ingestion/search route tests.

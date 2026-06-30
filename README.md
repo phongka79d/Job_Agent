@@ -43,7 +43,7 @@ Job_Agent/
 |   |   |-- api/
 |   |   |   |-- __init__.py
 |   |   |   |-- routes_batches.py    # Batch summary metrics endpoint (Phase 4 Batch 02)
-|   |   |   |-- routes_jobs.py       # Review, dashboard, detail, and status endpoints (Phase 4 Batch 02)
+|   |   |   |-- routes_jobs.py       # Ingestion, review, dashboard, detail, and status endpoints (Phase 4 Batch 02/03)
 |   |   |   |-- routes_role_profiles.py # Role profile create/list endpoints (Phase 4 Batch 02)
 |   |   |   `-- schemas.py            # Phase 4 API request/response schemas and JSON Schema source
 |   |   |-- agents/
@@ -73,7 +73,8 @@ Job_Agent/
 |   |   |   |-- job_processing_service.py # SQLite-first processing, Qdrant scoring, and status mutation service (Phase 3 Batch 03)
 |   |   |   |-- llm_client.py         # Mockable OpenAI structured extraction client boundary (Batch03)
 |   |   |   |-- qdrant_service.py     # Local Qdrant collection, payload, filters, and point operations (Phase 3 Batch 03)
-|   |   |   `-- scoring_service.py    # Deterministic scoring and clean text builders (Phase 3 Batch 01)
+|   |   |   |-- scoring_service.py    # Deterministic scoring and clean text builders (Phase 3 Batch 01)
+|   |   |   `-- search_service.py     # Mockable Tavily public search boundary (Phase 4 Batch 03)
 |   |-- data/
 |   |   `-- .gitkeep
 |   |-- scripts/
@@ -225,6 +226,24 @@ From the `backend` directory, smoke-check the core route wiring:
 ```bash
 python -m compileall -q app
 python -c "from app.main import app; print(app.title)"
+```
+
+---
+
+## Manual and Search Ingestion Routes (Phase 4 - Batch 03)
+
+Phase 4 Batch 03 exposes the live ingestion routes for manual text, public URL parsing, and Tavily-backed public search while reusing the existing extraction and processing services:
+
+- **Manual Text Parsing:** `POST /api/jobs/parse-text` creates one batch ID, runs the raw-text extraction entrypoint, processes the result through the SQLite-first job pipeline, and returns the standard ingestion response with persisted job rows and warnings.
+- **Manual URL Parsing:** `POST /api/jobs/parse-url` accepts only `http` and `https` URLs, relies on the bounded URL extraction service for timeout, size, and low-content handling, and returns the same ingestion response shape.
+- **Tavily Search Boundary:** `backend/app/services/search_service.py` wraps Tavily behind a mockable async client protocol, clamps requested results to `MAX_URLS_PER_BATCH`, reads `TAVILY_API_KEY` only from backend settings, and returns normalized public URL metadata.
+- **Search Ingestion:** `POST /api/jobs/search` calls the Tavily service, processes each result URL through the parse-url extraction and Plan 3 processing path with `input_source="tavily"`, continues after individual URL failures, and returns one batch summary without adding queue or worker infrastructure.
+
+From the `backend` directory, smoke-check the ingestion route surface:
+
+```bash
+python -m compileall -q app
+python -c "from app.main import app; print([path for path in sorted(app.openapi()['paths']) if path.startswith('/api/jobs')])"
 ```
 
 ---

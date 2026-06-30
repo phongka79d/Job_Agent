@@ -463,7 +463,7 @@ These endpoints complete the live backend workflow for real and fallback inputs.
 
 ### Tasks
 
-- [ ] (03A): Implement standard ingestion response shaping and parse-text endpoint
+- [x] (03A): Implement standard ingestion response shaping and parse-text endpoint
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Parse Routes`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Common API Response Shapes`
@@ -493,7 +493,7 @@ These endpoints complete the live backend workflow for real and fallback inputs.
   - Blocked Condition: None.
   - Files: `backend/app/api/routes_jobs.py`.
 
-- [ ] (03B): Implement parse-url endpoint with MVP URL safety limits
+- [x] (03B): Implement parse-url endpoint with MVP URL safety limits
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Parse Routes`
     - `docs/plans/Master_Plan.md` > `## 7. Handling JavaScript Pages and Cookie Banners`
@@ -524,7 +524,7 @@ These endpoints complete the live backend workflow for real and fallback inputs.
   - Blocked Condition: None.
   - Files: `backend/app/api/routes_jobs.py`.
 
-- [ ] (03C): Implement Tavily search service
+- [x] (03C): Implement Tavily search service
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 4. Scope`
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Search Route`
@@ -553,7 +553,7 @@ These endpoints complete the live backend workflow for real and fallback inputs.
   - Blocked Condition: `BLOCKED_BY_USER_ACTION` only for explicitly requested live Tavily validation when a valid key is absent.
   - Files: `backend/app/services/search_service.py`.
 
-- [ ] (03D): Implement search endpoint using parse-url pipeline
+- [x] (03D): Implement search endpoint using parse-url pipeline
   - Source of Truth:
     - `docs/plans/Plan_4.md` > `## 7. Technical Specifications` > `### Search Route`
     - `docs/plans/Master_Plan.md` > `## 3. MVP Scope`
@@ -1038,10 +1038,10 @@ Optional future tracks are outside the mandatory chain.
 
 #### Batch03
 
-- [ ] (03A): Implement standard ingestion response shaping and parse-text endpoint
-- [ ] (03B): Implement parse-url endpoint with MVP URL safety limits
-- [ ] (03C): Implement Tavily search service
-- [ ] (03D): Implement search endpoint using parse-url pipeline
+- [x] (03A): Implement standard ingestion response shaping and parse-text endpoint
+- [x] (03B): Implement parse-url endpoint with MVP URL safety limits
+- [x] (03C): Implement Tavily search service
+- [x] (03D): Implement search endpoint using parse-url pipeline
 
 #### Batch04
 

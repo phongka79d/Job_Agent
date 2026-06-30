@@ -4,26 +4,36 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from typing import Annotated
-from uuid import UUID
+from urllib.parse import urlparse
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.routes_role_profiles import SessionDep
 from app.api.schemas import (
+    IngestionResponse,
     JobListResponse,
     JobResponse,
+    ParseJobTextRequest,
+    ParseJobUrlRequest,
+    SearchJobsRequest,
     StatusMutationResponse,
     StatusUpdateRequest,
 )
+from app.agents.schemas import JobAgentState
 from app.core import constants
 from app.db.models import JobPost
+from app.services.extraction_service import extract_from_raw_text, extract_from_url
 from app.services.job_processing_service import (
     InvalidStatusTransition,
+    JobProcessingResult,
     approve_job,
+    process_job_state,
     reject_job,
     update_job_status,
 )
+from app.services.search_service import SearchServiceError, search_service
 
 
 DEFAULT_JOB_QUERY_LIMIT = 50
@@ -53,6 +63,190 @@ async def _mutate_job_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
+
+
+async def _load_jobs_by_ids(session: SessionDep, job_ids: list[str]) -> list[JobPost]:
+    if not job_ids:
+        return []
+
+    result = await session.execute(select(JobPost).where(JobPost.id.in_(job_ids)))
+    jobs_by_id = {job.id: job for job in result.scalars()}
+    return [jobs_by_id[job_id] for job_id in job_ids if job_id in jobs_by_id]
+
+
+async def _build_ingestion_response(
+    session: SessionDep,
+    batch_id: UUID,
+    job_ids: list[str],
+    *,
+    inserted_jobs: int,
+    skipped_exact_duplicates: int,
+    skipped_dedup_key_duplicates: int,
+    inserted_duplicate_metadata: int,
+    qdrant_upserted: int,
+    qdrant_synced: bool,
+    warnings: list[str],
+) -> IngestionResponse:
+    jobs = await _load_jobs_by_ids(session, job_ids)
+    return IngestionResponse(
+        batch_id=batch_id,
+        inserted_jobs=inserted_jobs,
+        skipped_exact_duplicates=skipped_exact_duplicates,
+        skipped_dedup_key_duplicates=skipped_dedup_key_duplicates,
+        inserted_duplicate_metadata=inserted_duplicate_metadata,
+        qdrant_upserted=qdrant_upserted,
+        qdrant_synced=qdrant_synced,
+        jobs=jobs,
+        warnings=warnings,
+    )
+
+
+async def _process_ingested_state(
+    session: SessionDep,
+    batch_id: UUID,
+    extraction_state: JobAgentState,
+) -> JobProcessingResult:
+    try:
+        return await process_job_state(session, extraction_state)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+async def _process_single_ingested_state(
+    session: SessionDep,
+    batch_id: UUID,
+    extraction_state: JobAgentState,
+) -> IngestionResponse:
+    processing_result = await _process_ingested_state(session, batch_id, extraction_state)
+
+    return await _build_ingestion_response(
+        session,
+        batch_id,
+        processing_result.job_ids,
+        inserted_jobs=processing_result.inserted_jobs,
+        skipped_exact_duplicates=processing_result.skipped_exact_duplicates,
+        skipped_dedup_key_duplicates=processing_result.skipped_dedup_key_duplicates,
+        inserted_duplicate_metadata=processing_result.inserted_duplicate_metadata,
+        qdrant_upserted=processing_result.qdrant_upserted,
+        qdrant_synced=processing_result.qdrant_synced,
+        warnings=processing_result.warnings,
+    )
+
+
+@router.post("/parse-text", response_model=IngestionResponse)
+async def parse_job_text(
+    request: ParseJobTextRequest,
+    session: SessionDep,
+) -> IngestionResponse:
+    batch_id = uuid4()
+    source_url = str(request.source_url) if request.source_url is not None else None
+
+    extraction_state = await extract_from_raw_text(
+        batch_id=str(batch_id),
+        role_profile_id=str(request.role_profile_id),
+        raw_text=request.raw_text,
+        source_url=source_url,
+    )
+
+    return await _process_single_ingested_state(session, batch_id, extraction_state)
+
+
+@router.post("/parse-url", response_model=IngestionResponse)
+async def parse_job_url(
+    request: ParseJobUrlRequest,
+    session: SessionDep,
+) -> IngestionResponse:
+    source_url = str(request.source_url)
+    parsed_url = urlparse(source_url)
+    if parsed_url.scheme not in {"http", "https"}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="source_url must use http or https",
+        )
+
+    batch_id = uuid4()
+
+    # Production note: Implement SSRF mitigation for URL parsing endpoints.
+    # Block localhost, private IPs, link-local metadata IPs, unsafe redirects, and internal network targets.
+    extraction_state = await extract_from_url(
+        batch_id=str(batch_id),
+        role_profile_id=str(request.role_profile_id),
+        source_url=source_url,
+        input_source="manual_url",
+    )
+    return await _process_single_ingested_state(session, batch_id, extraction_state)
+
+
+@router.post("/search", response_model=IngestionResponse)
+async def search_jobs(
+    request: SearchJobsRequest,
+    session: SessionDep,
+) -> IngestionResponse:
+    batch_id = uuid4()
+
+    try:
+        search_results = await search_service.search_jobs(
+            request.query,
+            max_urls=request.max_urls,
+        )
+    except SearchServiceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc) or "Search provider failed",
+        ) from exc
+
+    inserted_jobs = 0
+    skipped_exact_duplicates = 0
+    skipped_dedup_key_duplicates = 0
+    inserted_duplicate_metadata = 0
+    qdrant_upserted = 0
+    qdrant_synced = True
+    job_ids: list[str] = []
+    warnings: list[str] = []
+
+    for search_result in search_results:
+        try:
+            extraction_state = await extract_from_url(
+                batch_id=str(batch_id),
+                role_profile_id=str(request.role_profile_id),
+                source_url=search_result.url,
+                input_source="tavily",
+            )
+            processing_result = await _process_ingested_state(
+                session,
+                batch_id,
+                extraction_state,
+            )
+        except HTTPException:
+            raise
+        except Exception:
+            warnings.append(f"Failed to process search result URL: {search_result.url}")
+            continue
+
+        inserted_jobs += processing_result.inserted_jobs
+        skipped_exact_duplicates += processing_result.skipped_exact_duplicates
+        skipped_dedup_key_duplicates += processing_result.skipped_dedup_key_duplicates
+        inserted_duplicate_metadata += processing_result.inserted_duplicate_metadata
+        qdrant_upserted += processing_result.qdrant_upserted
+        qdrant_synced = qdrant_synced and processing_result.qdrant_synced
+        job_ids.extend(processing_result.job_ids)
+        warnings.extend(processing_result.warnings)
+
+    return await _build_ingestion_response(
+        session,
+        batch_id,
+        job_ids,
+        inserted_jobs=inserted_jobs,
+        skipped_exact_duplicates=skipped_exact_duplicates,
+        skipped_dedup_key_duplicates=skipped_dedup_key_duplicates,
+        inserted_duplicate_metadata=inserted_duplicate_metadata,
+        qdrant_upserted=qdrant_upserted,
+        qdrant_synced=qdrant_synced,
+        warnings=warnings,
+    )
 
 
 @router.get("/review", response_model=JobListResponse)
