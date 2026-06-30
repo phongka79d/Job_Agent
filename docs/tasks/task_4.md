@@ -1015,10 +1015,10 @@ Optional future tracks are outside the mandatory chain.
 ### Batches
 
 - [x] Batch01 - API Schema and Contract Foundation
-- [ ] Batch02 - Core FastAPI Routes and App Wiring
-- [ ] Batch03 - Manual and Search Ingestion Routes
-- [ ] Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
-- [~] Batch05 - Verification and Phase Boundary Validation
+- [x] Batch02 - Core FastAPI Routes and App Wiring
+- [x] Batch03 - Manual and Search Ingestion Routes
+- [x] Batch04 - Demo Loader, Fixtures, Seed Script, and Mock Load
+- [x] Batch05 - Verification and Phase Boundary Validation
 
 ### Task IDs
 
