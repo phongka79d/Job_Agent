@@ -190,9 +190,12 @@ class ProfileCvDraftService:
         *,
         role_profile_id: str,
         draft_id: str,
+        document_id: str | None = None,
     ) -> dict[str, object]:
         draft = await session.get(ProfileCvDraft, draft_id)
         if draft is None or draft.role_profile_id != role_profile_id:
+            raise LookupError("CV draft not found")
+        if document_id is not None and draft.document_id != document_id:
             raise LookupError("CV draft not found")
         structure = json.loads(draft.structure_json)
         edit_plan = json.loads(draft.edit_plan_json)

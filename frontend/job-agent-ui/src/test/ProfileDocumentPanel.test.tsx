@@ -202,6 +202,7 @@ describe("ProfileDocumentPanel", () => {
     await waitFor(() => {
       expect(screen.getByText("FastAPI")).toBeInTheDocument();
     });
+    expect(screen.getByText("wording_only - low")).toBeInTheDocument();
     expect(screen.getByText("Draft")).toBeInTheDocument();
   });
 });

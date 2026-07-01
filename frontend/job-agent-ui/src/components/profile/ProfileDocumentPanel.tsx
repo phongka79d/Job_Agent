@@ -254,7 +254,7 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                         <div key={suggestion.id} className="profile-document-suggestion">
                           <strong>{suggestion.requirement}</strong>
                           <span>{suggestion.proposed_edit}</span>
-                          <small>{suggestion.edit_kind} · {suggestion.risk_level}</small>
+                          <small>{suggestion.edit_kind} - {suggestion.risk_level}</small>
                         </div>
                       ))}
                     </div>

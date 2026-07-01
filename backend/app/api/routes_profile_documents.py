@@ -388,6 +388,7 @@ async def preview_cv_draft(
         preview = await profile_cv_draft_service.preview_draft(
             session,
             role_profile_id=str(role_profile_id),
+            document_id=str(document_id),
             draft_id=str(draft_id),
         )
     except LookupError as exc:

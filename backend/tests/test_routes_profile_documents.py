@@ -255,3 +255,22 @@ async def test_cv_draft_creation_requires_confirmation(client, role_profile, db_
 
     assert response.status_code == 409
     assert "confirmation" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_cv_draft_preview_requires_matching_document(client, role_profile, db_session):
+    document, version = await upload_ready_profile_document(client, role_profile)
+    other_document, _ = await upload_ready_profile_document(client, role_profile)
+
+    draft_response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version['id']}/drafts",
+        json={"title": "Scoped draft", "suggestion_ids": [], "confirmed": True},
+    )
+    assert draft_response.status_code == 201
+    draft = draft_response.json()
+
+    response = await client.get(
+        f"/api/role-profiles/{role_profile.id}/documents/{other_document['id']}/drafts/{draft['id']}/preview"
+    )
+
+    assert response.status_code == 404

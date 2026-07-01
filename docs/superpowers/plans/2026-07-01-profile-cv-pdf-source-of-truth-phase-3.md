@@ -100,7 +100,7 @@ Test:
 - Test: `backend/tests/test_profile_document_service.py`
 - Test: `backend/tests/test_sqlite_migrations.py`
 
-- [ ] **Step 1: Write failing model table tests**
+- [x] **Step 1: Write failing model table tests**
 
 Update `backend/tests/test_profile_document_service.py` imports:
 
@@ -133,7 +133,7 @@ def test_profile_document_models_are_registered_with_metadata():
     assert ProfileCvImprovementSuggestion.__tablename__ == "profile_cv_improvement_suggestions"
 ```
 
-- [ ] **Step 2: Write failing migration table tests**
+- [x] **Step 2: Write failing migration table tests**
 
 Update `backend/tests/test_sqlite_migrations.py`.
 
@@ -204,7 +204,7 @@ assert {
 } <= suggestion_columns
 ```
 
-- [ ] **Step 3: Run database tests and verify failure**
+- [x] **Step 3: Run database tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -213,7 +213,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because `ProfileCvDraft`, `ProfileCvImprovementSuggestion`, and migration-created tables do not exist.
 
-- [ ] **Step 4: Add ORM models**
+- [x] **Step 4: Add ORM models**
 
 In `backend/app/db/models.py`, add after `ProfileDocumentChunk`:
 
@@ -295,7 +295,7 @@ class ProfileCvImprovementSuggestion(Base):
     updated_at: Mapped[updated_timestamp]
 ```
 
-- [ ] **Step 5: Update expected database tables**
+- [x] **Step 5: Update expected database tables**
 
 In `backend/app/db/session.py`, add to `expected_tables`:
 
@@ -304,7 +304,7 @@ In `backend/app/db/session.py`, add to `expected_tables`:
 "profile_cv_improvement_suggestions",
 ```
 
-- [ ] **Step 6: Add idempotent SQLite table migrations**
+- [x] **Step 6: Add idempotent SQLite table migrations**
 
 In `backend/app/db/sqlite_migrations.py`, add helper above `apply_sqlite_migrations`:
 
@@ -377,7 +377,7 @@ At the end of `apply_sqlite_migrations`, add:
     )
 ```
 
-- [ ] **Step 7: Run database tests**
+- [x] **Step 7: Run database tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -386,7 +386,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 8: Commit Task 1**
+- [x] **Step 8: Commit Task 1**
 
 ```powershell
 git add backend/app/db/models.py backend/app/db/session.py backend/app/db/sqlite_migrations.py backend/tests/test_profile_document_service.py backend/tests/test_sqlite_migrations.py
@@ -403,7 +403,7 @@ git commit -m "feat: add profile cv draft tables"
 - Test: `backend/tests/test_cv_structure_extraction_service.py`
 - Test: `backend/tests/test_profile_document_service.py`
 
-- [ ] **Step 1: Write failing structure extraction tests**
+- [x] **Step 1: Write failing structure extraction tests**
 
 Create `backend/tests/test_cv_structure_extraction_service.py`:
 
@@ -465,7 +465,7 @@ def test_structure_extraction_marks_broken_text_unreliable_with_template_message
     assert result.recommendation == POOR_STRUCTURE_RECOMMENDATION
 ```
 
-- [ ] **Step 2: Run structure tests and verify failure**
+- [x] **Step 2: Run structure tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -474,7 +474,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because the service module does not exist.
 
-- [ ] **Step 3: Implement structure extraction service**
+- [x] **Step 3: Implement structure extraction service**
 
 Create `backend/app/services/cv_structure_extraction_service.py`:
 
@@ -645,7 +645,7 @@ class CvStructureExtractionService:
         )
 ```
 
-- [ ] **Step 4: Write failing profile document service structure test**
+- [x] **Step 4: Write failing profile document service structure test**
 
 In `backend/tests/test_profile_document_service.py`, add:
 
@@ -685,7 +685,7 @@ async def test_create_document_extracts_cv_structure_status(
     assert version.structure_confidence >= 0.75
 ```
 
-- [ ] **Step 5: Run profile document structure test and verify failure**
+- [x] **Step 5: Run profile document structure test and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -694,7 +694,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because upload still leaves `structure_status` as `not_extracted`.
 
-- [ ] **Step 6: Wire structure extraction into upload processing**
+- [x] **Step 6: Wire structure extraction into upload processing**
 
 In `backend/app/services/profile_document_service.py`, add import:
 
@@ -729,7 +729,7 @@ When text extraction fails, keep the existing `extraction_status="failed"` path 
             version.structure_confidence = 0.0
 ```
 
-- [ ] **Step 7: Run structure tests**
+- [x] **Step 7: Run structure tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -738,7 +738,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 8: Commit Task 2**
+- [x] **Step 8: Commit Task 2**
 
 ```powershell
 git add backend/app/services/cv_structure_extraction_service.py backend/app/services/profile_document_service.py backend/tests/test_cv_structure_extraction_service.py backend/tests/test_profile_document_service.py
@@ -753,7 +753,7 @@ git commit -m "feat: analyze profile cv structure"
 - Create: `backend/app/services/profile_cv_draft_service.py`
 - Test: `backend/tests/test_profile_cv_draft_service.py`
 
-- [ ] **Step 1: Write failing draft service tests**
+- [x] **Step 1: Write failing draft service tests**
 
 Create `backend/tests/test_profile_cv_draft_service.py`:
 
@@ -948,7 +948,7 @@ async def test_create_draft_for_unreliable_structure_returns_template_recommenda
     assert preview["structure_status"] == "unreliable"
 ```
 
-- [ ] **Step 2: Run draft service tests and verify failure**
+- [x] **Step 2: Run draft service tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -957,7 +957,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because `profile_cv_draft_service.py` does not exist.
 
-- [ ] **Step 3: Implement draft service**
+- [x] **Step 3: Implement draft service**
 
 Create `backend/app/services/profile_cv_draft_service.py`:
 
@@ -1230,7 +1230,7 @@ class ProfileCvDraftService:
         return list(result.scalars())
 ```
 
-- [ ] **Step 4: Run draft service tests**
+- [x] **Step 4: Run draft service tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1239,7 +1239,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```powershell
 git add backend/app/services/profile_cv_draft_service.py backend/tests/test_profile_cv_draft_service.py
@@ -1255,7 +1255,7 @@ git commit -m "feat: add profile cv draft service"
 - Modify: `backend/app/api/routes_profile_documents.py`
 - Test: `backend/tests/test_routes_profile_documents.py`
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Append to `backend/tests/test_routes_profile_documents.py`:
 
@@ -1331,7 +1331,7 @@ async def test_cv_draft_creation_requires_confirmation(client, role_profile, db_
     assert "confirmation" in response.json()["detail"].lower()
 ```
 
-- [ ] **Step 2: Run route tests and verify failure**
+- [x] **Step 2: Run route tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1340,7 +1340,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because routes and schemas do not exist.
 
-- [ ] **Step 3: Add API schemas**
+- [x] **Step 3: Add API schemas**
 
 In `backend/app/api/schemas.py`, add:
 
@@ -1411,7 +1411,7 @@ class CvDraftPreviewResponse(ApiSchema):
     edits: list[dict[str, Any]] = Field(default_factory=list)
 ```
 
-- [ ] **Step 4: Add routes**
+- [x] **Step 4: Add routes**
 
 In `backend/app/api/routes_profile_documents.py`, extend schema imports:
 
@@ -1561,7 +1561,7 @@ async def preview_cv_draft(
     return CvDraftPreviewResponse(**preview)
 ```
 
-- [ ] **Step 5: Run route tests**
+- [x] **Step 5: Run route tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1570,7 +1570,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit Task 4**
+- [x] **Step 6: Commit Task 4**
 
 ```powershell
 git add backend/app/api/schemas.py backend/app/api/routes_profile_documents.py backend/tests/test_routes_profile_documents.py
@@ -1587,7 +1587,7 @@ git commit -m "feat: expose profile cv draft api"
 - Test: `backend/tests/test_tool_registry.py`
 - Test: `backend/tests/test_routes_chat.py`
 
-- [ ] **Step 1: Write failing tool registry tests**
+- [x] **Step 1: Write failing tool registry tests**
 
 In `backend/tests/test_tool_registry.py`, extend `test_registry_exposes_safe_tool_metadata`:
 
@@ -1691,7 +1691,7 @@ async def test_cv_draft_tool_handlers_return_sanitized_payloads():
     assert "Private CV text" not in str(preview_result.safe_payload)
 ```
 
-- [ ] **Step 2: Run tool tests and verify failure**
+- [x] **Step 2: Run tool tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1700,7 +1700,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because new tools and handlers do not exist.
 
-- [ ] **Step 3: Register Phase 3 tools and handlers**
+- [x] **Step 3: Register Phase 3 tools and handlers**
 
 In `backend/app/services/tool_registry.py`, import service request dataclasses:
 
@@ -1827,7 +1827,7 @@ def build_preview_cv_edit_draft_handler(
 
 Ensure `json` is imported at the top of `tool_registry.py`.
 
-- [ ] **Step 4: Wire new tools into chat registry**
+- [x] **Step 4: Wire new tools into chat registry**
 
 In `backend/app/api/routes_chat.py`, import:
 
@@ -1857,7 +1857,7 @@ Add overrides:
 "preview_cv_edit_draft": build_preview_cv_edit_draft_handler(profile_cv_draft_service, session),
 ```
 
-- [ ] **Step 5: Run tool and chat route tests**
+- [x] **Step 5: Run tool and chat route tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1866,7 +1866,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit Task 5**
+- [x] **Step 6: Commit Task 5**
 
 ```powershell
 git add backend/app/services/tool_registry.py backend/app/api/routes_chat.py backend/tests/test_tool_registry.py backend/tests/test_routes_chat.py
@@ -1884,7 +1884,7 @@ git commit -m "feat: add profile cv draft tools"
 - Test: `frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts`
 - Test: `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`
 
-- [ ] **Step 1: Write failing frontend client tests**
+- [x] **Step 1: Write failing frontend client tests**
 
 In `frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts`, add:
 
@@ -1976,7 +1976,7 @@ it("lists suggestions, drafts, and draft previews", async () => {
 });
 ```
 
-- [ ] **Step 2: Run frontend client tests and verify failure**
+- [x] **Step 2: Run frontend client tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\frontend\job-agent-ui
@@ -1985,7 +1985,7 @@ npm test -- --run src/test/profileDocumentsClient.test.ts
 
 Expected: fail because client functions and types do not exist.
 
-- [ ] **Step 3: Add frontend types**
+- [x] **Step 3: Add frontend types**
 
 In `frontend/job-agent-ui/src/types/profileDocuments.ts`, add:
 
@@ -2055,7 +2055,7 @@ export interface CreateCvDraftPayload {
 }
 ```
 
-- [ ] **Step 4: Add frontend API client functions**
+- [x] **Step 4: Add frontend API client functions**
 
 In `frontend/job-agent-ui/src/api/profileDocumentsClient.ts`, extend imports:
 
@@ -2149,7 +2149,7 @@ export async function previewCvDraft(
 }
 ```
 
-- [ ] **Step 5: Write failing ProfileDocumentPanel rendering test**
+- [x] **Step 5: Write failing ProfileDocumentPanel rendering test**
 
 In `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`, add a test that mocks:
 
@@ -2166,7 +2166,7 @@ expect(screen.getByText("FastAPI")).toBeInTheDocument();
 expect(screen.getByText("Draft preview")).toBeInTheDocument();
 ```
 
-- [ ] **Step 6: Add lightweight panels inside ProfileDocumentPanel**
+- [x] **Step 6: Add lightweight panels inside ProfileDocumentPanel**
 
 In `frontend/job-agent-ui/src/components/profile/ProfileDocumentPanel.tsx`, add imports:
 
@@ -2249,7 +2249,7 @@ Render under each document actions:
 
 Keep CSS changes minimal and reuse existing document panel classes where possible.
 
-- [ ] **Step 7: Run frontend tests**
+- [x] **Step 7: Run frontend tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\frontend\job-agent-ui
@@ -2258,7 +2258,7 @@ npm test -- --run src/test/profileDocumentsClient.test.ts src/test/ProfileDocume
 
 Expected: tests pass.
 
-- [ ] **Step 8: Commit Task 6**
+- [x] **Step 8: Commit Task 6**
 
 ```powershell
 git add frontend/job-agent-ui/src/types/profileDocuments.ts frontend/job-agent-ui/src/api/profileDocumentsClient.ts frontend/job-agent-ui/src/components/profile/ProfileDocumentPanel.tsx frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx
@@ -2272,7 +2272,7 @@ git commit -m "feat: show profile cv suggestions and drafts"
 **Files:**
 - Modify only if verification finds breakage.
 
-- [ ] **Step 1: Run backend verification**
+- [x] **Step 1: Run backend verification**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -2287,7 +2287,7 @@ Expected:
 - pytest reports all tests passed
 - pip check reports `No broken requirements found.`
 
-- [ ] **Step 2: Run frontend verification**
+- [x] **Step 2: Run frontend verification**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\frontend\job-agent-ui
@@ -2304,7 +2304,7 @@ Expected:
 - tests pass
 - build exits `0`
 
-- [ ] **Step 3: Run Phase 3 safety scan**
+- [x] **Step 3: Run Phase 3 safety scan**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent
@@ -2319,7 +2319,7 @@ Expected:
 - no API keys appear in frontend code or tool safe payloads
 - `requires_user_fact` suggestions cannot create drafts without user-provided facts
 
-- [ ] **Step 4: Review final diff**
+- [x] **Step 4: Review final diff**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent
@@ -2337,7 +2337,7 @@ Expected:
 - no OCR code added
 - no runtime demo/mock data introduced
 
-- [ ] **Step 5: Commit verification cleanup if needed**
+- [x] **Step 5: Commit verification cleanup if needed**
 
 Only if Step 1-4 required cleanup edits:
 
