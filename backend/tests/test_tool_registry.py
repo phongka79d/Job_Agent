@@ -22,6 +22,17 @@ async def test_registry_exposes_safe_tool_metadata():
         assert tool_name in tools
         assert tools[tool_name].requires_confirmation is False
         assert "api_key" not in tools[tool_name].description.lower()
+    for tool_name in [
+        "suggest_cv_improvements",
+        "create_cv_edit_draft",
+        "preview_cv_edit_draft",
+    ]:
+        assert tool_name in tools
+        assert "api_key" not in tools[tool_name].description.lower()
+
+    assert tools["suggest_cv_improvements"].requires_confirmation is False
+    assert tools["create_cv_edit_draft"].requires_confirmation is True
+    assert tools["preview_cv_edit_draft"].requires_confirmation is False
 
 
 @pytest.mark.asyncio
@@ -282,3 +293,86 @@ async def test_profile_cv_tool_handlers_return_sanitized_payloads():
 
     structure_result = await build_analyze_cv_structure_handler(Retrieval(), session)(request)
     assert structure_result.safe_payload["structure_status"] == "not_extracted"
+
+
+@pytest.mark.asyncio
+async def test_cv_draft_tool_handlers_return_sanitized_payloads():
+    from app.services.tool_registry import (
+        build_create_cv_edit_draft_handler,
+        build_preview_cv_edit_draft_handler,
+        build_suggest_cv_improvements_handler,
+    )
+
+    class Suggestion:
+        id = "suggestion-1"
+        status = "suggested"
+        edit_kind = "wording_only"
+        risk_level = "low"
+
+    class Draft:
+        id = "draft-1"
+        status = "draft"
+        title = "Draft"
+        structure_status_at_creation = "reliable"
+
+    class DraftService:
+        async def create_suggestion(self, session, request):
+            return Suggestion()
+
+        async def create_draft(self, session, request):
+            return Draft()
+
+        async def preview_draft(self, session, *, role_profile_id, draft_id):
+            return {
+                "draft_id": draft_id,
+                "title": "Draft",
+                "status": "draft",
+                "structure_status": "reliable",
+                "recommendation": None,
+                "sections": [{"heading": "Extracted CV", "content": "Private CV text"}],
+                "edits": [{"requirement": "FastAPI", "proposed_edit": "Improve wording"}],
+            }
+
+    service = DraftService()
+    session = object()
+    context = {"role_profile_id": "profile-1", "document_id": "doc-1", "version_id": "version-1"}
+
+    suggestion_result = await build_suggest_cv_improvements_handler(service, session)(
+        ToolRequest(
+            name="suggest_cv_improvements",
+            arguments={
+                "requirement": "FastAPI",
+                "current_cv_evidence": "Evidence exists",
+                "missing_or_weak_evidence": "Weak wording",
+                "proposed_edit": "Improve wording",
+                "edit_kind": "wording_only",
+                "risk_level": "low",
+            },
+            context=context,
+        )
+    )
+    assert suggestion_result.safe_payload == {
+        "suggestion_id": "suggestion-1",
+        "status": "suggested",
+        "edit_kind": "wording_only",
+        "risk_level": "low",
+    }
+
+    draft_result = await build_create_cv_edit_draft_handler(service, session)(
+        ToolRequest(
+            name="create_cv_edit_draft",
+            arguments={"title": "Draft", "suggestion_ids": ["suggestion-1"], "confirmed": True},
+            context=context,
+        )
+    )
+    assert draft_result.safe_payload["draft_id"] == "draft-1"
+
+    preview_result = await build_preview_cv_edit_draft_handler(service, session)(
+        ToolRequest(
+            name="preview_cv_edit_draft",
+            arguments={"draft_id": "draft-1"},
+            context={"role_profile_id": "profile-1"},
+        )
+    )
+    assert "Private CV text" in preview_result.content
+    assert "Private CV text" not in str(preview_result.safe_payload)

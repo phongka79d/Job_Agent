@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+import json
 from typing import Any
 
 from app.services.job_search_workflow import ingest_search_jobs
 from app.services.job_text_ingestion_workflow import ingest_raw_job_text
+from app.services.profile_cv_draft_service import CreateCvDraftRequest, CreateCvSuggestionRequest
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,24 @@ class ToolRegistry:
                 requires_confirmation=False,
                 handler=_not_wired,
             ),
+            "suggest_cv_improvements": ToolDefinition(
+                name="suggest_cv_improvements",
+                description="Store a grounded CV improvement suggestion without editing the PDF.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
+            "create_cv_edit_draft": ToolDefinition(
+                name="create_cv_edit_draft",
+                description="Create an editable CV draft from approved wording-only suggestions.",
+                requires_confirmation=True,
+                handler=_not_wired,
+            ),
+            "preview_cv_edit_draft": ToolDefinition(
+                name="preview_cv_edit_draft",
+                description="Preview an editable CV draft without exporting or activating it.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
         }
         for name, handler in (overrides or {}).items():
             if name not in self._tools:
@@ -174,6 +194,97 @@ def build_list_profile_cvs_handler(
             content=f"Found {len(safe_documents)} uploaded profile CVs.",
             result_summary=f"Found {len(safe_documents)} profile CVs",
             safe_payload={"documents": safe_documents},
+        )
+
+    return handler
+
+
+def build_suggest_cv_improvements_handler(
+    draft_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        suggestion = await draft_service.create_suggestion(
+            session,
+            CreateCvSuggestionRequest(
+                role_profile_id=str(request.context["role_profile_id"]),
+                document_id=str(request.context["document_id"]),
+                version_id=str(request.context["version_id"]),
+                job_id=request.arguments.get("job_id"),
+                requirement=str(request.arguments["requirement"]),
+                current_cv_evidence=str(request.arguments["current_cv_evidence"]),
+                missing_or_weak_evidence=str(request.arguments["missing_or_weak_evidence"]),
+                proposed_edit=str(request.arguments["proposed_edit"]),
+                edit_kind=str(request.arguments["edit_kind"]),  # type: ignore[arg-type]
+                risk_level=str(request.arguments["risk_level"]),  # type: ignore[arg-type]
+                requires_confirmation=True,
+            ),
+        )
+        return ToolResult(
+            content="Stored 1 grounded CV improvement suggestion.",
+            result_summary="Stored 1 CV suggestion",
+            safe_payload={
+                "suggestion_id": suggestion.id,
+                "status": suggestion.status,
+                "edit_kind": suggestion.edit_kind,
+                "risk_level": suggestion.risk_level,
+            },
+        )
+
+    return handler
+
+
+def build_create_cv_edit_draft_handler(
+    draft_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        draft = await draft_service.create_draft(
+            session,
+            CreateCvDraftRequest(
+                role_profile_id=str(request.context["role_profile_id"]),
+                document_id=str(request.context["document_id"]),
+                base_version_id=str(request.context["version_id"]),
+                title=str(request.arguments.get("title", "CV edit draft")),
+                suggestion_ids=[str(value) for value in request.arguments.get("suggestion_ids", [])],
+                confirmed=bool(request.arguments.get("confirmed", False)),
+                created_by="ai",
+            ),
+        )
+        return ToolResult(
+            content="Created a CV edit draft. Original PDF was not modified.",
+            result_summary=f"Created CV draft: {draft.title}",
+            safe_payload={
+                "draft_id": draft.id,
+                "status": draft.status,
+                "title": draft.title,
+                "structure_status": draft.structure_status_at_creation,
+            },
+        )
+
+    return handler
+
+
+def build_preview_cv_edit_draft_handler(
+    draft_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        preview = await draft_service.preview_draft(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+            draft_id=str(request.arguments["draft_id"]),
+        )
+        return ToolResult(
+            content=json.dumps(preview, separators=(",", ":")),
+            result_summary=f"Previewed CV draft: {preview['title']}",
+            safe_payload={
+                "draft_id": preview["draft_id"],
+                "status": preview["status"],
+                "structure_status": preview["structure_status"],
+                "edit_count": len(preview.get("edits", [])),
+                "has_template_recommendation": bool(preview.get("recommendation")),
+            },
         )
 
     return handler

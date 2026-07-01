@@ -27,16 +27,20 @@ from app.services.agent_event_service import AgentEventService
 from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClient
 from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
+from app.services.profile_cv_draft_service import ProfileCvDraftService
 from app.services.profile_document_retrieval_service import ProfileDocumentRetrievalService
 from app.services.tool_registry import (
     ToolRegistry,
     ToolRequest,
     build_analyze_cv_structure_handler,
+    build_create_cv_edit_draft_handler,
     build_extract_job_from_text_handler,
     build_get_active_profile_cv_handler,
     build_list_profile_cvs_handler,
+    build_preview_cv_edit_draft_handler,
     build_retrieve_profile_cv_chunks_handler,
     build_search_jobs_handler,
+    build_suggest_cv_improvements_handler,
     build_view_profile_cv_metadata_handler,
 )
 
@@ -48,6 +52,7 @@ agent_event_service = AgentEventService()
 memory_service = ChatMemoryService()
 chat_llm_client = OpenAIChatLLMClient()
 profile_cv_retrieval_service = ProfileDocumentRetrievalService()
+profile_cv_draft_service = ProfileCvDraftService()
 
 
 def build_tool_registry(session: SessionDep) -> ToolRegistry:
@@ -61,6 +66,9 @@ def build_tool_registry(session: SessionDep) -> ToolRegistry:
             "retrieve_profile_cv_chunks": build_retrieve_profile_cv_chunks_handler(profile_cv_retrieval_service, session),
             "analyze_cv_structure": build_analyze_cv_structure_handler(profile_cv_retrieval_service, session),
             "retrieve_profile_documents": build_retrieve_profile_cv_chunks_handler(profile_cv_retrieval_service, session),
+            "suggest_cv_improvements": build_suggest_cv_improvements_handler(profile_cv_draft_service, session),
+            "create_cv_edit_draft": build_create_cv_edit_draft_handler(profile_cv_draft_service, session),
+            "preview_cv_edit_draft": build_preview_cv_edit_draft_handler(profile_cv_draft_service, session),
         }
     )
 
