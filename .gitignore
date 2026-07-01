@@ -5,7 +5,7 @@ __pycache__/
 AGENTS.md
 # C extensions
 *.so
-
+.commandcode
 # Distribution / packaging
 .Python
 build/
