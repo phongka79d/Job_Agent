@@ -83,3 +83,21 @@ class ToolRegistry:
         if tool is None:
             raise ValueError(f"Unknown tool: {request.name}")
         return await tool.handler(request)
+
+
+def build_retrieve_profile_documents_handler(retrieval_service: object, session: object) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        chunks = await retrieval_service.retrieve(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+            query=str(request.arguments.get("query", "")),
+            limit=int(request.arguments.get("limit", 5)),
+        )
+        content = "\n\n".join(chunk.text for chunk in chunks)
+        return ToolResult(
+            content=content,
+            result_summary=f"Retrieved {len(chunks)} profile document chunks",
+            safe_payload={"chunk_count": len(chunks)},
+        )
+
+    return handler
