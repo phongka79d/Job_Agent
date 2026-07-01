@@ -78,7 +78,10 @@ async def test_append_user_message_returns_stream_url(client, role_profile):
 
 
 @pytest.mark.asyncio
-async def test_stream_conversation_events_returns_placeholder_sse(client, role_profile):
+async def test_stream_conversation_events_returns_agent_sse_and_persists_assistant(
+    client,
+    role_profile,
+):
     conversation_response = await client.post(
         "/api/chat/conversations",
         json={
@@ -100,14 +103,17 @@ async def test_stream_conversation_events_returns_placeholder_sse(client, role_p
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
-    assert response.text == (
-        "event: message_started\n"
-        f'data: {{"conversation_id":"{conversation["id"]}",'
-        f'"after_message_id":"{after_message_id}"}}\n\n'
-        "event: message_completed\n"
-        f'data: {{"conversation_id":"{conversation["id"]}",'
-        f'"after_message_id":"{after_message_id}"}}\n\n'
+    assert "event: message_started" in response.text
+    assert "event: assistant_delta" in response.text
+    assert "event: message_completed" in response.text
+    assert "job search" in response.text
+
+    messages_response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/messages"
     )
+    messages = messages_response.json()["messages"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assert messages[1]["content"]
 
 
 @pytest.mark.asyncio

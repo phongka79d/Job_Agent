@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from uuid import UUID
 
@@ -10,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
+from app.agents.chat_graph import run_chat_turn
 from app.api.routes_role_profiles import SessionDep
 from app.api.schemas import (
     AgentToolCallListResponse,
@@ -22,12 +22,14 @@ from app.api.schemas import (
 )
 from app.db.models import ChatConversation, ChatMessage, RoleProfile
 from app.services.agent_event_service import AgentEventService
+from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 chat_service = ChatService()
 agent_event_service = AgentEventService()
+memory_service = ChatMemoryService()
 
 
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
@@ -65,20 +67,22 @@ async def _require_message_in_conversation(
     session: SessionDep,
     conversation_id: str,
     message_id: str,
-) -> None:
+) -> ChatMessage:
     result = await session.execute(
-        select(ChatMessage.id)
+        select(ChatMessage)
         .where(
             ChatMessage.id == message_id,
             ChatMessage.conversation_id == conversation_id,
         )
         .limit(1)
     )
-    if result.scalar_one_or_none() is None:
+    message = result.scalar_one_or_none()
+    if message is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="message not found",
         )
+    return message
 
 
 @router.post(
@@ -153,8 +157,8 @@ async def stream_conversation_events(
     after_message_id: UUID,
     session: SessionDep,
 ) -> StreamingResponse:
-    await _require_conversation(session, str(conversation_id))
-    await _require_message_in_conversation(
+    conversation = await _require_conversation(session, str(conversation_id))
+    user_message = await _require_message_in_conversation(
         session,
         str(conversation_id),
         str(after_message_id),
@@ -168,12 +172,40 @@ async def stream_conversation_events(
                 "after_message_id": str(after_message_id),
             },
         )
-        await asyncio.sleep(0)
+        memory = await memory_service.assemble(
+            session,
+            conversation_id=str(conversation_id),
+            current_user_message=user_message.content,
+        )
+        result = await run_chat_turn(
+            {
+                "conversation_id": str(conversation_id),
+                "role_profile_id": conversation.role_profile_id,
+                "user_message": user_message.content,
+                "working_memory": memory.context_text,
+                "tool_results": [],
+            },
+            llm_client=None,
+            tool_registry=None,
+        )
+        assistant = await chat_service.append_message(
+            session,
+            conversation_id=str(conversation_id),
+            role="assistant",
+            content=result["final_answer"],
+            metadata={
+                "source": "chat_agent",
+                "memory_tokens": memory.total_tokens,
+                "dropped_memory_keys": memory.dropped_keys,
+            },
+        )
+        yield _sse_event("assistant_delta", {"content": assistant.content})
         yield _sse_event(
             "message_completed",
             {
                 "conversation_id": str(conversation_id),
                 "after_message_id": str(after_message_id),
+                "message_id": assistant.id,
             },
         )
 
