@@ -53,6 +53,7 @@ async def init_db() -> None:
         "chat_conversations",
         "chat_messages",
         "job_posts",
+        "memory_summaries",
         "role_profiles",
     }
     metadata_tables = set(Base.metadata.tables.keys())

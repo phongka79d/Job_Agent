@@ -265,6 +265,27 @@ class ChatMessage(Base):
     created_at: Mapped[created_timestamp]
 
 
+class MemorySummary(Base):
+    """Long-term conversation summary for messages outside the recent working window."""
+    __tablename__ = "memory_summaries"
+
+    __table_args__ = (
+        Index("idx_memory_summaries_conversation_updated", "conversation_id", text("updated_at DESC")),
+    )
+
+    id: Mapped[uuid_pk]
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("chat_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    summary_text: Mapped[str] = mapped_column(Text, nullable=False)
+    covered_message_id_until: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
 class AgentToolCall(Base):
     """Sanitized visible tool call event persisted for chat UI."""
     __tablename__ = "agent_tool_calls"
