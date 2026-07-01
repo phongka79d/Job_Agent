@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import ChatWorkspacePage from './pages/ChatWorkspacePage';
 import RoleProfilePanel from './components/RoleProfilePanel';
 import IngestionPanel from './components/IngestionPanel';
+import ProfileDocumentPanel from './components/profile/ProfileDocumentPanel';
 import type { RoleProfile } from './types/api';
 import { loadActiveBatchId, saveActiveBatchId } from './utils/activeBatchStorage';
 import BatchMetrics from './components/BatchMetrics';
@@ -42,6 +43,8 @@ function App() {
         activeProfile={activeProfile}
         onProfileChange={handleProfileChange}
       />
+
+      <ProfileDocumentPanel activeProfileId={activeProfile?.id || null} />
       
       <IngestionPanel
         activeProfileId={activeProfile?.id || null}
