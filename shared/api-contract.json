@@ -2264,6 +2264,18 @@
       "$defs": {
         "ProfileDocumentResponse": {
           "properties": {
+            "active_version_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Active Version Id"
+            },
             "chunk_count": {
               "title": "Chunk Count",
               "type": "integer"
@@ -2271,6 +2283,10 @@
             "created_at": {
               "format": "date-time",
               "title": "Created At",
+              "type": "string"
+            },
+            "document_kind": {
+              "title": "Document Kind",
               "type": "string"
             },
             "error_reason": {
@@ -2296,6 +2312,11 @@
               "format": "uuid",
               "title": "Id",
               "type": "string"
+            },
+            "is_active": {
+              "default": false,
+              "title": "Is Active",
+              "type": "boolean"
             },
             "mime_type": {
               "title": "Mime Type",
@@ -2324,6 +2345,8 @@
             "id",
             "role_profile_id",
             "original_filename",
+            "document_kind",
+            "active_version_id",
             "mime_type",
             "file_size_bytes",
             "extracted_text_chars",
@@ -2351,6 +2374,18 @@
     },
     "ProfileDocumentResponse": {
       "properties": {
+        "active_version_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Active Version Id"
+        },
         "chunk_count": {
           "title": "Chunk Count",
           "type": "integer"
@@ -2358,6 +2393,10 @@
         "created_at": {
           "format": "date-time",
           "title": "Created At",
+          "type": "string"
+        },
+        "document_kind": {
+          "title": "Document Kind",
           "type": "string"
         },
         "error_reason": {
@@ -2383,6 +2422,11 @@
           "format": "uuid",
           "title": "Id",
           "type": "string"
+        },
+        "is_active": {
+          "default": false,
+          "title": "Is Active",
+          "type": "boolean"
         },
         "mime_type": {
           "title": "Mime Type",
@@ -2411,6 +2455,8 @@
         "id",
         "role_profile_id",
         "original_filename",
+        "document_kind",
+        "active_version_id",
         "mime_type",
         "file_size_bytes",
         "extracted_text_chars",
