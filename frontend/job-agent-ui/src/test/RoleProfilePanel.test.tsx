@@ -68,12 +68,29 @@ describe("RoleProfilePanel", () => {
 
     const select = screen.getByTestId("profile-select") as HTMLSelectElement;
     expect(select).toBeInTheDocument();
-    expect(select.options.length).toBe(3); // placeholder + 2 profiles
-    expect(select.options[1].text).toBe("Software Engineer (Mid)");
-    expect(select.options[2].text).toBe("Data Scientist (Senior)");
+    expect(select.options.length).toBe(2); // exactly 2 profiles, no placeholder
+    expect(select.options[0].text).toBe("Software Engineer - Mid");
+    expect(select.options[1].text).toBe("Data Scientist - Senior");
 
     // Verification of automatic selection behavior on startup when activeProfile is null
     expect(onProfileChange).toHaveBeenCalledWith(mockProfiles[0]);
+  });
+
+  it("renders only API profiles and active profile metadata", async () => {
+    vi.mocked(listRoleProfiles).mockResolvedValue({ role_profiles: mockProfiles });
+    render(
+      <RoleProfilePanel
+        activeProfile={mockProfiles[0]}
+        onProfileChange={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: /Software Engineer/ })).toBeInTheDocument();
+    });
+    expect(screen.getByText("San Francisco")).toBeInTheDocument();
+    expect(screen.queryByText("AI Engineer Intern")).not.toBeInTheDocument();
+    expect(screen.queryByText("User Workspace Avatar")).not.toBeInTheDocument();
   });
 
   it("should render an empty state when no profiles exist", async () => {
