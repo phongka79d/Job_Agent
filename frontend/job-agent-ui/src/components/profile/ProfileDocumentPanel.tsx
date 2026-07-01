@@ -115,15 +115,20 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
     }
   };
 
-  const handleActivate = async (document: ProfileDocument) => {
-    if (!activeProfileId || !document.active_version_id) return;
+  const handleActivateVersion = async (document: ProfileDocument, versionId: string) => {
+    if (!activeProfileId) return;
     setError(null);
     try {
-      await activateProfileDocumentVersion(activeProfileId, document.id, document.active_version_id);
+      await activateProfileDocumentVersion(activeProfileId, document.id, versionId);
       await refreshDocuments();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set active CV");
     }
+  };
+
+  const handleActivate = async (document: ProfileDocument) => {
+    if (!document.active_version_id) return;
+    await handleActivateVersion(document, document.active_version_id);
   };
 
   const handleDelete = async (document: ProfileDocument) => {
@@ -349,7 +354,7 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                             {document.active_version_id !== version.id ? (
                               <button
                                 type="button"
-                                onClick={() => void activateProfileDocumentVersion(activeProfileId!, document.id, version.id).then(refreshDocuments)}
+                                onClick={() => void handleActivateVersion(document, version.id)}
                                 aria-label={`Set ${version.display_name} active`}
                               >
                                 <Star size={14} /> Set active

@@ -235,3 +235,7 @@ frontend/job-agent-ui/dist/
 !.env.example
 !backend/data/.gitkeep
 !backend/app/db/migrations/.gitkeep
+
+# Local verification temp roots
+.tmp/
+backend/test_tmp/

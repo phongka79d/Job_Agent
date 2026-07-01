@@ -322,12 +322,44 @@ async def test_set_active_version_requires_existing_profile_document_and_version
         role_profile_id=test_role_profile.id,
         document_id=document.id,
         version_id=document.active_version_id,
+        confirmed=True,
     )
     profile = await db_session.get(RoleProfile, test_role_profile.id)
 
     assert version.id == document.active_version_id
     assert profile.active_cv_document_id == document.id
     assert profile.active_cv_version_id == version.id
+
+@pytest.mark.asyncio
+async def test_set_active_version_rejects_missing_confirmation(
+    db_session,
+    test_role_profile,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "job_matching.db"))
+    source_path = tmp_path / "cv.pdf"
+    source_path.write_bytes(b"%PDF-test")
+    service = ProfileDocumentService(
+        extractor=FakeExtractor(),
+        embedder=FakeEmbedder(),
+        vector_store=FakeVectorStore(),
+    )
+    document = await service.create_document_from_pdf(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        source_path=source_path,
+        original_filename="cv.pdf",
+        mime_type="application/pdf",
+    )
+
+    with pytest.raises(ValueError, match="requires confirmation"):
+        await service.set_active_version(
+            db_session,
+            role_profile_id=test_role_profile.id,
+            document_id=document.id,
+            version_id=document.active_version_id,
+        )
 
 
 @pytest.mark.asyncio

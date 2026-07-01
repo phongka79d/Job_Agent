@@ -303,7 +303,10 @@ class ProfileDocumentService:
         role_profile_id: str,
         document_id: str,
         version_id: str | None,
+        confirmed: bool = False,
     ) -> ProfileDocumentVersion:
+        if not confirmed:
+            raise ValueError("Setting the active CV requires confirmation")
         if version_id is None:
             raise LookupError("profile document version not found")
         document, version = await self._get_document_and_version(

@@ -253,6 +253,7 @@ async def activate_profile_cv_version(
             role_profile_id=str(role_profile_id),
             document_id=str(document_id),
             version_id=str(version_id),
+            confirmed=request.confirmed,
         )
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

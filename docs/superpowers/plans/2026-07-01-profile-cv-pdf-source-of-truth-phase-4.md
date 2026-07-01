@@ -105,7 +105,7 @@ Modify:
 - Create: `backend/app/services/cv_pdf_export_service.py`
 - Test: `backend/tests/test_cv_pdf_export_service.py`
 
-- [ ] **Step 1: Write the failing PDF renderer test**
+- [x] **Step 1: Write the failing PDF renderer test**
 
 Create `backend/tests/test_cv_pdf_export_service.py`:
 
@@ -152,7 +152,7 @@ def test_write_pdf_creates_real_pdf_with_preview_content(tmp_path: Path) -> None
     assert "RAG experience" in text
 ```
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run:
 
@@ -163,7 +163,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because `app.services.cv_pdf_export_service` does not exist.
 
-- [ ] **Step 3: Add the PDF dependency**
+- [x] **Step 3: Add the PDF dependency**
 
 Append to `backend/requirements.txt`:
 
@@ -180,7 +180,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: pip installs `reportlab` and keeps existing packages.
 
-- [ ] **Step 4: Add the renderer service**
+- [x] **Step 4: Add the renderer service**
 
 Create `backend/app/services/cv_pdf_export_service.py`:
 
@@ -252,7 +252,7 @@ class CvPdfExportService:
         return output_path
 ```
 
-- [ ] **Step 5: Run the renderer test and commit**
+- [x] **Step 5: Run the renderer test and commit**
 
 Run:
 
@@ -279,7 +279,7 @@ git commit -m "feat: add cv pdf export renderer"
 - Test: `backend/tests/test_profile_document_indexing_service.py`
 - Test: existing `backend/tests/test_routes_profile_documents.py`
 
-- [ ] **Step 1: Write the failing indexing service tests**
+- [x] **Step 1: Write the failing indexing service tests**
 
 Create `backend/tests/test_profile_document_indexing_service.py`:
 
@@ -365,7 +365,7 @@ def test_chunk_text_uses_stable_overlap() -> None:
     assert chunks[1] == "A" * 400
 ```
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 Run:
 
@@ -376,7 +376,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because the indexing service does not exist.
 
-- [ ] **Step 3: Add the shared indexing service**
+- [x] **Step 3: Add the shared indexing service**
 
 Create `backend/app/services/profile_document_indexing_service.py`:
 
@@ -487,7 +487,7 @@ class ProfileDocumentIndexingService:
         return len(chunks)
 ```
 
-- [ ] **Step 4: Refactor upload indexing to reuse the service**
+- [x] **Step 4: Refactor upload indexing to reuse the service**
 
 Modify `backend/app/services/profile_document_service.py`:
 
@@ -530,7 +530,7 @@ Replace the manual loop in `create_document_from_pdf(...)` with:
 
 Remove the private `_chunk_text(...)` method after the route and service tests pass.
 
-- [ ] **Step 5: Run focused backend tests and commit**
+- [x] **Step 5: Run focused backend tests and commit**
 
 Run:
 
@@ -555,7 +555,7 @@ git commit -m "refactor: share profile document version indexing"
 - Create: `backend/app/services/profile_cv_export_service.py`
 - Test: `backend/tests/test_profile_cv_export_service.py`
 
-- [ ] **Step 1: Write failing export service tests**
+- [x] **Step 1: Write failing export service tests**
 
 Create `backend/tests/test_profile_cv_export_service.py` with three tests:
 
@@ -720,7 +720,7 @@ async def test_export_draft_rejects_wrong_document_scope(db_session) -> None:
         )
 ```
 
-- [ ] **Step 2: Run tests and verify they fail**
+- [x] **Step 2: Run tests and verify they fail**
 
 Run:
 
@@ -731,7 +731,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because `ProfileCvExportService` does not exist.
 
-- [ ] **Step 3: Add the export orchestration service**
+- [x] **Step 3: Add the export orchestration service**
 
 Create `backend/app/services/profile_cv_export_service.py`:
 
@@ -883,7 +883,7 @@ class ProfileCvExportService:
         return int(current) + 1
 ```
 
-- [ ] **Step 4: Run export service tests and commit**
+- [x] **Step 4: Run export service tests and commit**
 
 Run:
 
@@ -909,7 +909,7 @@ git commit -m "feat: export cv drafts as pdf versions"
 - Modify: `backend/app/api/routes_profile_documents.py`
 - Test: `backend/tests/test_routes_profile_documents.py`
 
-- [ ] **Step 1: Add route tests first**
+- [x] **Step 1: Add route tests first**
 
 Append tests to `backend/tests/test_routes_profile_documents.py`:
 
@@ -960,10 +960,10 @@ async def test_export_cv_draft_returns_exported_version(client, role_profile):
     )
     assert versions_response.status_code == 200
     versions = versions_response.json()["versions"]
-    assert [item["version_number"] for item in versions] == [2, 1]
+    assert [item["version_number"] for item in versions] == [1, 2]
 ```
 
-- [ ] **Step 2: Run the route tests and verify they fail**
+- [x] **Step 2: Run the route tests and verify they fail**
 
 Run:
 
@@ -974,7 +974,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because the export route and schema do not exist.
 
-- [ ] **Step 3: Add the request schema**
+- [x] **Step 3: Add the request schema**
 
 Modify `backend/app/api/schemas.py` near `CvDraftCreateRequest`:
 
@@ -992,7 +992,7 @@ draft_id: str | None = None
 
 If those fields are missing, add them to the response model so the frontend can link exported versions to drafts.
 
-- [ ] **Step 4: Add the export route**
+- [x] **Step 4: Add the export route**
 
 Modify imports in `backend/app/api/routes_profile_documents.py`:
 
@@ -1041,7 +1041,7 @@ async def export_cv_draft_pdf(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 ```
 
-- [ ] **Step 5: Run route tests and commit**
+- [x] **Step 5: Run route tests and commit**
 
 Run:
 
@@ -1067,7 +1067,7 @@ git commit -m "feat: expose cv draft pdf export api"
 - Modify: `backend/app/api/routes_chat.py`
 - Test: `backend/tests/test_tool_registry.py`
 
-- [ ] **Step 1: Write failing tool registry tests**
+- [x] **Step 1: Write failing tool registry tests**
 
 Append to `backend/tests/test_tool_registry.py`:
 
@@ -1150,7 +1150,7 @@ async def test_set_active_cv_version_tool_returns_safe_payload():
     assert "FastAPI" not in str(result.safe_payload)
 ```
 
-- [ ] **Step 2: Run tool tests and verify they fail**
+- [x] **Step 2: Run tool tests and verify they fail**
 
 Run:
 
@@ -1161,7 +1161,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because the new tools and handlers do not exist.
 
-- [ ] **Step 3: Register tool definitions**
+- [x] **Step 3: Register tool definitions**
 
 Modify `ToolRegistry.__init__` in `backend/app/services/tool_registry.py`:
 
@@ -1180,7 +1180,7 @@ Modify `ToolRegistry.__init__` in `backend/app/services/tool_registry.py`:
             ),
 ```
 
-- [ ] **Step 4: Add tool handlers**
+- [x] **Step 4: Add tool handlers**
 
 Add imports:
 
@@ -1252,7 +1252,7 @@ def build_set_active_cv_version_handler(
     return handler
 ```
 
-- [ ] **Step 5: Wire chat routes**
+- [x] **Step 5: Wire chat routes**
 
 Modify `backend/app/api/routes_chat.py` imports:
 
@@ -1276,7 +1276,7 @@ Add overrides in `build_tool_registry(...)`:
             "set_active_cv_version": build_set_active_cv_version_handler(profile_document_service, session),
 ```
 
-- [ ] **Step 6: Run tool tests and commit**
+- [x] **Step 6: Run tool tests and commit**
 
 Run:
 
@@ -1305,7 +1305,7 @@ git commit -m "feat: add cv export agent tools"
 - Test: `frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts`
 - Test: `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`
 
-- [ ] **Step 1: Write failing frontend API tests**
+- [x] **Step 1: Write failing frontend API tests**
 
 Update imports in `frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts`:
 
@@ -1362,7 +1362,7 @@ it("exports a CV draft as PDF with confirmation", async () => {
 });
 ```
 
-- [ ] **Step 2: Add client types and functions**
+- [x] **Step 2: Add client types and functions**
 
 Modify `frontend/job-agent-ui/src/types/profileDocuments.ts`:
 
@@ -1407,7 +1407,7 @@ export async function exportCvDraftToPdf(
 }
 ```
 
-- [ ] **Step 3: Write failing panel tests**
+- [x] **Step 3: Write failing panel tests**
 
 Update the `vi.mock("../api/profileDocumentsClient", ...)` block in `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx` with these new mocks:
 
@@ -1519,7 +1519,7 @@ it("exports a draft and refreshes version history", async () => {
 });
 ```
 
-- [ ] **Step 4: Load and render version history in the panel**
+- [x] **Step 4: Load and render version history in the panel**
 
 Modify imports in `ProfileDocumentPanel.tsx`:
 
@@ -1625,7 +1625,7 @@ In the draft list, add:
 ) : null}
 ```
 
-- [ ] **Step 5: Add styles for version rows**
+- [x] **Step 5: Add styles for version rows**
 
 Modify `frontend/job-agent-ui/src/styles/app.css`:
 
@@ -1649,7 +1649,7 @@ Modify `frontend/job-agent-ui/src/styles/app.css`:
 }
 ```
 
-- [ ] **Step 6: Run frontend tests and commit**
+- [x] **Step 6: Run frontend tests and commit**
 
 Run:
 
