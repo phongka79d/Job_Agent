@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import shutil
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
@@ -12,7 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.db.models import ProfileDocument, ProfileDocumentChunk
+from app.db.models import ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion, RoleProfile
+from app.services.profile_document_storage_service import ProfileDocumentStorageService
 from app.services.embedding_service import EmbeddingService
 from app.services.pdf_text_extraction_service import (
     PdfTextExtractionError,
@@ -57,11 +57,13 @@ class ProfileDocumentService:
         token_counter: SimpleTokenCounter | None = None,
         embedder: TextEmbedder | None = None,
         vector_store: ProfileDocumentVectorStore | None = None,
+        storage: ProfileDocumentStorageService | None = None,
     ) -> None:
         self.extractor = extractor or PdfTextExtractionService()
         self.token_counter = token_counter or SimpleTokenCounter()
         self.embedder = embedder or EmbeddingService()
         self.vector_store = vector_store or QdrantService()
+        self.storage = storage or ProfileDocumentStorageService()
 
     async def list_documents(
         self,
@@ -89,10 +91,13 @@ class ProfileDocumentService:
         size = source_path.stat().st_size
         content_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
         document_id = str(uuid4())
-        stored_path = self._copy_to_storage(
+        version_id = str(uuid4())
+        stored_path = self.storage.copy_pdf(
             source_path,
             role_profile_id=role_profile_id,
             document_id=document_id,
+            version_id=version_id,
+            directory_name="original",
         )
         document = ProfileDocument(
             id=document_id,
@@ -102,9 +107,28 @@ class ProfileDocumentService:
             content_hash=content_hash,
             mime_type=mime_type,
             file_size_bytes=size,
+            document_kind="cv",
             status="processing",
         )
+        version = ProfileDocumentVersion(
+            id=version_id,
+            document_id=document_id,
+            role_profile_id=role_profile_id,
+            version_number=1,
+            source_type="original_upload",
+            display_name="Original upload",
+            filename=original_filename,
+            stored_path=str(stored_path),
+            content_hash=content_hash,
+            mime_type=mime_type,
+            file_size_bytes=size,
+            extraction_status="processing",
+            structure_status="not_extracted",
+            created_by="user",
+        )
+        document.active_version_id = version_id
         session.add(document)
+        session.add(version)
         await session.commit()
         await session.refresh(document)
 
@@ -119,6 +143,8 @@ class ProfileDocumentService:
                     id=chunk_id,
                     document_id=document.id,
                     role_profile_id=role_profile_id,
+                    version_id=version.id,
+                    source_type="profile_cv",
                     chunk_index=index,
                     text=chunk_text,
                     token_count=self.token_counter.count(chunk_text),
@@ -136,16 +162,24 @@ class ProfileDocumentService:
                 session.add(chunk)
             document.extracted_text_chars = len(text)
             document.chunk_count = len(chunks)
+            version.extracted_text_chars = len(text)
+            version.chunk_count = len(chunks)
+            version.extraction_status = "ready"
+            version.error_reason = None
             document.status = "ready"
             document.error_reason = None
+            profile = await session.get(RoleProfile, role_profile_id)
+            if profile and profile.active_cv_version_id is None:
+                profile.active_cv_document_id = document.id
+                profile.active_cv_version_id = version.id
             await session.commit()
             await session.refresh(document)
             return document
         except (PdfTextExtractionError, ValueError) as exc:
-            await self._mark_failed(session, document, str(exc))
+            await self._mark_failed(session, document, str(exc), version)
             raise ValueError(str(exc)) from exc
         except Exception as exc:
-            await self._mark_failed(session, document, "Profile document indexing failed")
+            await self._mark_failed(session, document, "Profile document indexing failed", version)
             raise RuntimeError("Profile document indexing failed") from exc
 
     @staticmethod
@@ -155,24 +189,6 @@ class ProfileDocumentService:
         size = source_path.stat().st_size
         if size <= 0 or size > MAX_PROFILE_PDF_BYTES:
             raise ValueError("PDF file size is outside the allowed range")
-
-    @staticmethod
-    def _copy_to_storage(
-        source_path: Path,
-        *,
-        role_profile_id: str,
-        document_id: str,
-    ) -> Path:
-        storage_dir = (
-            Path(settings.SQLITE_DB_PATH).resolve().parent
-            / "uploads"
-            / "profile_documents"
-            / role_profile_id
-        )
-        storage_dir.mkdir(parents=True, exist_ok=True)
-        stored_path = storage_dir / f"{document_id}.pdf"
-        shutil.copyfile(source_path, stored_path)
-        return stored_path
 
     def _chunk_text(
         self,
@@ -198,8 +214,12 @@ class ProfileDocumentService:
         session: AsyncSession,
         document: ProfileDocument,
         reason: str,
+        version: ProfileDocumentVersion | None = None,
     ) -> None:
         document.status = "failed"
         document.error_reason = reason[:500]
+        if version is not None:
+            version.extraction_status = "failed"
+            version.error_reason = reason[:500]
         await session.commit()
         await session.refresh(document)

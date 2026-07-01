@@ -200,3 +200,44 @@ async def test_create_document_from_pdf_marks_extraction_failure(
     ).scalars().all()
     assert len(documents) == 1
     assert "extractable text" in (documents[0].error_reason or "")
+
+
+@pytest.mark.asyncio
+async def test_create_document_from_pdf_creates_original_version_and_sets_first_active(
+    db_session,
+    test_role_profile,
+    monkeypatch,
+    tmp_path,
+):
+    from app.db.models import ProfileDocumentVersion, RoleProfile
+
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "job_matching.db"))
+    source_path = tmp_path / "cv.pdf"
+    source_path.write_bytes(b"%PDF-test")
+    service = ProfileDocumentService(
+        extractor=FakeExtractor(),
+        embedder=FakeEmbedder(),
+        vector_store=FakeVectorStore(),
+    )
+
+    document = await service.create_document_from_pdf(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        source_path=source_path,
+        original_filename="cv.pdf",
+        mime_type="application/pdf",
+    )
+
+    versions = (
+        await db_session.execute(
+            select(ProfileDocumentVersion).where(ProfileDocumentVersion.document_id == document.id)
+        )
+    ).scalars().all()
+    profile = await db_session.get(RoleProfile, test_role_profile.id)
+    assert len(versions) == 1
+    assert versions[0].version_number == 1
+    assert versions[0].source_type == "original_upload"
+    assert versions[0].stored_path.endswith(".pdf")
+    assert document.active_version_id == versions[0].id
+    assert profile.active_cv_document_id == document.id
+    assert profile.active_cv_version_id == versions[0].id
