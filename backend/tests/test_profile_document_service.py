@@ -360,3 +360,38 @@ async def test_delete_document_rejects_active_cv_without_clear_flag(
             document_id=document.id,
             clear_active=False,
         )
+
+
+@pytest.mark.asyncio
+async def test_create_document_extracts_cv_structure_status(
+    db_session,
+    test_role_profile,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "job_matching.db"))
+    source_path = tmp_path / "cv.pdf"
+    source_path.write_bytes(b"%PDF-test")
+    service = ProfileDocumentService(
+        extractor=FakeExtractor(
+            "Summary\nAI engineer intern\n\n"
+            "Experience\n- Built FastAPI services\n\n"
+            "Projects\n- RAG app\n\n"
+            "Education\nUniversity\n\n"
+            "Skills\nPython"
+        ),
+        embedder=FakeEmbedder(),
+        vector_store=FakeVectorStore(),
+    )
+    document = await service.create_document_from_pdf(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        source_path=source_path,
+        original_filename="cv.pdf",
+        mime_type="application/pdf",
+    )
+
+    version = await db_session.get(ProfileDocumentVersion, document.active_version_id)
+    assert version.structure_status == "reliable"
+    assert version.structure_confidence is not None
+    assert version.structure_confidence >= 0.75

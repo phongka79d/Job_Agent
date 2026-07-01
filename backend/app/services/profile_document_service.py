@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.db.models import ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion, RoleProfile
 from app.services.profile_document_storage_service import ProfileDocumentStorageService
 from app.services.embedding_service import EmbeddingService
+from app.services.cv_structure_extraction_service import CvStructureExtractionService
 from app.services.pdf_text_extraction_service import (
     PdfTextExtractionError,
     PdfTextExtractionService,
@@ -71,12 +72,14 @@ class ProfileDocumentService:
         embedder: TextEmbedder | None = None,
         vector_store: ProfileDocumentVectorStore | None = None,
         storage: ProfileDocumentStorageService | None = None,
+        structure_extractor: CvStructureExtractionService | None = None,
     ) -> None:
         self.extractor = extractor or PdfTextExtractionService()
         self.token_counter = token_counter or SimpleTokenCounter()
         self.embedder = embedder or EmbeddingService()
         self.vector_store = vector_store or QdrantService()
         self.storage = storage or ProfileDocumentStorageService()
+        self.structure_extractor = structure_extractor or CvStructureExtractionService()
 
     async def list_documents(
         self,
@@ -178,6 +181,9 @@ class ProfileDocumentService:
             version.extracted_text_chars = len(text)
             version.chunk_count = len(chunks)
             version.extraction_status = "ready"
+            structure = self.structure_extractor.analyze(text)
+            version.structure_status = structure.status
+            version.structure_confidence = structure.confidence
             version.error_reason = None
             document.status = "ready"
             document.error_reason = None
@@ -233,6 +239,8 @@ class ProfileDocumentService:
         document.error_reason = reason[:500]
         if version is not None:
             version.extraction_status = "failed"
+            version.structure_status = "unreliable"
+            version.structure_confidence = 0.0
             version.error_reason = reason[:500]
         await session.commit()
         await session.refresh(document)
