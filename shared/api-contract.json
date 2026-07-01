@@ -58,6 +58,11 @@
       "path": "/api/jobs/review",
       "response_schema": "JobListResponse"
     },
+    "listProfileDocuments": {
+      "method": "GET",
+      "path": "/api/role-profiles/{role_profile_id}/documents",
+      "response_schema": "ProfileDocumentListResponse"
+    },
     "listRoleProfiles": {
       "method": "GET",
       "path": "/api/role-profiles",
@@ -91,6 +96,11 @@
       "path": "/api/jobs/{id}/status",
       "request_schema": "StatusUpdateRequest",
       "response_schema": "StatusMutationResponse"
+    },
+    "uploadProfileDocument": {
+      "method": "POST",
+      "path": "/api/role-profiles/{role_profile_id}/documents",
+      "response_schema": "ProfileDocumentResponse"
     }
   },
   "extraction_statuses": [
@@ -1589,6 +1599,169 @@
         "source_url"
       ],
       "title": "ParseJobUrlRequest",
+      "type": "object"
+    },
+    "ProfileDocumentListResponse": {
+      "$defs": {
+        "ProfileDocumentResponse": {
+          "properties": {
+            "chunk_count": {
+              "title": "Chunk Count",
+              "type": "integer"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "error_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Reason"
+            },
+            "extracted_text_chars": {
+              "title": "Extracted Text Chars",
+              "type": "integer"
+            },
+            "file_size_bytes": {
+              "title": "File Size Bytes",
+              "type": "integer"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "mime_type": {
+              "title": "Mime Type",
+              "type": "string"
+            },
+            "original_filename": {
+              "title": "Original Filename",
+              "type": "string"
+            },
+            "role_profile_id": {
+              "format": "uuid",
+              "title": "Role Profile Id",
+              "type": "string"
+            },
+            "status": {
+              "title": "Status",
+              "type": "string"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "role_profile_id",
+            "original_filename",
+            "mime_type",
+            "file_size_bytes",
+            "extracted_text_chars",
+            "chunk_count",
+            "status",
+            "error_reason",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "ProfileDocumentResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/ProfileDocumentResponse"
+          },
+          "title": "Documents",
+          "type": "array"
+        }
+      },
+      "title": "ProfileDocumentListResponse",
+      "type": "object"
+    },
+    "ProfileDocumentResponse": {
+      "properties": {
+        "chunk_count": {
+          "title": "Chunk Count",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "error_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Reason"
+        },
+        "extracted_text_chars": {
+          "title": "Extracted Text Chars",
+          "type": "integer"
+        },
+        "file_size_bytes": {
+          "title": "File Size Bytes",
+          "type": "integer"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "mime_type": {
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "original_filename": {
+          "title": "Original Filename",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role_profile_id",
+        "original_filename",
+        "mime_type",
+        "file_size_bytes",
+        "extracted_text_chars",
+        "chunk_count",
+        "status",
+        "error_reason",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ProfileDocumentResponse",
       "type": "object"
     },
     "RoleProfileCreateRequest": {

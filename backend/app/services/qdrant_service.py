@@ -17,12 +17,18 @@ from app.services.scoring_service import clamp_score
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "job_posts"
+PROFILE_DOCUMENT_COLLECTION_NAME = "profile_documents"
 PAYLOAD_INDEX_FIELDS = (
     "role_profile_id",
     "status",
     "jd_status",
     "batch_id",
     "source_platform",
+)
+PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS = (
+    "role_profile_id",
+    "document_id",
+    "source_type",
 )
 SCORABLE_JD_STATUSES = ("full_jd", "partial_jd")
 PENDING_REVIEW_STATUS = "pending_review"
@@ -108,6 +114,23 @@ def build_job_payload(job: JobPost) -> dict[str, str | None]:
         "jd_status": job.jd_status,
         "status": job.status,
         "source_platform": job.source_platform,
+    }
+
+
+def build_profile_document_payload(
+    *,
+    role_profile_id: str,
+    document_id: str,
+    chunk_id: str,
+    chunk_index: int,
+) -> dict[str, str | int]:
+    """Build the approved lightweight Qdrant payload for profile PDF chunks."""
+    return {
+        "role_profile_id": role_profile_id,
+        "document_id": document_id,
+        "chunk_id": chunk_id,
+        "chunk_index": chunk_index,
+        "source_type": "profile_document",
     }
 
 
@@ -205,6 +228,31 @@ class QdrantService:
             self._log_qdrant_error("ensure_collection", exc)
             raise QdrantServiceError("Qdrant collection initialization failed") from exc
 
+    async def ensure_profile_document_collection(self) -> None:
+        """Idempotently create the profile_documents collection and payload indexes."""
+        try:
+            exists = await self.client.collection_exists(PROFILE_DOCUMENT_COLLECTION_NAME)
+            if not exists:
+                await self.client.create_collection(
+                    collection_name=PROFILE_DOCUMENT_COLLECTION_NAME,
+                    vectors_config=qmodels.VectorParams(
+                        size=self.vector_size,
+                        distance=qmodels.Distance.COSINE,
+                    ),
+                )
+            for field_name in PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS:
+                await self.client.create_payload_index(
+                    collection_name=PROFILE_DOCUMENT_COLLECTION_NAME,
+                    field_name=field_name,
+                    field_schema=qmodels.PayloadSchemaType.KEYWORD,
+                    wait=True,
+                )
+        except Exception as exc:
+            self._log_qdrant_error("ensure_profile_document_collection", exc)
+            raise QdrantServiceError(
+                "Qdrant profile document collection initialization failed"
+            ) from exc
+
     async def ensure_payload_indexes(self) -> None:
         """Idempotently create approved keyword payload indexes."""
         try:
@@ -243,6 +291,37 @@ class QdrantService:
         except Exception as exc:
             self._log_qdrant_error("upsert_scorable_job", exc)
             raise QdrantServiceError("Qdrant upsert failed") from exc
+
+    async def upsert_profile_document_chunk(
+        self,
+        *,
+        point_id: str,
+        role_profile_id: str,
+        document_id: str,
+        chunk_id: str,
+        chunk_index: int,
+        vector: Sequence[float],
+    ) -> None:
+        """Upsert one embedded profile document chunk into Qdrant."""
+        try:
+            point = qmodels.PointStruct(
+                id=canonical_uuid(point_id),
+                vector=self._validate_vector(vector),
+                payload=build_profile_document_payload(
+                    role_profile_id=role_profile_id,
+                    document_id=document_id,
+                    chunk_id=chunk_id,
+                    chunk_index=chunk_index,
+                ),
+            )
+            await self.client.upsert(
+                collection_name=PROFILE_DOCUMENT_COLLECTION_NAME,
+                points=[point],
+                wait=True,
+            )
+        except Exception as exc:
+            self._log_qdrant_error("upsert_profile_document_chunk", exc)
+            raise QdrantServiceError("Qdrant profile document upsert failed") from exc
 
     async def query_job_similarity(
         self,
@@ -343,5 +422,7 @@ class QdrantService:
 
 
 async def ensure_collection() -> None:
-    """Initialize the default Qdrant collection for app startup."""
-    await QdrantService().ensure_collection()
+    """Initialize default Qdrant collections for app startup."""
+    service = QdrantService()
+    await service.ensure_collection()
+    await service.ensure_profile_document_collection()

@@ -21,6 +21,8 @@ from app.api.schemas import (
     JobResponse,
     ParseJobTextRequest,
     ParseJobUrlRequest,
+    ProfileDocumentListResponse,
+    ProfileDocumentResponse,
     RoleProfileCreateRequest,
     RoleProfileListResponse,
     RoleProfileResponse,
@@ -102,6 +104,16 @@ ENDPOINTS = {
         "path": "/api/batches/{batch_id}/summary",
         "response_schema": "BatchSummaryResponse",
     },
+    "uploadProfileDocument": {
+        "method": "POST",
+        "path": "/api/role-profiles/{role_profile_id}/documents",
+        "response_schema": "ProfileDocumentResponse",
+    },
+    "listProfileDocuments": {
+        "method": "GET",
+        "path": "/api/role-profiles/{role_profile_id}/documents",
+        "response_schema": "ProfileDocumentListResponse",
+    },
 }
 
 SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
@@ -117,6 +129,8 @@ SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
     IngestionResponse,
     JobListResponse,
     BatchSummaryResponse,
+    ProfileDocumentResponse,
+    ProfileDocumentListResponse,
 )
 
 

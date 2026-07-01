@@ -279,6 +279,24 @@ class AgentToolCallListResponse(ApiSchema):
     tool_calls: list[AgentToolCallResponse] = Field(default_factory=list)
 
 
+class ProfileDocumentResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    original_filename: str
+    mime_type: str
+    file_size_bytes: int
+    extracted_text_chars: int
+    chunk_count: int
+    status: str
+    error_reason: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProfileDocumentListResponse(ApiSchema):
+    documents: list[ProfileDocumentResponse] = Field(default_factory=list)
+
+
 def _parse_string_list(value: Any) -> list[str]:
     if value is None:
         return []

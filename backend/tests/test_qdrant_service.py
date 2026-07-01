@@ -7,7 +7,10 @@ from qdrant_client import models as qmodels
 from app.db.models import JobPost
 from app.services.qdrant_service import (
     PAYLOAD_INDEX_FIELDS,
+    PROFILE_DOCUMENT_COLLECTION_NAME,
+    PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS,
     QdrantService,
+    build_profile_document_payload,
     build_job_scoring_filter,
     build_pending_review_filter,
 )
@@ -145,6 +148,59 @@ async def test_ensure_collection_requests_payload_indexes_for_filter_fields():
         for _, _, field_schema, _ in client.payload_indexes
     )
     assert all(kwargs == {"wait": True} for _, _, _, kwargs in client.payload_indexes)
+
+
+@pytest.mark.asyncio
+async def test_ensure_profile_document_collection_requests_payload_indexes():
+    client = FakeQdrantClient(collection_exists=True)
+    service = QdrantService(client=client, vector_size=3)
+
+    await service.ensure_profile_document_collection()
+
+    assert [field for _, field, _, _ in client.payload_indexes] == list(
+        PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS
+    )
+    assert set(PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS) == {
+        "role_profile_id",
+        "document_id",
+        "source_type",
+    }
+    assert all(
+        collection == PROFILE_DOCUMENT_COLLECTION_NAME
+        for collection, _, _, _ in client.payload_indexes
+    )
+
+
+@pytest.mark.asyncio
+async def test_upsert_profile_document_chunk_uses_sanitized_payload():
+    client = FakeQdrantClient()
+    service = QdrantService(client=client, vector_size=3)
+    point_id = str(uuid4())
+    role_profile_id = str(uuid4())
+    document_id = str(uuid4())
+    chunk_id = str(uuid4())
+
+    await service.upsert_profile_document_chunk(
+        point_id=point_id,
+        role_profile_id=role_profile_id,
+        document_id=document_id,
+        chunk_id=chunk_id,
+        chunk_index=0,
+        vector=[1.0, 0.0, 0.0],
+    )
+
+    collection_name, points, kwargs = client.upserts[0]
+    assert collection_name == PROFILE_DOCUMENT_COLLECTION_NAME
+    assert kwargs == {"wait": True}
+    point = points[0]
+    assert str(UUID(str(point.id))) == point_id
+    assert point.payload == build_profile_document_payload(
+        role_profile_id=role_profile_id,
+        document_id=document_id,
+        chunk_id=chunk_id,
+        chunk_index=0,
+    )
+    assert "Python" not in str(point.payload)
 
 
 @pytest.mark.asyncio
