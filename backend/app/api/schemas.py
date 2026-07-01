@@ -218,6 +218,47 @@ class BatchSummaryResponse(ApiSchema):
     average_extraction_time_ms: float | None
 
 
+class ChatConversationCreateRequest(ApiSchema):
+    role_profile_id: UUID
+    title: str | None = Field(default=None, max_length=200)
+
+
+class ChatConversationResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    title: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChatConversationListResponse(ApiSchema):
+    conversations: list[ChatConversationResponse] = Field(default_factory=list)
+
+
+class ChatMessageCreateRequest(ApiSchema):
+    content: str = Field(min_length=1, max_length=20000)
+
+
+class ChatMessageResponse(ApiSchema):
+    id: UUID
+    conversation_id: UUID
+    role: str
+    content: str
+    token_count: int | None
+    metadata_json: str | None
+    created_at: datetime
+
+
+class ChatMessageListResponse(ApiSchema):
+    messages: list[ChatMessageResponse] = Field(default_factory=list)
+
+
+class ChatMessageCreateResponse(ApiSchema):
+    message: ChatMessageResponse
+    stream_url: str
+
+
 def _parse_string_list(value: Any) -> list[str]:
     if value is None:
         return []
