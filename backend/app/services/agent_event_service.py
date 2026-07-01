@@ -52,10 +52,13 @@ class AgentEventService:
         tool_call_id: str,
         *,
         result_summary: str,
+        safe_payload: dict[str, Any] | None = None,
     ) -> AgentToolCall:
         call = await self._get_call(session, tool_call_id)
         call.status = "success"
         call.result_summary = result_summary
+        if safe_payload is not None:
+            call.safe_payload_json = json.dumps(safe_payload, separators=(",", ":"))
         call.completed_at = utc_now()
         return await self._commit_refresh_detach(session, call)
 

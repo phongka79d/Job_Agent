@@ -8,6 +8,7 @@ from app.api import routes_jobs
 from app.api.routes_role_profiles import get_session
 from app.db.models import Base, JobPost, RoleProfile
 from app.main import app
+from app.services import job_search_workflow
 from app.services.job_processing_service import InvalidStatusTransition, JobProcessingResult
 from app.services.search_service import SearchServiceError, TavilySearchService
 
@@ -287,9 +288,13 @@ async def test_search_respects_max_urls_and_continues_after_url_parse_failure(
             job_ids=[job.id],
         )
 
-    monkeypatch.setattr(routes_jobs, "search_service", TavilySearchService(client=fake_client))
-    monkeypatch.setattr(routes_jobs, "extract_from_url", fake_extract_from_url)
-    monkeypatch.setattr(routes_jobs, "process_job_state", fake_process_job_state)
+    monkeypatch.setattr(
+        job_search_workflow,
+        "search_service",
+        TavilySearchService(client=fake_client),
+    )
+    monkeypatch.setattr(job_search_workflow, "extract_from_url", fake_extract_from_url)
+    monkeypatch.setattr(job_search_workflow, "process_job_state", fake_process_job_state)
 
     async def override_session():
         yield db_session
@@ -340,8 +345,8 @@ async def test_search_tavily_failure_returns_502_without_processing(
         calls.append(kwargs)
         return {}
 
-    monkeypatch.setattr(routes_jobs, "search_service", FailingSearchService())
-    monkeypatch.setattr(routes_jobs, "extract_from_url", fake_extract_from_url)
+    monkeypatch.setattr(job_search_workflow, "search_service", FailingSearchService())
+    monkeypatch.setattr(job_search_workflow, "extract_from_url", fake_extract_from_url)
 
     async def override_session():
         yield db_session

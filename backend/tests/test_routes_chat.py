@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.db.models import AgentToolCall, ChatMessage, RoleProfile
 from app.main import app
 from app.services.agent_event_service import AgentEventService
+from app.services.tool_registry import ToolRegistry, ToolRequest, ToolResult
 
 
 class ChatLLMDouble:
@@ -110,7 +111,7 @@ async def test_stream_conversation_events_returns_agent_sse_and_persists_assista
 ):
     from app.api import routes_chat
 
-    llm_client = ChatLLMDouble(answer="I will search AI Engineer Intern jobs in Hanoi.")
+    llm_client = ChatLLMDouble(answer="Here is your application pipeline summary.")
     monkeypatch.setattr(routes_chat, "chat_llm_client", llm_client, raising=False)
     conversation_response = await client.post(
         "/api/chat/conversations",
@@ -122,7 +123,7 @@ async def test_stream_conversation_events_returns_agent_sse_and_persists_assista
     conversation = conversation_response.json()
     message_response = await client.post(
         f"/api/chat/conversations/{conversation['id']}/messages",
-        json={"content": "Find AI Engineer Intern jobs in Hanoi"},
+        json={"content": "Summarize my application pipeline"},
     )
     after_message_id = message_response.json()["message"]["id"]
 
@@ -136,15 +137,91 @@ async def test_stream_conversation_events_returns_agent_sse_and_persists_assista
     assert "event: message_started" in response.text
     assert "event: assistant_delta" in response.text
     assert "event: message_completed" in response.text
-    assert "I will search AI Engineer Intern jobs in Hanoi." in response.text
+    assert "Here is your application pipeline summary." in response.text
 
     messages_response = await client.get(
         f"/api/chat/conversations/{conversation['id']}/messages"
     )
     messages = messages_response.json()["messages"]
     assert [message["role"] for message in messages] == ["user", "assistant"]
-    assert messages[1]["content"] == "I will search AI Engineer Intern jobs in Hanoi."
+    assert messages[1]["content"] == "Here is your application pipeline summary."
     assert llm_client.calls
+
+
+@pytest.mark.asyncio
+async def test_stream_search_intent_calls_search_tool_and_persists_visible_event(
+    client,
+    db_session,
+    role_profile,
+    monkeypatch,
+):
+    from app.api import routes_chat
+
+    async def search_handler(request: ToolRequest) -> ToolResult:
+        assert request.name == "search_jobs"
+        assert request.context["role_profile_id"] == role_profile.id
+        assert request.arguments["query"] == "Bắt đầu tìm việc về AI Engineer Level Intern"
+        return ToolResult(
+            content="Inserted 2 jobs into Review Queue.",
+            result_summary="Đã đưa 2 job vào Review Queue.",
+            safe_payload={"inserted_jobs": 2, "review_queue_path": "/review"},
+        )
+
+    def build_registry(session):
+        assert session is db_session
+        return ToolRegistry(overrides={"search_jobs": search_handler})
+
+    monkeypatch.setattr(routes_chat, "build_tool_registry", build_registry)
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "Session",
+        },
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": "Bắt đầu tìm việc về AI Engineer Level Intern"},
+    )
+    after_message_id = message_response.json()["message"]["id"]
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": after_message_id},
+    )
+
+    assert response.status_code == 200
+    assert "event: tool_call_started" in response.text
+    assert "event: tool_call_completed" in response.text
+    assert "Đã gọi 1 công cụ: Tìm kiếm việc làm." in response.text
+    assert "Công ty XYZ" not in response.text
+
+    calls = (
+        await db_session.execute(
+            select(AgentToolCall).where(
+                AgentToolCall.conversation_id == conversation["id"]
+            )
+        )
+    ).scalars().all()
+    assert len(calls) == 1
+    assert calls[0].tool_name == "search_jobs"
+    assert calls[0].status == "success"
+    assert calls[0].input_summary == "Tìm kiếm việc làm: Bắt đầu tìm việc về AI Engineer Level Intern"
+    assert calls[0].result_summary == "Đã đưa 2 job vào Review Queue."
+    assert json.loads(calls[0].safe_payload_json) == {
+        "inserted_jobs": 2,
+        "review_queue_path": "/review",
+    }
+
+    messages_response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/messages"
+    )
+    messages = messages_response.json()["messages"]
+    assert messages[1]["content"] == (
+        "Đã gọi 1 công cụ: Tìm kiếm việc làm. "
+        "Đã đưa 2 job vào Review Queue. Mở Review Queue để xem và duyệt job."
+    )
 
 
 @pytest.mark.asyncio
@@ -166,7 +243,7 @@ async def test_stream_conversation_events_persists_visible_message_when_llm_unav
     conversation = conversation_response.json()
     message_response = await client.post(
         f"/api/chat/conversations/{conversation['id']}/messages",
-        json={"content": "Find AI Engineer Intern jobs in Hanoi"},
+        json={"content": "Summarize my application pipeline"},
     )
     after_message_id = message_response.json()["message"]["id"]
 

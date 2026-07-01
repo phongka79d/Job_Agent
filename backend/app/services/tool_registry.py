@@ -6,6 +6,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from app.services.job_search_workflow import ingest_search_jobs
+
 
 @dataclass(frozen=True)
 class ToolRequest:
@@ -111,6 +113,47 @@ def build_retrieve_profile_documents_handler(
             content=content,
             result_summary=f"Retrieved {len(chunks)} profile document chunks",
             safe_payload={"chunk_count": len(chunks)},
+        )
+
+    return handler
+
+
+def build_search_jobs_handler(
+    session: object,
+    *,
+    search_workflow: Callable[..., Awaitable[object]] = ingest_search_jobs,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        query = str(request.arguments.get("query", "")).strip()
+        if not query:
+            raise ValueError("search_jobs requires a query")
+
+        result = await search_workflow(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+            query=query,
+            max_urls=request.arguments.get("max_urls"),
+        )
+        inserted_jobs = int(getattr(result, "inserted_jobs", 0))
+        skipped_duplicates = int(getattr(result, "skipped_exact_duplicates", 0)) + int(
+            getattr(result, "skipped_dedup_key_duplicates", 0)
+        )
+        warnings = list(getattr(result, "warnings", []))
+        summary = f"Đã đưa {inserted_jobs} job vào Review Queue."
+        if skipped_duplicates:
+            summary = f"{summary} Bỏ qua {skipped_duplicates} job trùng."
+        if warnings:
+            summary = f"{summary} Có {len(warnings)} cảnh báo khi xử lý."
+
+        return ToolResult(
+            content=summary,
+            result_summary=summary,
+            safe_payload={
+                "inserted_jobs": inserted_jobs,
+                "skipped_duplicates": skipped_duplicates,
+                "warning_count": len(warnings),
+                "review_queue_path": "/review",
+            },
         )
 
     return handler

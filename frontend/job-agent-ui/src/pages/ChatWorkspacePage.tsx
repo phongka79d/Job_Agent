@@ -1,9 +1,10 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   createConversation,
   deleteConversation,
+  listAgentToolCalls,
   listConversationMessages,
   listConversations,
   sendChatMessage,
@@ -11,10 +12,12 @@ import {
 } from "../api/chatClient";
 import ChatComposer from "../components/chat/ChatComposer";
 import ChatMessageList from "../components/chat/ChatMessageList";
-import type { ChatConversation, ChatMessage } from "../types/chat";
+import ToolCallTimeline from "../components/chat/ToolCallTimeline";
+import type { AgentToolCall, ChatConversation, ChatMessage } from "../types/chat";
 
 interface OutletContext {
   activeProfileId: string | null;
+  triggerMetricsRefresh?: () => void;
 }
 
 interface ConversationState {
@@ -27,11 +30,31 @@ function conversationLabel(conversation: ChatConversation): string {
   return conversation.title || new Date(conversation.created_at).toLocaleString();
 }
 
+function shouldOpenReviewQueue(toolCalls: AgentToolCall[]): boolean {
+  return toolCalls.some((toolCall) => {
+    if (toolCall.tool_name !== "search_jobs" || toolCall.status !== "success") {
+      return false;
+    }
+    if (!toolCall.safe_payload_json) return false;
+    try {
+      const payload = JSON.parse(toolCall.safe_payload_json) as {
+        inserted_jobs?: unknown;
+        review_queue_path?: unknown;
+      };
+      return payload.review_queue_path === "/review" && Number(payload.inserted_jobs) > 0;
+    } catch {
+      return false;
+    }
+  });
+}
+
 export default function ChatWorkspacePage() {
-  const { activeProfileId } = useOutletContext<OutletContext>();
+  const { activeProfileId, triggerMetricsRefresh } = useOutletContext<OutletContext>();
+  const navigate = useNavigate();
   const [conversation, setConversation] = useState<ConversationState | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [toolCalls, setToolCalls] = useState<AgentToolCall[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const conversationRef = useRef<ConversationState | null>(null);
@@ -69,6 +92,7 @@ export default function ChatWorkspacePage() {
     setConversation(null);
     setConversations([]);
     setMessages([]);
+    setToolCalls([]);
     setError(null);
     setIsSending(false);
     conversationRef.current = null;
@@ -138,6 +162,10 @@ export default function ChatWorkspacePage() {
       if (isCurrentRequest(activeProfileId, generation)) {
         setMessages(loadedMessages);
       }
+      const loadedToolCalls = await listAgentToolCalls(selected.id);
+      if (isCurrentRequest(activeProfileId, generation)) {
+        setToolCalls(loadedToolCalls);
+      }
     } catch (loadError) {
       if (isCurrentRequest(activeProfileId, generation)) {
         setError(loadError instanceof Error ? loadError.message : "Failed to load chat.");
@@ -150,6 +178,7 @@ export default function ChatWorkspacePage() {
     conversationRequestRef.current = null;
     setConversation(null);
     setMessages([]);
+    setToolCalls([]);
     setError(null);
   };
 
@@ -163,6 +192,7 @@ export default function ChatWorkspacePage() {
         conversationRef.current = null;
         setConversation(null);
         setMessages([]);
+        setToolCalls([]);
       }
       await refreshConversations(activeProfileId, generation);
     } catch (deleteError) {
@@ -188,9 +218,15 @@ export default function ChatWorkspacePage() {
       const response = await sendChatMessage(activeConversation.id, { content });
       await streamChatResponse(response.stream_url);
       const refreshed = await listConversationMessages(activeConversation.id);
+      const refreshedToolCalls = await listAgentToolCalls(activeConversation.id);
       await refreshConversations(sendProfileId, sendGeneration);
       if (isCurrentRequest(sendProfileId, sendGeneration)) {
         setMessages(refreshed);
+        setToolCalls(refreshedToolCalls);
+        if (shouldOpenReviewQueue(refreshedToolCalls)) {
+          triggerMetricsRefresh?.();
+          navigate("/review");
+        }
       }
     } catch (sendError) {
       if (isCurrentRequest(sendProfileId, sendGeneration)) {
@@ -247,6 +283,7 @@ export default function ChatWorkspacePage() {
           })}
         </div>
       </div>
+      <ToolCallTimeline toolCalls={toolCalls} />
       <ChatMessageList messages={messages} />
       {error ? (
         <div className="chat-error" role="alert">

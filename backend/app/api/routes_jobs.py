@@ -25,6 +25,7 @@ from app.agents.schemas import JobAgentState
 from app.core import constants
 from app.db.models import JobPost
 from app.services.extraction_service import extract_from_raw_text, extract_from_url
+from app.services.job_search_workflow import ingest_search_jobs
 from app.services.job_processing_service import (
     InvalidStatusTransition,
     JobProcessingResult,
@@ -33,7 +34,6 @@ from app.services.job_processing_service import (
     reject_job,
     update_job_status,
 )
-from app.services.search_service import SearchServiceError, search_service
 
 
 DEFAULT_JOB_QUERY_LIMIT = 50
@@ -183,67 +183,24 @@ async def search_jobs(
     request: SearchJobsRequest,
     session: SessionDep,
 ) -> IngestionResponse:
-    batch_id = uuid4()
-
-    try:
-        search_results = await search_service.search_jobs(
-            request.query,
-            max_urls=request.max_urls,
-        )
-    except SearchServiceError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc) or "Search provider failed",
-        ) from exc
-
-    inserted_jobs = 0
-    skipped_exact_duplicates = 0
-    skipped_dedup_key_duplicates = 0
-    inserted_duplicate_metadata = 0
-    qdrant_upserted = 0
-    qdrant_synced = True
-    job_ids: list[str] = []
-    warnings: list[str] = []
-
-    for search_result in search_results:
-        try:
-            extraction_state = await extract_from_url(
-                batch_id=str(batch_id),
-                role_profile_id=str(request.role_profile_id),
-                source_url=search_result.url,
-                input_source="tavily",
-            )
-            processing_result = await _process_ingested_state(
-                session,
-                batch_id,
-                extraction_state,
-            )
-        except HTTPException:
-            raise
-        except Exception:
-            warnings.append(f"Failed to process search result URL: {search_result.url}")
-            continue
-
-        inserted_jobs += processing_result.inserted_jobs
-        skipped_exact_duplicates += processing_result.skipped_exact_duplicates
-        skipped_dedup_key_duplicates += processing_result.skipped_dedup_key_duplicates
-        inserted_duplicate_metadata += processing_result.inserted_duplicate_metadata
-        qdrant_upserted += processing_result.qdrant_upserted
-        qdrant_synced = qdrant_synced and processing_result.qdrant_synced
-        job_ids.extend(processing_result.job_ids)
-        warnings.extend(processing_result.warnings)
+    result = await ingest_search_jobs(
+        session,
+        role_profile_id=str(request.role_profile_id),
+        query=request.query,
+        max_urls=request.max_urls,
+    )
 
     return await _build_ingestion_response(
         session,
-        batch_id,
-        job_ids,
-        inserted_jobs=inserted_jobs,
-        skipped_exact_duplicates=skipped_exact_duplicates,
-        skipped_dedup_key_duplicates=skipped_dedup_key_duplicates,
-        inserted_duplicate_metadata=inserted_duplicate_metadata,
-        qdrant_upserted=qdrant_upserted,
-        qdrant_synced=qdrant_synced,
-        warnings=warnings,
+        result.batch_id,
+        result.job_ids,
+        inserted_jobs=result.inserted_jobs,
+        skipped_exact_duplicates=result.skipped_exact_duplicates,
+        skipped_dedup_key_duplicates=result.skipped_dedup_key_duplicates,
+        inserted_duplicate_metadata=result.inserted_duplicate_metadata,
+        qdrant_upserted=result.qdrant_upserted,
+        qdrant_synced=result.qdrant_synced,
+        warnings=result.warnings,
     )
 
 

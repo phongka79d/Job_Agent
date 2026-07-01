@@ -1,5 +1,6 @@
 import { apiClient, normalizeError } from "./client";
 import type {
+  AgentToolCall,
   ChatConversation,
   ChatMessage,
   CreateConversationRequest,
@@ -40,6 +41,17 @@ export async function listConversationMessages(conversationId: string): Promise<
       `/api/chat/conversations/${conversationId}/messages`
     );
     return response.data.messages;
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function listAgentToolCalls(conversationId: string): Promise<AgentToolCall[]> {
+  try {
+    const response = await apiClient.get<{ tool_calls: AgentToolCall[] }>(
+      `/api/chat/conversations/${conversationId}/tool-calls`
+    );
+    return response.data.tool_calls;
   } catch (error) {
     throw normalizeError(error);
   }

@@ -33,12 +33,15 @@ async def test_tool_call_lifecycle_persists_safe_summaries(db_session):
         db_session,
         call.id,
         result_summary="Found 5 URLs",
+        safe_payload={"inserted_jobs": 5, "review_queue_path": "/review"},
     )
 
     assert call.status == "pending"
     assert running.status == "running"
     assert succeeded.status == "success"
-    assert succeeded.safe_payload_json == '{"query":"AI Engineer Intern Hanoi"}'
+    assert succeeded.safe_payload_json == (
+        '{"inserted_jobs":5,"review_queue_path":"/review"}'
+    )
 
 
 @pytest.mark.asyncio

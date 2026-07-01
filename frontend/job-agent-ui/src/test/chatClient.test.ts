@@ -3,6 +3,7 @@ import { apiClient } from "../api/client";
 import {
   createConversation,
   deleteConversation,
+  listAgentToolCalls,
   listConversationMessages,
   listConversations,
   sendChatMessage,
@@ -67,6 +68,35 @@ describe("chatClient", () => {
     await deleteConversation("conv-1");
 
     expect(deleteSpy).toHaveBeenCalledWith("/api/chat/conversations/conv-1");
+  });
+
+  it("lists agent tool calls for a conversation", async () => {
+    getSpy.mockResolvedValueOnce({
+      data: {
+        tool_calls: [
+          {
+            id: "tool-1",
+            conversation_id: "conv-1",
+            assistant_message_id: null,
+            tool_name: "search_jobs",
+            status: "success",
+            input_summary: "Tìm kiếm việc làm",
+            result_summary: "Đã đưa 2 job vào Review Queue.",
+            safe_payload_json: "{\"inserted_jobs\":2,\"review_queue_path\":\"/review\"}",
+            error_message: null,
+            started_at: null,
+            completed_at: null,
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+      },
+    });
+
+    const result = await listAgentToolCalls("conv-1");
+
+    expect(getSpy).toHaveBeenCalledWith("/api/chat/conversations/conv-1/tool-calls");
+    expect(result[0].tool_name).toBe("search_jobs");
   });
 
   it("resolves chat stream when message_completed arrives", async () => {

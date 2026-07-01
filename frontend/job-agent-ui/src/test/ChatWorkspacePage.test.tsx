@@ -4,24 +4,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createConversation,
   deleteConversation,
+  listAgentToolCalls,
   listConversationMessages,
   listConversations,
   sendChatMessage,
   streamChatResponse,
 } from "../api/chatClient";
 import ChatWorkspacePage from "../pages/ChatWorkspacePage";
-import type { ChatConversation, ChatMessage } from "../types/chat";
+import type { AgentToolCall, ChatConversation, ChatMessage } from "../types/chat";
 
 vi.mock("../api/chatClient", () => ({
   createConversation: vi.fn(),
   deleteConversation: vi.fn(),
+  listAgentToolCalls: vi.fn(),
   listConversationMessages: vi.fn(),
   listConversations: vi.fn(),
   sendChatMessage: vi.fn(),
   streamChatResponse: vi.fn(),
 }));
 
+const navigate = vi.fn();
+
 vi.mock("react-router-dom", () => ({
+  useNavigate: () => navigate,
   useOutletContext: vi.fn(),
 }));
 
@@ -44,10 +49,27 @@ const existingConversation: ChatConversation = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+const searchToolCall: AgentToolCall = {
+  id: "tool-1",
+  conversation_id: "conv-1",
+  assistant_message_id: null,
+  tool_name: "search_jobs",
+  status: "success",
+  input_summary: "Tìm kiếm việc làm: AI Engineer Intern",
+  result_summary: "Đã đưa 2 job vào Review Queue.",
+  safe_payload_json: "{\"inserted_jobs\":2,\"review_queue_path\":\"/review\"}",
+  error_message: null,
+  started_at: "2026-01-01T00:00:00Z",
+  completed_at: "2026-01-01T00:00:01Z",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:01Z",
+};
+
 describe("ChatWorkspacePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(listConversations).mockResolvedValue([]);
+    vi.mocked(listAgentToolCalls).mockResolvedValue([]);
     vi.mocked(streamChatResponse).mockResolvedValue();
     vi.mocked(deleteConversation).mockResolvedValue();
   });
@@ -169,6 +191,49 @@ describe("ChatWorkspacePage", () => {
       expect(sendChatMessage).toHaveBeenCalledTimes(1);
       expect(streamChatResponse).toHaveBeenCalledTimes(1);
       expect(listConversationMessages).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("renders search tool calls and navigates to review queue after successful search", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({
+      activeProfileId: "profile-1",
+      triggerMetricsRefresh: vi.fn(),
+    });
+    vi.mocked(createConversation).mockResolvedValue({
+      id: "conv-1",
+      role_profile_id: "profile-1",
+      title: "Job agent session",
+      status: "active",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    vi.mocked(sendChatMessage).mockResolvedValue({
+      message: {
+        id: "msg-1",
+        conversation_id: "conv-1",
+        role: "user",
+        content: "Bắt đầu tìm việc AI Engineer Intern",
+        token_count: null,
+        metadata_json: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      stream_url: "/stream",
+    });
+    vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
+    vi.mocked(listAgentToolCalls).mockResolvedValue([searchToolCall]);
+
+    render(<ChatWorkspacePage />);
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Bắt đầu tìm việc AI Engineer Intern" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(listAgentToolCalls).toHaveBeenCalledWith("conv-1");
+      expect(screen.getByText("search_jobs")).toBeInTheDocument();
+      expect(screen.getByText("Đã đưa 2 job vào Review Queue.")).toBeInTheDocument();
+      expect(navigate).toHaveBeenCalledWith("/review");
     });
   });
 

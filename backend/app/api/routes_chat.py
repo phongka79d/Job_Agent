@@ -26,6 +26,11 @@ from app.services.agent_event_service import AgentEventService
 from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClient
 from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
+from app.services.tool_registry import (
+    ToolRegistry,
+    ToolRequest,
+    build_search_jobs_handler,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -36,8 +41,26 @@ memory_service = ChatMemoryService()
 chat_llm_client = OpenAIChatLLMClient()
 
 
+def build_tool_registry(session: SessionDep) -> ToolRegistry:
+    return ToolRegistry(
+        overrides={
+            "search_jobs": build_search_jobs_handler(session),
+        }
+    )
+
+
+def _is_search_jobs_intent(content: str) -> bool:
+    normalized = content.casefold()
+    search_terms = ("find", "search", "tìm", "tim", "kiếm", "kiem")
+    job_terms = ("job", "jobs", "việc", "viec", "role", "position")
+    return any(term in normalized for term in search_terms) and any(
+        term in normalized for term in job_terms
+    )
+
+
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
-    return f"event: {event_type}\ndata: {json.dumps(payload, separators=(',', ':'))}\n\n"
+    data = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+    return f"event: {event_type}\ndata: {data}\n\n"
 
 
 async def _require_profile(session: SessionDep, role_profile_id: str) -> None:
@@ -200,27 +223,103 @@ async def stream_conversation_events(
             conversation_id=str(conversation_id),
             current_user_message=user_message.content,
         )
-        agent_metadata_source = "chat_agent"
-        try:
-            result = await run_chat_turn(
+        if _is_search_jobs_intent(user_message.content):
+            tool_call = await agent_event_service.create_tool_call(
+                session,
+                conversation_id=str(conversation_id),
+                tool_name="search_jobs",
+                input_summary=f"Tìm kiếm việc làm: {user_message.content}",
+                safe_payload={"query": user_message.content},
+            )
+            tool_call = await agent_event_service.mark_running(session, tool_call.id)
+            yield _sse_event(
+                "tool_call_started",
                 {
-                    "conversation_id": str(conversation_id),
-                    "role_profile_id": conversation.role_profile_id,
-                    "user_message": user_message.content,
-                    "working_memory": memory.context_text,
-                    "tool_results": [],
+                    "tool_call_id": tool_call.id,
+                    "tool_name": tool_call.tool_name,
+                    "status": tool_call.status,
+                    "input_summary": tool_call.input_summary,
                 },
-                llm_client=chat_llm_client,
-                tool_registry=None,
             )
-            assistant_content = result["final_answer"]
-        except ChatLLMProviderError:
-            logger.exception("Chat LLM is unavailable")
-            agent_metadata_source = "chat_agent_error"
-            assistant_content = (
-                "Chat LLM is unavailable. Check OPENAI_API_KEY and provider settings, "
-                "then try again."
-            )
+            try:
+                tool_result = await build_tool_registry(session).execute(
+                    ToolRequest(
+                        name="search_jobs",
+                        arguments={
+                            "query": user_message.content,
+                            "max_urls": None,
+                        },
+                        context={
+                            "role_profile_id": conversation.role_profile_id,
+                            "conversation_id": str(conversation_id),
+                        },
+                    )
+                )
+            except Exception:
+                logger.exception("search_jobs tool failed")
+                tool_call = await agent_event_service.mark_failed(
+                    session,
+                    tool_call.id,
+                    error_message="Search tool failed. Check search, extraction, and provider settings.",
+                )
+                assistant_content = (
+                    "Đã gọi 1 công cụ: Tìm kiếm việc làm, nhưng công cụ thất bại. "
+                    "Kiểm tra cấu hình Tavily/OpenAI/Qdrant rồi thử lại."
+                )
+                agent_metadata_source = "chat_agent_tool_error"
+                yield _sse_event(
+                    "tool_call_failed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "error_message": tool_call.error_message,
+                    },
+                )
+            else:
+                tool_call = await agent_event_service.mark_success(
+                    session,
+                    tool_call.id,
+                    result_summary=tool_result.result_summary,
+                    safe_payload=tool_result.safe_payload,
+                )
+                assistant_content = (
+                    "Đã gọi 1 công cụ: Tìm kiếm việc làm. "
+                    f"{tool_result.result_summary} Mở Review Queue để xem và duyệt job."
+                )
+                agent_metadata_source = "chat_agent_tool"
+                yield _sse_event(
+                    "tool_call_completed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "result_summary": tool_call.result_summary,
+                        "safe_payload": tool_result.safe_payload,
+                    },
+                )
+        else:
+            agent_metadata_source = "chat_agent"
+            try:
+                result = await run_chat_turn(
+                    {
+                        "conversation_id": str(conversation_id),
+                        "role_profile_id": conversation.role_profile_id,
+                        "user_message": user_message.content,
+                        "working_memory": memory.context_text,
+                        "tool_results": [],
+                    },
+                    llm_client=chat_llm_client,
+                    tool_registry=None,
+                )
+                assistant_content = result["final_answer"]
+            except ChatLLMProviderError:
+                logger.exception("Chat LLM is unavailable")
+                agent_metadata_source = "chat_agent_error"
+                assistant_content = (
+                    "Chat LLM is unavailable. Check OPENAI_API_KEY and provider settings, "
+                    "then try again."
+                )
         assistant = await chat_service.append_message(
             session,
             conversation_id=str(conversation_id),

@@ -224,7 +224,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .chat-workspace {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   height: 100%;
   gap: 12px;
 }
@@ -292,6 +292,60 @@ h1, h2, h3, h4, h5, h6 {
 .chat-history-delete:hover:not(:disabled) {
   background: var(--bg-surface-hover);
   color: var(--text-primary);
+}
+
+.tool-call-timeline {
+  display: grid;
+  gap: 8px;
+}
+
+.tool-call-timeline:empty {
+  display: none;
+}
+
+.tool-call-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  padding: 10px 12px;
+}
+
+.tool-call-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.tool-call-header strong {
+  color: var(--text-primary);
+}
+
+.tool-call-header span {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.tool-call-card p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.tool-call-success {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.tool-call-running,
+.tool-call-pending {
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+.tool-call-failed {
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
 .chat-message-list {
