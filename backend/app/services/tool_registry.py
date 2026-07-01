@@ -70,6 +70,36 @@ class ToolRegistry:
                 requires_confirmation=True,
                 handler=_not_wired,
             ),
+            "list_profile_cvs": ToolDefinition(
+                name="list_profile_cvs",
+                description="List uploaded profile CV PDFs and active-version metadata.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
+            "get_active_profile_cv": ToolDefinition(
+                name="get_active_profile_cv",
+                description="Return safe metadata for the active profile CV source of truth.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
+            "view_profile_cv_metadata": ToolDefinition(
+                name="view_profile_cv_metadata",
+                description="Return safe metadata for a profile CV document and its active version.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
+            "retrieve_profile_cv_chunks": ToolDefinition(
+                name="retrieve_profile_cv_chunks",
+                description="Retrieve relevant active CV chunks for backend AI reasoning.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
+            "analyze_cv_structure": ToolDefinition(
+                name="analyze_cv_structure",
+                description="Report extracted CV structure reliability metadata without editing the PDF.",
+                requires_confirmation=False,
+                handler=_not_wired,
+            ),
             "retrieve_profile_documents": ToolDefinition(
                 name="retrieve_profile_documents",
                 description="Retrieve relevant chunks from uploaded profile PDFs.",
@@ -102,18 +132,157 @@ def build_retrieve_profile_documents_handler(
     retrieval_service: object,
     session: object,
 ) -> ToolHandler:
+    return build_retrieve_profile_cv_chunks_handler(retrieval_service, session)
+
+
+def _document_safe_payload(document: object) -> dict[str, Any]:
+    return {
+        "document_id": str(getattr(document, "id", "")),
+        "filename": str(getattr(document, "original_filename", "")),
+        "status": str(getattr(document, "status", "")),
+        "chunk_count": int(getattr(document, "chunk_count", 0) or 0),
+        "active_version_id": (
+            str(getattr(document, "active_version_id"))
+            if getattr(document, "active_version_id", None)
+            else None
+        ),
+    }
+
+
+def _version_safe_payload(version: object) -> dict[str, Any]:
+    return {
+        "version_id": str(getattr(version, "id", "")),
+        "version_number": int(getattr(version, "version_number", 0) or 0),
+        "source_type": str(getattr(version, "source_type", "")),
+        "extraction_status": str(getattr(version, "extraction_status", "")),
+        "structure_status": str(getattr(version, "structure_status", "")),
+        "structure_confidence": getattr(version, "structure_confidence", None),
+    }
+
+
+def build_list_profile_cvs_handler(
+    retrieval_service: object,
+    session: object,
+) -> ToolHandler:
     async def handler(request: ToolRequest) -> ToolResult:
-        chunks = await retrieval_service.retrieve(
+        documents = await retrieval_service.list_profile_cvs(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+        )
+        safe_documents = [_document_safe_payload(document) for document in documents]
+        return ToolResult(
+            content=f"Found {len(safe_documents)} uploaded profile CVs.",
+            result_summary=f"Found {len(safe_documents)} profile CVs",
+            safe_payload={"documents": safe_documents},
+        )
+
+    return handler
+
+
+def build_get_active_profile_cv_handler(
+    retrieval_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        active = await retrieval_service.get_active_cv(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+        )
+        if active is None:
+            return ToolResult(
+                content="No active profile CV is selected.",
+                result_summary="No active profile CV",
+                safe_payload={"has_active_cv": False},
+            )
+        document, version = active
+        return ToolResult(
+            content=(
+                "Active profile CV is available. "
+                "Use retrieve_profile_cv_chunks to read relevant extracted text."
+            ),
+            result_summary=f"Active CV: {document.original_filename}",
+            safe_payload={
+                "has_active_cv": True,
+                **_document_safe_payload(document),
+                **_version_safe_payload(version),
+            },
+        )
+
+    return handler
+
+
+def build_view_profile_cv_metadata_handler(
+    retrieval_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        return await build_get_active_profile_cv_handler(retrieval_service, session)(request)
+
+    return handler
+
+
+def build_retrieve_profile_cv_chunks_handler(
+    retrieval_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        result = await retrieval_service.retrieve_active_cv_chunks(
             session,
             role_profile_id=str(request.context["role_profile_id"]),
             query=str(request.arguments.get("query", "")),
             limit=int(request.arguments.get("limit", 5)),
         )
-        content = "\n\n".join(chunk.text for chunk in chunks)
+        content = "\n\n".join(item.chunk.text for item in result.chunks)
+        if result.document is None or result.version is None:
+            return ToolResult(
+                content="No active profile CV is selected.",
+                result_summary="No active profile CV",
+                safe_payload={"has_active_cv": False, "chunk_count": 0},
+            )
         return ToolResult(
             content=content,
-            result_summary=f"Retrieved {len(chunks)} profile document chunks",
-            safe_payload={"chunk_count": len(chunks)},
+            result_summary=f"Retrieved {len(result.chunks)} active CV chunks",
+            safe_payload={
+                "document_id": result.document.id,
+                "version_id": result.version.id,
+                "chunk_count": len(result.chunks),
+                "used_fallback": result.used_fallback,
+            },
+        )
+
+    return handler
+
+
+def build_analyze_cv_structure_handler(
+    retrieval_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        active = await retrieval_service.get_active_cv(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+        )
+        if active is None:
+            return ToolResult(
+                content="No active profile CV is selected.",
+                result_summary="No active profile CV",
+                safe_payload={"has_active_cv": False},
+            )
+        document, version = active
+        structure_status = str(getattr(version, "structure_status", "not_extracted"))
+        return ToolResult(
+            content=(
+                "CV structure status is "
+                f"{structure_status}. Structure-preserving editing is not part of Phase 2."
+            ),
+            result_summary=f"CV structure: {structure_status}",
+            safe_payload={
+                "has_active_cv": True,
+                "document_id": document.id,
+                "version_id": version.id,
+                "structure_status": structure_status,
+                "structure_confidence": getattr(version, "structure_confidence", None),
+            },
         )
 
     return handler

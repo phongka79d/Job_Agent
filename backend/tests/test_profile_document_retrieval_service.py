@@ -242,8 +242,8 @@ async def test_retrieve_profile_documents_tool_returns_sanitized_summary(
     )
 
     assert result.content == "Python FastAPI internship experience"
-    assert result.result_summary == "Retrieved 1 profile document chunks"
-    assert result.safe_payload == {"chunk_count": 1}
+    assert result.result_summary == "Retrieved 1 active CV chunks"
+    assert result.safe_payload["chunk_count"] == 1
 
 
 @pytest.mark.asyncio

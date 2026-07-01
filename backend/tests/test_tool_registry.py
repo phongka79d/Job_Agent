@@ -12,6 +12,16 @@ async def test_registry_exposes_safe_tool_metadata():
     assert "search_jobs" in tools
     assert tools["search_jobs"].requires_confirmation is False
     assert "api_key" not in tools["search_jobs"].description.lower()
+    for tool_name in [
+        "list_profile_cvs",
+        "get_active_profile_cv",
+        "view_profile_cv_metadata",
+        "retrieve_profile_cv_chunks",
+        "analyze_cv_structure",
+    ]:
+        assert tool_name in tools
+        assert tools[tool_name].requires_confirmation is False
+        assert "api_key" not in tools[tool_name].description.lower()
 
 
 @pytest.mark.asyncio
@@ -192,3 +202,83 @@ async def test_extract_job_from_text_handler_requires_raw_text():
                 context={"role_profile_id": "profile-1"},
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_profile_cv_tool_handlers_return_sanitized_payloads():
+    from app.services.tool_registry import (
+        build_analyze_cv_structure_handler,
+        build_get_active_profile_cv_handler,
+        build_list_profile_cvs_handler,
+        build_retrieve_profile_cv_chunks_handler,
+        build_view_profile_cv_metadata_handler,
+    )
+
+    class Document:
+        id = "doc-1"
+        original_filename = "cv.pdf"
+        status = "ready"
+        chunk_count = 2
+        active_version_id = "version-1"
+
+    class Version:
+        id = "version-1"
+        version_number = 1
+        source_type = "original_upload"
+        extraction_status = "ready"
+        structure_status = "not_extracted"
+        structure_confidence = None
+
+    class Chunk:
+        text = "Private full CV text with Python and FastAPI"
+        id = "chunk-1"
+        chunk_index = 0
+
+    class Item:
+        chunk = Chunk()
+        score_source = "sqlite_keyword"
+
+    class Result:
+        document = Document()
+        version = Version()
+        chunks = [Item()]
+        used_fallback = True
+
+    class Retrieval:
+        async def list_profile_cvs(self, session, *, role_profile_id):
+            return [Document()]
+
+        async def get_active_cv(self, session, *, role_profile_id):
+            return Document(), Version()
+
+        async def retrieve_active_cv_chunks(self, session, *, role_profile_id, query, limit):
+            return Result()
+
+    session = object()
+    request = ToolRequest(
+        name="retrieve_profile_cv_chunks",
+        arguments={"query": "Python", "limit": 3},
+        context={"role_profile_id": "profile-1"},
+    )
+
+    retrieve_result = await build_retrieve_profile_cv_chunks_handler(Retrieval(), session)(request)
+    assert "Private full CV text" in retrieve_result.content
+    assert "Private full CV text" not in str(retrieve_result.safe_payload)
+    assert retrieve_result.safe_payload == {
+        "document_id": "doc-1",
+        "version_id": "version-1",
+        "chunk_count": 1,
+        "used_fallback": True,
+    }
+
+    list_result = await build_list_profile_cvs_handler(Retrieval(), session)(request)
+    assert list_result.safe_payload["documents"][0]["document_id"] == "doc-1"
+
+    active_result = await build_get_active_profile_cv_handler(Retrieval(), session)(request)
+    assert active_result.safe_payload["document_id"] == "doc-1"
+
+    metadata_result = await build_view_profile_cv_metadata_handler(Retrieval(), session)(request)
+    assert metadata_result.safe_payload["document_id"] == "doc-1"
+
+    structure_result = await build_analyze_cv_structure_handler(Retrieval(), session)(request)
+    assert structure_result.safe_payload["structure_status"] == "not_extracted"
