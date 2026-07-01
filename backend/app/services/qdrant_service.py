@@ -387,6 +387,26 @@ class QdrantService:
             self._log_qdrant_error("update_payload_fields", exc)
             raise QdrantServiceError("Qdrant payload update failed") from exc
 
+    async def delete_profile_document_points(self, *, document_id: str) -> None:
+        await self.ensure_profile_document_collection()
+        try:
+            await self.client.delete(
+                collection_name=PROFILE_DOCUMENT_COLLECTION_NAME,
+                points_selector=qmodels.FilterSelector(
+                    filter=qmodels.Filter(
+                        must=[
+                            qmodels.FieldCondition(
+                                key="document_id",
+                                match=qmodels.MatchValue(value=document_id),
+                            )
+                        ]
+                    )
+                ),
+            )
+        except Exception as exc:
+            self._log_qdrant_error("delete_profile_document_points", exc)
+            raise QdrantServiceError("Qdrant profile document delete failed") from exc
+
     def _validate_vector(self, vector: Sequence[float]) -> list[float]:
         values = [float(value) for value in vector]
         if len(values) != self.vector_size:

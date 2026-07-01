@@ -38,6 +38,9 @@ class FakeVectorStore:
     async def upsert_profile_document_chunk(self, **kwargs) -> None:
         self.upserts.append(kwargs)
 
+    async def delete_profile_document_points(self, *, document_id: str) -> None:
+        return None
+
 
 def test_profile_document_models_are_registered_with_metadata():
     assert "profile_documents" in Base.metadata.tables
@@ -241,3 +244,108 @@ async def test_create_document_from_pdf_creates_original_version_and_sets_first_
     assert document.active_version_id == versions[0].id
     assert profile.active_cv_document_id == document.id
     assert profile.active_cv_version_id == versions[0].id
+
+
+@pytest.mark.asyncio
+async def test_get_document_file_returns_original_version_file_metadata(
+    db_session,
+    test_role_profile,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "job_matching.db"))
+    source_path = tmp_path / "cv.pdf"
+    source_path.write_bytes(b"%PDF-test")
+    service = ProfileDocumentService(
+        extractor=FakeExtractor(),
+        embedder=FakeEmbedder(),
+        vector_store=FakeVectorStore(),
+    )
+    document = await service.create_document_from_pdf(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        source_path=source_path,
+        original_filename="cv.pdf",
+        mime_type="application/pdf",
+    )
+
+    file_info = await service.get_document_file(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        document_id=document.id,
+    )
+
+    assert file_info.path.read_bytes() == b"%PDF-test"
+    assert file_info.media_type == "application/pdf"
+    assert file_info.inline_filename.endswith(".pdf")
+    assert file_info.download_filename.endswith(".pdf")
+
+
+@pytest.mark.asyncio
+async def test_set_active_version_requires_existing_profile_document_and_version(
+    db_session,
+    test_role_profile,
+    monkeypatch,
+    tmp_path,
+):
+    from app.db.models import RoleProfile
+
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "job_matching.db"))
+    source_path = tmp_path / "cv.pdf"
+    source_path.write_bytes(b"%PDF-test")
+    service = ProfileDocumentService(
+        extractor=FakeExtractor(),
+        embedder=FakeEmbedder(),
+        vector_store=FakeVectorStore(),
+    )
+    document = await service.create_document_from_pdf(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        source_path=source_path,
+        original_filename="cv.pdf",
+        mime_type="application/pdf",
+    )
+
+    version = await service.set_active_version(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        document_id=document.id,
+        version_id=document.active_version_id,
+    )
+    profile = await db_session.get(RoleProfile, test_role_profile.id)
+
+    assert version.id == document.active_version_id
+    assert profile.active_cv_document_id == document.id
+    assert profile.active_cv_version_id == version.id
+
+
+@pytest.mark.asyncio
+async def test_delete_document_rejects_active_cv_without_clear_flag(
+    db_session,
+    test_role_profile,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "job_matching.db"))
+    source_path = tmp_path / "cv.pdf"
+    source_path.write_bytes(b"%PDF-test")
+    service = ProfileDocumentService(
+        extractor=FakeExtractor(),
+        embedder=FakeEmbedder(),
+        vector_store=FakeVectorStore(),
+    )
+    document = await service.create_document_from_pdf(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        source_path=source_path,
+        original_filename="cv.pdf",
+        mime_type="application/pdf",
+    )
+
+    with pytest.raises(ValueError, match="Cannot delete the active CV"):
+        await service.delete_document(
+            db_session,
+            role_profile_id=test_role_profile.id,
+            document_id=document.id,
+            clear_active=False,
+        )

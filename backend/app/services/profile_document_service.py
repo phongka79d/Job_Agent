@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 from typing import Protocol
@@ -47,6 +48,17 @@ class ProfileDocumentVectorStore(Protocol):
         vector: list[float],
     ) -> None:
         ...
+
+    async def delete_profile_document_points(self, *, document_id: str) -> None:
+        ...
+
+
+@dataclass(frozen=True)
+class ProfileDocumentFileInfo:
+    path: Path
+    media_type: str
+    inline_filename: str
+    download_filename: str
 
 
 class ProfileDocumentService:
@@ -223,3 +235,136 @@ class ProfileDocumentService:
             version.error_reason = reason[:500]
         await session.commit()
         await session.refresh(document)
+
+    async def _get_document_and_version(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        document_id: str,
+        version_id: str | None = None,
+    ) -> tuple[ProfileDocument, ProfileDocumentVersion]:
+        document = await session.get(ProfileDocument, document_id)
+        if document is None or document.role_profile_id != role_profile_id:
+            raise LookupError("profile document not found")
+        selected_version_id = version_id or document.active_version_id
+        if selected_version_id is None:
+            raise LookupError("profile document has no active version")
+        version = await session.get(ProfileDocumentVersion, selected_version_id)
+        if (
+            version is None
+            or version.document_id != document.id
+            or version.role_profile_id != role_profile_id
+        ):
+            raise LookupError("profile document version not found")
+        return document, version
+
+    async def get_document_file(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        document_id: str,
+        version_id: str | None = None,
+    ) -> ProfileDocumentFileInfo:
+        document, version = await self._get_document_and_version(
+            session,
+            role_profile_id=role_profile_id,
+            document_id=document_id,
+            version_id=version_id,
+        )
+        path = self.storage.resolve_stored_pdf(version.stored_path)
+        filename = self.storage.safe_download_filename(
+            "profile_cv",
+            document.original_filename,
+            f"v{version.version_number}",
+        )
+        return ProfileDocumentFileInfo(
+            path=path,
+            media_type="application/pdf",
+            inline_filename=filename,
+            download_filename=filename,
+        )
+
+    async def list_versions(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        document_id: str,
+    ) -> list[ProfileDocumentVersion]:
+        result = await session.execute(
+            select(ProfileDocumentVersion)
+            .where(ProfileDocumentVersion.role_profile_id == role_profile_id)
+            .where(ProfileDocumentVersion.document_id == document_id)
+            .order_by(ProfileDocumentVersion.version_number.asc(), ProfileDocumentVersion.created_at.asc())
+        )
+        return list(result.scalars())
+
+    async def get_active_cv(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+    ) -> tuple[ProfileDocument | None, ProfileDocumentVersion | None]:
+        profile = await session.get(RoleProfile, role_profile_id)
+        if profile is None or profile.active_cv_document_id is None or profile.active_cv_version_id is None:
+            return None, None
+        document = await session.get(ProfileDocument, profile.active_cv_document_id)
+        version = await session.get(ProfileDocumentVersion, profile.active_cv_version_id)
+        if document is None or version is None:
+            return None, None
+        if document.role_profile_id != role_profile_id or version.role_profile_id != role_profile_id:
+            return None, None
+        return document, version
+
+    async def set_active_version(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        document_id: str,
+        version_id: str | None,
+    ) -> ProfileDocumentVersion:
+        if version_id is None:
+            raise LookupError("profile document version not found")
+        document, version = await self._get_document_and_version(
+            session,
+            role_profile_id=role_profile_id,
+            document_id=document_id,
+            version_id=version_id,
+        )
+        if version.extraction_status != "ready":
+            raise ValueError("Only ready CV versions can be activated")
+        profile = await session.get(RoleProfile, role_profile_id)
+        if profile is None:
+            raise LookupError("role profile not found")
+        document.active_version_id = version.id
+        profile.active_cv_document_id = document.id
+        profile.active_cv_version_id = version.id
+        await session.commit()
+        await session.refresh(version)
+        return version
+
+    async def delete_document(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        document_id: str,
+        clear_active: bool = False,
+    ) -> None:
+        document = await session.get(ProfileDocument, document_id)
+        if document is None or document.role_profile_id != role_profile_id:
+            raise LookupError("profile document not found")
+        profile = await session.get(RoleProfile, role_profile_id)
+        is_active = bool(profile and profile.active_cv_document_id == document.id)
+        if is_active and not clear_active:
+            raise ValueError("Cannot delete the active CV without clearing active selection")
+        if is_active and profile:
+            profile.active_cv_document_id = None
+            profile.active_cv_version_id = None
+        await self.vector_store.delete_profile_document_points(document_id=document.id)
+        await session.delete(document)
+        await session.commit()
+        self.storage.delete_document_files(role_profile_id=role_profile_id, document_id=document_id)
