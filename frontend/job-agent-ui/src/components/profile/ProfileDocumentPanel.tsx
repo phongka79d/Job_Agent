@@ -11,6 +11,12 @@ interface ProfileDocumentPanelProps {
   activeProfileId: string | null;
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumentPanelProps) {
   const [documents, setDocuments] = useState<ProfileDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,26 +71,9 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
   };
 
   return (
-    <div className="glass-panel" style={{ padding: "16px" }} data-testid="profile-document-panel">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "11px",
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            fontWeight: 600,
-          }}
-        >
-          Profile PDFs
-        </span>
+    <section className="rail-section profile-document-panel" data-testid="profile-document-panel">
+      <div className="rail-section-heading">
+        <span>Profile documents</span>
         <ProfileDocumentUpload
           disabled={!activeProfileId || isUploading}
           isUploading={isUploading}
@@ -131,29 +120,43 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {documents.map((document) => (
-            <div
-              key={document.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "18px 1fr auto",
-                alignItems: "center",
-                gap: "8px",
-                color: "var(--text-secondary)",
-                fontSize: "12px",
-              }}
-            >
-              <FileText size={16} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {document.original_filename}
-              </span>
-              <span style={{ color: document.status === "failed" ? "var(--text-danger)" : "var(--text-muted)" }}>
-                {document.status}
-              </span>
-            </div>
-          ))}
+          {documents.map((document) => {
+            const updatedAt = new Intl.DateTimeFormat(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(new Date(document.updated_at));
+
+            return (
+              <div
+                key={document.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "18px 1fr",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "var(--text-secondary)",
+                  fontSize: "12px",
+                }}
+              >
+                <FileText size={16} />
+                <div>
+                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {document.original_filename}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", color: "var(--text-muted)", fontSize: "11px" }}>
+                    <span style={{ color: document.status === "failed" ? "var(--text-danger)" : undefined }}>
+                      {document.status}
+                    </span>
+                    <span>{formatFileSize(document.file_size_bytes)}</span>
+                    <span>{document.chunk_count} chunks</span>
+                    <span>{updatedAt}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -29,7 +29,6 @@ export default function BatchMetrics({ activeProfileId, activeBatchId, refreshTr
       setSummary(data);
     } catch (err: any) {
       if (err.status === 404) {
-        // If the summary endpoint returns 404 for a stored batch, remove only that profile's localStorage key
         const storedBatchId = loadActiveBatchId(activeProfileId);
         if (storedBatchId === activeBatchId) {
           clearActiveBatchId(activeProfileId);
@@ -47,39 +46,29 @@ export default function BatchMetrics({ activeProfileId, activeBatchId, refreshTr
     fetchSummary();
   }, [fetchSummary]);
 
-  const formatCurrency = (val: number | null | undefined) => {
-    if (val == null) return "N/A";
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 4 }).format(val);
-  };
-
-  const formatTime = (ms: number | null | undefined) => {
-    if (ms == null) return "N/A";
-    return `${(ms / 1000).toFixed(2)}s`;
-  };
-
   const formatNumber = (val: number | null | undefined) => {
-    if (val == null) return "N/A";
+    if (val == null) return null;
     return new Intl.NumberFormat("en-US").format(val);
   };
 
   if (!activeProfileId || !activeBatchId || (error == null && summary == null && !isLoading)) {
     return (
-      <div className="glass-panel" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-        <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+      <section className="rail-section batch-metrics-panel" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <h2 className="rail-section-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <BarChart2 size={14} /> Batch Metrics
-        </div>
+        </h2>
         <div style={{ color: "var(--text-secondary)", fontSize: "13px", textAlign: "center", padding: "16px 0" }}>
           No active batch metrics available.
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="glass-panel" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-      <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+    <section className="rail-section batch-metrics-panel" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <h2 className="rail-section-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
         <BarChart2 size={14} /> Batch Metrics
-      </div>
+      </h2>
       
       {error && (
         <div style={{ color: "var(--text-danger)", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -95,32 +84,40 @@ export default function BatchMetrics({ activeProfileId, activeBatchId, refreshTr
 
       {summary && (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>Jobs Parsed</span>
-            <span className="tabular-metrics" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{formatNumber(summary.total_parsed_jobs)}</span>
+          <div className="metric-row">
+            <span>Jobs parsed</span>
+            <strong className="tabular-metrics">{formatNumber(summary.total_parsed_jobs)}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>Scorable Jobs</span>
-            <span className="tabular-metrics" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{formatNumber(summary.scorable_jobs)}</span>
+          <div className="metric-row">
+            <span>Scorable jobs</span>
+            <strong className="tabular-metrics">{formatNumber(summary.scorable_jobs)}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>Failed Extractions</span>
-            <span className="tabular-metrics" style={{ color: "var(--text-danger)", fontWeight: 500 }}>{formatNumber(summary.failed_extractions)}</span>
+          <div className="metric-row">
+            <span>Failed extractions</span>
+            <strong className="tabular-metrics">{formatNumber(summary.failed_extractions)}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", borderTop: "1px solid var(--border-color)", paddingTop: "8px", marginTop: "4px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>Total Tokens</span>
-            <span className="tabular-metrics" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{formatNumber(summary.total_tokens)}</span>
+          <div className="metric-row">
+            <span>Total tokens</span>
+            <strong className="tabular-metrics">{formatNumber(summary.total_tokens)}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>Estimated Cost</span>
-            <span className="tabular-metrics" style={{ color: "var(--accent)", fontWeight: 500 }}>{formatCurrency(summary.estimated_cost_usd)}</span>
+          <div className="metric-row">
+            <span>Estimated cost</span>
+            <strong className="tabular-metrics">
+              {summary.estimated_cost_usd != null
+                ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 4 }).format(summary.estimated_cost_usd)
+                : null}
+            </strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>Avg Extraction Time</span>
-            <span className="tabular-metrics" style={{ color: "var(--text-primary)", fontWeight: 500 }}>{formatTime(summary.average_extraction_time_ms)}</span>
-          </div>
+          {summary.average_extraction_time_ms != null ? (
+            <div className="metric-row">
+              <span>Average extraction time</span>
+              <strong className="tabular-metrics">
+                {(summary.average_extraction_time_ms / 1000).toFixed(2)}s
+              </strong>
+            </div>
+          ) : null}
         </div>
       )}
-    </div>
+    </section>
   );
 }
