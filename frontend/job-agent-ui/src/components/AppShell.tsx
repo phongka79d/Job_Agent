@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Briefcase, ClipboardList, Layers } from 'lucide-react';
+import { Briefcase, ClipboardList, Layers, MessageSquare } from 'lucide-react';
 
 interface AppShellProps {
   sidebarContent: React.ReactNode;
@@ -26,6 +26,13 @@ export default function AppShell({ sidebarContent, activeBatchId, activeProfileI
             <NavLink
               to="/"
               end
+              className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}
+            >
+              <MessageSquare size={16} />
+              Agent Chat
+            </NavLink>
+            <NavLink
+              to="/review"
               className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}
             >
               <ClipboardList size={16} />

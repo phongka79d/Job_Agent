@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AppShell from './components/AppShell';
 import ReviewPage from './pages/ReviewPage';
 import DashboardPage from './pages/DashboardPage';
+import ChatWorkspacePage from './pages/ChatWorkspacePage';
 import RoleProfilePanel from './components/RoleProfilePanel';
 import IngestionPanel from './components/IngestionPanel';
 import type { RoleProfile } from './types/api';
@@ -59,7 +60,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppShell sidebarContent={sidebar} activeBatchId={activeBatchId} activeProfileId={activeProfile?.id || null} triggerMetricsRefresh={triggerMetricsRefresh} />}>
-          <Route index element={<ReviewPage />} />
+          <Route index element={<ChatWorkspacePage />} />
+          <Route path="review" element={<ReviewPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
         </Route>
       </Routes>
