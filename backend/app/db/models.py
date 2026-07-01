@@ -89,6 +89,8 @@ class RoleProfile(Base):
     accept_remote: Mapped[bool | None] = mapped_column(Boolean, nullable=True, doc="Whether remote jobs are acceptable")
     skills: Mapped[str | None] = mapped_column(Text, nullable=True, doc="Desired canonical skills as a JSON array")
     resume_text: Mapped[str | None] = mapped_column(Text, nullable=True, doc="CV/Profile raw text")
+    active_cv_document_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    active_cv_version_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[created_timestamp]
     updated_at: Mapped[updated_timestamp]
 
@@ -308,8 +310,51 @@ class ProfileDocument(Base):
     file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     extracted_text_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    document_kind: Mapped[str] = mapped_column(Text, nullable=False, default="cv")
+    active_version_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False, default="processing")
     error_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
+class ProfileDocumentVersion(Base):
+    """Real PDF version for an uploaded or exported profile CV."""
+    __tablename__ = "profile_document_versions"
+
+    __table_args__ = (
+        Index("idx_profile_document_versions_document_number", "document_id", "version_number"),
+        Index("idx_profile_document_versions_role_profile_created", "role_profile_id", text("created_at DESC")),
+    )
+
+    id: Mapped[uuid_pk]
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_type: Mapped[str] = mapped_column(Text, nullable=False, default="original_upload")
+    parent_version_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    draft_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    display_name: Mapped[str] = mapped_column(Text, nullable=False)
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    stored_path: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    mime_type: Mapped[str] = mapped_column(Text, nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    extracted_text_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    extraction_status: Mapped[str] = mapped_column(Text, nullable=False, default="processing")
+    structure_status: Mapped[str] = mapped_column(Text, nullable=False, default="not_extracted")
+    structure_confidence: Mapped[float | None] = mapped_column(nullable=True)
+    error_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str] = mapped_column(Text, nullable=False, default="user")
     created_at: Mapped[created_timestamp]
     updated_at: Mapped[updated_timestamp]
 
@@ -334,6 +379,12 @@ class ProfileDocumentChunk(Base):
         ForeignKey("role_profiles.id"),
         nullable=False,
     )
+    version_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("profile_document_versions.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    source_type: Mapped[str] = mapped_column(Text, nullable=False, default="profile_cv")
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.db.models import Base, ProfileDocument, ProfileDocumentChunk
+from app.db.models import Base, ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion
 from app.services import pdf_text_extraction_service
 from app.services.pdf_text_extraction_service import (
     PdfTextExtractionError,
@@ -41,8 +41,10 @@ class FakeVectorStore:
 
 def test_profile_document_models_are_registered_with_metadata():
     assert "profile_documents" in Base.metadata.tables
+    assert "profile_document_versions" in Base.metadata.tables
     assert "profile_document_chunks" in Base.metadata.tables
     assert ProfileDocument.__tablename__ == "profile_documents"
+    assert ProfileDocumentVersion.__tablename__ == "profile_document_versions"
     assert ProfileDocumentChunk.__tablename__ == "profile_document_chunks"
 
 

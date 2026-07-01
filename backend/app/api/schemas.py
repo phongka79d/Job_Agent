@@ -283,6 +283,9 @@ class ProfileDocumentResponse(ApiSchema):
     id: UUID
     role_profile_id: UUID
     original_filename: str
+    document_kind: str
+    active_version_id: UUID | None
+    is_active: bool = False
     mime_type: str
     file_size_bytes: int
     extracted_text_chars: int
@@ -295,6 +298,40 @@ class ProfileDocumentResponse(ApiSchema):
 
 class ProfileDocumentListResponse(ApiSchema):
     documents: list[ProfileDocumentResponse] = Field(default_factory=list)
+
+
+class ProfileDocumentVersionResponse(ApiSchema):
+    id: UUID
+    document_id: UUID
+    role_profile_id: UUID
+    version_number: int
+    source_type: str
+    display_name: str
+    filename: str
+    mime_type: str
+    file_size_bytes: int
+    extracted_text_chars: int
+    chunk_count: int
+    extraction_status: str
+    structure_status: str
+    structure_confidence: float | None
+    error_reason: str | None
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProfileDocumentVersionListResponse(ApiSchema):
+    versions: list[ProfileDocumentVersionResponse] = Field(default_factory=list)
+
+
+class ActiveCvResponse(ApiSchema):
+    document: ProfileDocumentResponse | None = None
+    version: ProfileDocumentVersionResponse | None = None
+
+
+class ActivateCvVersionRequest(ApiSchema):
+    confirmed: bool = False
 
 
 def _parse_string_list(value: Any) -> list[str]:

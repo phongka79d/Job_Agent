@@ -55,6 +55,7 @@ async def init_db() -> None:
         "job_posts",
         "memory_summaries",
         "profile_document_chunks",
+        "profile_document_versions",
         "profile_documents",
         "role_profiles",
     }
