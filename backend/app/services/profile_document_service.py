@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.db.models import ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion, RoleProfile
+from app.db.models import ProfileDocument, ProfileDocumentVersion, RoleProfile
 from app.services.profile_document_storage_service import ProfileDocumentStorageService
 from app.services.embedding_service import EmbeddingService
 from app.services.cv_structure_extraction_service import CvStructureExtractionService
@@ -20,6 +20,7 @@ from app.services.pdf_text_extraction_service import (
     PdfTextExtractionError,
     PdfTextExtractionService,
 )
+from app.services.profile_document_indexing_service import ProfileDocumentIndexingService
 from app.services.qdrant_service import QdrantService
 from app.services.token_budget_service import SimpleTokenCounter
 
@@ -73,6 +74,7 @@ class ProfileDocumentService:
         vector_store: ProfileDocumentVectorStore | None = None,
         storage: ProfileDocumentStorageService | None = None,
         structure_extractor: CvStructureExtractionService | None = None,
+        indexing_service: ProfileDocumentIndexingService | None = None,
     ) -> None:
         self.extractor = extractor or PdfTextExtractionService()
         self.token_counter = token_counter or SimpleTokenCounter()
@@ -80,6 +82,11 @@ class ProfileDocumentService:
         self.vector_store = vector_store or QdrantService()
         self.storage = storage or ProfileDocumentStorageService()
         self.structure_extractor = structure_extractor or CvStructureExtractionService()
+        self.indexing_service = indexing_service or ProfileDocumentIndexingService(
+            token_counter=token_counter,
+            embedder=embedder,
+            vector_store=vector_store,
+        )
 
     async def list_documents(
         self,
@@ -150,36 +157,17 @@ class ProfileDocumentService:
 
         try:
             text = self.extractor.extract_text(stored_path)
-            chunks = self._chunk_text(text)
-            if not chunks:
-                raise ValueError("PDF does not contain enough extractable text")
-            for index, chunk_text in enumerate(chunks):
-                chunk_id = str(uuid4())
-                chunk = ProfileDocumentChunk(
-                    id=chunk_id,
-                    document_id=document.id,
-                    role_profile_id=role_profile_id,
-                    version_id=version.id,
-                    source_type="profile_cv",
-                    chunk_index=index,
-                    text=chunk_text,
-                    token_count=self.token_counter.count(chunk_text),
-                    qdrant_point_id=str(uuid4()),
-                )
-                vector = await self.embedder.embed_text(chunk_text)
-                await self.vector_store.upsert_profile_document_chunk(
-                    point_id=chunk.qdrant_point_id,
-                    role_profile_id=role_profile_id,
-                    document_id=document.id,
-                    chunk_id=chunk_id,
-                    chunk_index=index,
-                    vector=vector,
-                )
-                session.add(chunk)
+            chunk_count = await self.indexing_service.index_extracted_text(
+                session,
+                role_profile_id=role_profile_id,
+                document_id=document.id,
+                version_id=version.id,
+                text=text,
+            )
             document.extracted_text_chars = len(text)
-            document.chunk_count = len(chunks)
+            document.chunk_count = chunk_count
             version.extracted_text_chars = len(text)
-            version.chunk_count = len(chunks)
+            version.chunk_count = chunk_count
             version.extraction_status = "ready"
             structure = self.structure_extractor.analyze(text)
             version.structure_status = structure.status
@@ -208,25 +196,6 @@ class ProfileDocumentService:
         size = source_path.stat().st_size
         if size <= 0 or size > MAX_PROFILE_PDF_BYTES:
             raise ValueError("PDF file size is outside the allowed range")
-
-    def _chunk_text(
-        self,
-        text: str,
-        *,
-        max_chars: int = 1800,
-        overlap_chars: int = 200,
-    ) -> list[str]:
-        chunks: list[str] = []
-        start = 0
-        while start < len(text):
-            end = min(start + max_chars, len(text))
-            chunk = text[start:end].strip()
-            if chunk:
-                chunks.append(chunk)
-            if end == len(text):
-                break
-            start = max(0, end - overlap_chars)
-        return chunks
 
     @staticmethod
     async def _mark_failed(
