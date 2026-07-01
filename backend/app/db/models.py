@@ -286,6 +286,61 @@ class MemorySummary(Base):
     updated_at: Mapped[updated_timestamp]
 
 
+class ProfileDocument(Base):
+    """Uploaded profile PDF metadata scoped to a role profile."""
+    __tablename__ = "profile_documents"
+
+    __table_args__ = (
+        Index("idx_profile_documents_role_profile_created", "role_profile_id", text("created_at DESC")),
+        Index("idx_profile_documents_content_hash", "content_hash"),
+    )
+
+    id: Mapped[uuid_pk]
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    original_filename: Mapped[str] = mapped_column(Text, nullable=False)
+    stored_path: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    mime_type: Mapped[str] = mapped_column(Text, nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    extracted_text_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="processing")
+    error_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
+class ProfileDocumentChunk(Base):
+    """Text chunk from an uploaded profile document with a Qdrant point ID."""
+    __tablename__ = "profile_document_chunks"
+
+    __table_args__ = (
+        Index("idx_profile_document_chunks_document", "document_id", "chunk_index"),
+        Index("idx_profile_document_chunks_role_profile", "role_profile_id"),
+    )
+
+    id: Mapped[uuid_pk]
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    qdrant_point_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    created_at: Mapped[created_timestamp]
+
+
 class AgentToolCall(Base):
     """Sanitized visible tool call event persisted for chat UI."""
     __tablename__ = "agent_tool_calls"
