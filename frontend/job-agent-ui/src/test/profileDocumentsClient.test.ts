@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "../api/client";
 import {
   activateProfileDocumentVersion,
+  createCvDraft,
+  createCvSuggestion,
   deleteProfileDocument,
   getProfileDocumentDownloadUrl,
   getProfileDocumentFileUrl,
+  listCvDrafts,
+  listCvSuggestions,
   listProfileDocumentVersions,
   listProfileDocuments,
+  previewCvDraft,
   uploadProfileDocument,
 } from "../api/profileDocumentsClient";
 
@@ -82,5 +87,81 @@ describe("profileDocumentsClient", () => {
       "/api/role-profiles/profile-1/documents/doc-1",
       { params: { clear_active: true } }
     );
+  });
+
+  it("creates CV suggestions and drafts through profile document routes", async () => {
+    postSpy.mockResolvedValueOnce({
+      data: {
+        id: "suggestion-1",
+        role_profile_id: "profile-1",
+        document_id: "doc-1",
+        version_id: "version-1",
+        job_id: null,
+        requirement: "FastAPI",
+        current_cv_evidence: "Evidence",
+        missing_or_weak_evidence: "Weak wording",
+        proposed_edit: "Improve wording",
+        edit_kind: "wording_only",
+        risk_level: "low",
+        requires_confirmation: true,
+        status: "suggested",
+        created_at: "2026-07-01T00:00:00Z",
+        updated_at: "2026-07-01T00:00:00Z",
+      },
+    });
+    postSpy.mockResolvedValueOnce({
+      data: {
+        id: "draft-1",
+        role_profile_id: "profile-1",
+        document_id: "doc-1",
+        base_version_id: "version-1",
+        status: "draft",
+        title: "Draft",
+        structure_status_at_creation: "reliable",
+        created_by: "ai",
+        created_at: "2026-07-01T00:00:00Z",
+        updated_at: "2026-07-01T00:00:00Z",
+      },
+    });
+
+    const suggestion = await createCvSuggestion("profile-1", "doc-1", "version-1", {
+      requirement: "FastAPI",
+      current_cv_evidence: "Evidence",
+      missing_or_weak_evidence: "Weak wording",
+      proposed_edit: "Improve wording",
+      edit_kind: "wording_only",
+      risk_level: "low",
+      requires_confirmation: true,
+    });
+    const draft = await createCvDraft("profile-1", "doc-1", "version-1", {
+      title: "Draft",
+      suggestion_ids: [suggestion.id],
+      confirmed: true,
+    });
+
+    expect(suggestion.id).toBe("suggestion-1");
+    expect(draft.id).toBe("draft-1");
+  });
+
+  it("lists suggestions, drafts, and draft previews", async () => {
+    getSpy.mockResolvedValueOnce({ data: { suggestions: [] } });
+    getSpy.mockResolvedValueOnce({ data: { drafts: [] } });
+    getSpy.mockResolvedValueOnce({
+      data: {
+        draft_id: "draft-1",
+        title: "Draft",
+        status: "draft",
+        structure_status: "reliable",
+        recommendation: null,
+        sections: [],
+        edits: [],
+      },
+    });
+
+    await expect(listCvSuggestions("profile-1", "doc-1")).resolves.toEqual([]);
+    await expect(listCvDrafts("profile-1", "doc-1")).resolves.toEqual([]);
+    await expect(previewCvDraft("profile-1", "doc-1", "draft-1")).resolves.toMatchObject({
+      draft_id: "draft-1",
+    });
   });
 });

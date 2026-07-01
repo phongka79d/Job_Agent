@@ -5,10 +5,13 @@ import {
   deleteProfileDocument,
   getProfileDocumentDownloadUrl,
   getProfileDocumentFileUrl,
+  listCvDrafts,
+  listCvSuggestions,
   listProfileDocuments,
+  previewCvDraft,
   uploadProfileDocument,
 } from "../../api/profileDocumentsClient";
-import type { ProfileDocument } from "../../types/profileDocuments";
+import type { CvDraft, CvDraftPreview, CvImprovementSuggestion, ProfileDocument } from "../../types/profileDocuments";
 import ProfileDocumentUpload from "./ProfileDocumentUpload";
 
 interface ProfileDocumentPanelProps {
@@ -26,6 +29,9 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestionsByDocument, setSuggestionsByDocument] = useState<Record<string, CvImprovementSuggestion[]>>({});
+  const [draftsByDocument, setDraftsByDocument] = useState<Record<string, CvDraft[]>>({});
+  const [draftPreview, setDraftPreview] = useState<CvDraftPreview | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +48,14 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
         const nextDocuments = await listProfileDocuments(activeProfileId);
         if (!cancelled) {
           setDocuments(nextDocuments);
+          const suggestionEntries = await Promise.all(
+            nextDocuments.map(async (document) => [document.id, await listCvSuggestions(activeProfileId, document.id)] as const)
+          );
+          const draftEntries = await Promise.all(
+            nextDocuments.map(async (document) => [document.id, await listCvDrafts(activeProfileId, document.id)] as const)
+          );
+          setSuggestionsByDocument(Object.fromEntries(suggestionEntries));
+          setDraftsByDocument(Object.fromEntries(draftEntries));
         }
       } catch (err) {
         if (!cancelled) {
@@ -62,7 +76,16 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
 
   const refreshDocuments = async () => {
     if (!activeProfileId) return;
-    setDocuments(await listProfileDocuments(activeProfileId));
+    const nextDocuments = await listProfileDocuments(activeProfileId);
+    setDocuments(nextDocuments);
+    const suggestionEntries = await Promise.all(
+      nextDocuments.map(async (document) => [document.id, await listCvSuggestions(activeProfileId, document.id)] as const)
+    );
+    const draftEntries = await Promise.all(
+      nextDocuments.map(async (document) => [document.id, await listCvDrafts(activeProfileId, document.id)] as const)
+    );
+    setSuggestionsByDocument(Object.fromEntries(suggestionEntries));
+    setDraftsByDocument(Object.fromEntries(draftEntries));
   };
 
   const handleUpload = async (file: File) => {
@@ -224,6 +247,43 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                       <Trash2 size={14} /> Delete
                     </button>
                   </div>
+                  {(suggestionsByDocument[document.id] ?? []).length > 0 ? (
+                    <div className="profile-document-subpanel">
+                      <div className="profile-document-subpanel-title">CV suggestions</div>
+                      {(suggestionsByDocument[document.id] ?? []).map((suggestion) => (
+                        <div key={suggestion.id} className="profile-document-suggestion">
+                          <strong>{suggestion.requirement}</strong>
+                          <span>{suggestion.proposed_edit}</span>
+                          <small>{suggestion.edit_kind} · {suggestion.risk_level}</small>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {(draftsByDocument[document.id] ?? []).length > 0 ? (
+                    <div className="profile-document-subpanel">
+                      <div className="profile-document-subpanel-title">Draft preview</div>
+                      {(draftsByDocument[document.id] ?? []).map((draft) => (
+                        <button
+                          key={draft.id}
+                          type="button"
+                          onClick={() => {
+                            void previewCvDraft(activeProfileId!, document.id, draft.id).then(setDraftPreview);
+                          }}
+                        >
+                          {draft.title}
+                        </button>
+                      ))}
+                      {draftPreview?.draft_id && (
+                        <div className="profile-document-preview">
+                          <strong>{draftPreview.title}</strong>
+                          {draftPreview.recommendation ? <p>{draftPreview.recommendation}</p> : null}
+                          {draftPreview.edits.map((edit) => (
+                            <p key={`${draftPreview.draft_id}-${edit.requirement}`}>{edit.proposed_edit}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );
