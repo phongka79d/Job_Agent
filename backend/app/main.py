@@ -8,7 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes_chat import router as chat_router
 from app.api.routes_batches import router as batches_router
 from app.api.routes_jobs import router as jobs_router
-from app.api.routes_profile_documents import router as profile_documents_router
+from app.api.routes_profile_documents import (
+    active_cv_router,
+    router as profile_documents_router,
+)
 from app.api.routes_role_profiles import router as role_profiles_router
 from app.core.logging import setup_logging
 from app.db.session import init_db
@@ -48,6 +51,7 @@ app.include_router(jobs_router, prefix="/api")
 app.include_router(batches_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(profile_documents_router, prefix="/api")
+app.include_router(active_cv_router, prefix="/api")
 
 
 @app.get("/")

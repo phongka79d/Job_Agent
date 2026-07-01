@@ -26,6 +26,9 @@ class FakeVectorStore:
     async def upsert_profile_document_chunk(self, **kwargs) -> None:
         return None
 
+    async def delete_profile_document_points(self, *, document_id: str) -> None:
+        return None
+
 
 @pytest_asyncio.fixture
 async def role_profile(db_session):
@@ -112,3 +115,73 @@ async def test_upload_profile_document_rejects_non_pdf(client, role_profile):
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Only PDF uploads are supported"
+
+
+@pytest.mark.asyncio
+async def test_view_profile_document_returns_inline_pdf(client, role_profile):
+    upload = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents",
+        files={"file": ("cv.pdf", b"%PDF-test", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+
+    response = await client.get(
+        f"/api/role-profiles/{role_profile.id}/documents/{document_id}/file"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert "inline" in response.headers["content-disposition"]
+    assert response.content == b"%PDF-test"
+
+
+@pytest.mark.asyncio
+async def test_download_profile_document_returns_attachment_pdf(client, role_profile):
+    upload = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents",
+        files={"file": ("cv.pdf", b"%PDF-test", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+
+    response = await client.get(
+        f"/api/role-profiles/{role_profile.id}/documents/{document_id}/download"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert "attachment" in response.headers["content-disposition"]
+    assert response.content == b"%PDF-test"
+
+
+@pytest.mark.asyncio
+async def test_delete_active_profile_document_requires_clear_active(client, role_profile):
+    upload = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents",
+        files={"file": ("cv.pdf", b"%PDF-test", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+
+    response = await client.delete(
+        f"/api/role-profiles/{role_profile.id}/documents/{document_id}"
+    )
+
+    assert response.status_code == 409
+    assert "active CV" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_activate_profile_cv_version_requires_confirmation(client, role_profile):
+    upload = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents",
+        files={"file": ("cv.pdf", b"%PDF-test", "application/pdf")},
+    )
+    document = upload.json()
+    version_id = document["active_version_id"]
+
+    response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version_id}/activate",
+        json={"confirmed": False},
+    )
+
+    assert response.status_code == 409
+    assert "requires confirmation" in response.json()["detail"]
