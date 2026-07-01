@@ -10,6 +10,7 @@ from typing import Any
 from app.services.job_search_workflow import ingest_search_jobs
 from app.services.job_text_ingestion_workflow import ingest_raw_job_text
 from app.services.profile_cv_draft_service import CreateCvDraftRequest, CreateCvSuggestionRequest
+from app.services.profile_cv_export_service import ExportCvDraftRequest
 
 
 @dataclass(frozen=True)
@@ -124,6 +125,18 @@ class ToolRegistry:
                 name="preview_cv_edit_draft",
                 description="Preview an editable CV draft without exporting or activating it.",
                 requires_confirmation=False,
+                handler=_not_wired,
+            ),
+            "export_cv_draft_to_pdf": ToolDefinition(
+                name="export_cv_draft_to_pdf",
+                description="Export an approved CV edit draft into a real PDF version without activating it.",
+                requires_confirmation=True,
+                handler=_not_wired,
+            ),
+            "set_active_cv_version": ToolDefinition(
+                name="set_active_cv_version",
+                description="Set a profile CV version as the active source of truth after confirmation.",
+                requires_confirmation=True,
                 handler=_not_wired,
             ),
         }
@@ -507,6 +520,67 @@ def build_extract_job_from_text_handler(
                 "review_queue_path": "/review",
                 "job_ids": job_ids,
                 "batch_id": str(getattr(result, "batch_id", "")),
+            },
+        )
+
+    return handler
+
+
+def build_export_cv_draft_to_pdf_handler(
+    export_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        version = await export_service.export_draft_to_pdf(
+            session,
+            ExportCvDraftRequest(
+                role_profile_id=str(request.context["role_profile_id"]),
+                document_id=str(request.context["document_id"]),
+                draft_id=str(request.arguments["draft_id"]),
+                confirmed=bool(request.arguments.get("confirmed", False)),
+                created_by="ai",
+            ),
+        )
+        return ToolResult(
+            content="Exported the CV draft as a new PDF version. The active CV was not changed.",
+            result_summary=f"Exported CV draft as PDF version {version.version_number}",
+            safe_payload={
+                "document_id": version.document_id,
+                "version_id": version.id,
+                "version_number": version.version_number,
+                "source_type": version.source_type,
+                "extraction_status": version.extraction_status,
+                "structure_status": version.structure_status,
+                "structure_confidence": version.structure_confidence,
+            },
+        )
+
+    return handler
+
+
+def build_set_active_cv_version_handler(
+    document_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        version = await document_service.set_active_version(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+            document_id=str(request.context["document_id"]),
+            version_id=str(request.arguments["version_id"]),
+            confirmed=bool(request.arguments.get("confirmed", False)),
+        )
+        return ToolResult(
+            content="Set the selected CV version as the active profile CV source of truth.",
+            result_summary=f"Set CV version {version.version_number} active",
+            safe_payload={
+                "document_id": version.document_id,
+                "version_id": version.id,
+                "version_number": version.version_number,
+                "source_type": version.source_type,
+                "extraction_status": version.extraction_status,
+                "structure_status": version.structure_status,
+                "structure_confidence": version.structure_confidence,
             },
         )
 

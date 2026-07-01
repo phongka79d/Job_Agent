@@ -28,18 +28,22 @@ from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClie
 from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
 from app.services.profile_cv_draft_service import ProfileCvDraftService
+from app.services.profile_cv_export_service import ProfileCvExportService
 from app.services.profile_document_retrieval_service import ProfileDocumentRetrievalService
+from app.services.profile_document_service import ProfileDocumentService
 from app.services.tool_registry import (
     ToolRegistry,
     ToolRequest,
     build_analyze_cv_structure_handler,
     build_create_cv_edit_draft_handler,
+    build_export_cv_draft_to_pdf_handler,
     build_extract_job_from_text_handler,
     build_get_active_profile_cv_handler,
     build_list_profile_cvs_handler,
     build_preview_cv_edit_draft_handler,
     build_retrieve_profile_cv_chunks_handler,
     build_search_jobs_handler,
+    build_set_active_cv_version_handler,
     build_suggest_cv_improvements_handler,
     build_view_profile_cv_metadata_handler,
 )
@@ -53,6 +57,8 @@ memory_service = ChatMemoryService()
 chat_llm_client = OpenAIChatLLMClient()
 profile_cv_retrieval_service = ProfileDocumentRetrievalService()
 profile_cv_draft_service = ProfileCvDraftService()
+profile_cv_export_service = ProfileCvExportService()
+profile_document_service = ProfileDocumentService()
 
 
 def build_tool_registry(session: SessionDep) -> ToolRegistry:
@@ -69,6 +75,8 @@ def build_tool_registry(session: SessionDep) -> ToolRegistry:
             "suggest_cv_improvements": build_suggest_cv_improvements_handler(profile_cv_draft_service, session),
             "create_cv_edit_draft": build_create_cv_edit_draft_handler(profile_cv_draft_service, session),
             "preview_cv_edit_draft": build_preview_cv_edit_draft_handler(profile_cv_draft_service, session),
+            "export_cv_draft_to_pdf": build_export_cv_draft_to_pdf_handler(profile_cv_export_service, session),
+            "set_active_cv_version": build_set_active_cv_version_handler(profile_document_service, session),
         }
     )
 

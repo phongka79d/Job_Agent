@@ -376,3 +376,83 @@ async def test_cv_draft_tool_handlers_return_sanitized_payloads():
     )
     assert "Private CV text" in preview_result.content
     assert "Private CV text" not in str(preview_result.safe_payload)
+
+
+def test_cv_export_and_active_tools_require_confirmation():
+    tools = ToolRegistry().list_tools()
+
+    assert tools["export_cv_draft_to_pdf"].requires_confirmation is True
+    assert tools["set_active_cv_version"].requires_confirmation is True
+
+
+@pytest.mark.asyncio
+async def test_export_cv_draft_tool_returns_safe_payload():
+    class ExportService:
+        async def export_draft_to_pdf(self, session, request):
+            assert request.confirmed is True
+
+            class Version:
+                id = "version-2"
+                document_id = "doc-1"
+                version_number = 2
+                source_type = "exported_draft"
+                extraction_status = "ready"
+                structure_status = "reliable"
+                structure_confidence = 0.91
+
+            return Version()
+
+    from app.services.tool_registry import build_export_cv_draft_to_pdf_handler
+
+    handler = build_export_cv_draft_to_pdf_handler(ExportService(), object())
+    result = await handler(
+        ToolRequest(
+            name="export_cv_draft_to_pdf",
+            arguments={"draft_id": "draft-1", "confirmed": True},
+            context={"role_profile_id": "profile-1", "document_id": "doc-1"},
+        )
+    )
+
+    assert result.result_summary == "Exported CV draft as PDF version 2"
+    assert result.safe_payload == {
+        "document_id": "doc-1",
+        "version_id": "version-2",
+        "version_number": 2,
+        "source_type": "exported_draft",
+        "extraction_status": "ready",
+        "structure_status": "reliable",
+        "structure_confidence": 0.91,
+    }
+
+
+@pytest.mark.asyncio
+async def test_set_active_cv_version_tool_returns_safe_payload():
+    class DocumentService:
+        async def set_active_version(self, session, **kwargs):
+            assert kwargs["confirmed"] is True
+
+            class Version:
+                id = "version-2"
+                document_id = "doc-1"
+                version_number = 2
+                source_type = "exported_draft"
+                extraction_status = "ready"
+                structure_status = "reliable"
+                structure_confidence = 0.91
+
+            return Version()
+
+    from app.services.tool_registry import build_set_active_cv_version_handler
+
+    handler = build_set_active_cv_version_handler(DocumentService(), object())
+    result = await handler(
+        ToolRequest(
+            name="set_active_cv_version",
+            arguments={"version_id": "version-2", "confirmed": True},
+            context={"role_profile_id": "profile-1", "document_id": "doc-1"},
+        )
+    )
+
+    assert result.result_summary == "Set CV version 2 active"
+    assert result.safe_payload["version_id"] == "version-2"
+    assert "FastAPI" not in str(result.safe_payload)
