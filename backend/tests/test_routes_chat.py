@@ -78,6 +78,35 @@ async def test_append_user_message_returns_stream_url(client, role_profile):
 
 
 @pytest.mark.asyncio
+async def test_stream_conversation_events_returns_placeholder_sse(client, role_profile):
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "Session",
+        },
+    )
+    conversation = conversation_response.json()
+    after_message_id = uuid4()
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": after_message_id},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert response.text == (
+        "event: message_started\n"
+        f'data: {{"conversation_id":"{conversation["id"]}",'
+        f'"after_message_id":"{after_message_id}"}}\n\n'
+        "event: message_completed\n"
+        f'data: {{"conversation_id":"{conversation["id"]}",'
+        f'"after_message_id":"{after_message_id}"}}\n\n'
+    )
+
+
+@pytest.mark.asyncio
 async def test_list_tool_calls_returns_serialized_calls_in_order(
     client,
     db_session,

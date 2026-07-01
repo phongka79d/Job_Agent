@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.api.routes_role_profiles import SessionDep
@@ -25,6 +28,10 @@ from app.services.chat_service import ChatService
 router = APIRouter(prefix="/chat", tags=["chat"])
 chat_service = ChatService()
 agent_event_service = AgentEventService()
+
+
+def _sse_event(event_type: str, payload: dict[str, object]) -> str:
+    return f"event: {event_type}\ndata: {json.dumps(payload, separators=(',', ':'))}\n\n"
 
 
 async def _require_profile(session: SessionDep, role_profile_id: str) -> None:
@@ -118,6 +125,34 @@ async def list_tool_calls(
         conversation_id=str(conversation_id),
     )
     return AgentToolCallListResponse(tool_calls=tool_calls)
+
+
+@router.get("/conversations/{conversation_id}/stream")
+async def stream_conversation_events(
+    conversation_id: UUID,
+    after_message_id: UUID,
+    session: SessionDep,
+) -> StreamingResponse:
+    await _require_conversation(session, str(conversation_id))
+
+    async def event_generator():
+        yield _sse_event(
+            "message_started",
+            {
+                "conversation_id": str(conversation_id),
+                "after_message_id": str(after_message_id),
+            },
+        )
+        await asyncio.sleep(0)
+        yield _sse_event(
+            "message_completed",
+            {
+                "conversation_id": str(conversation_id),
+                "after_message_id": str(after_message_id),
+            },
+        )
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.post(
