@@ -32,6 +32,15 @@ vi.mock("../api/client", () => {
   };
 });
 
+vi.mock("../api/profileDocumentsClient", () => ({
+  listProfileDocuments: vi.fn().mockResolvedValue([]),
+  uploadProfileDocument: vi.fn(),
+}));
+
+vi.mock("../components/profile/ProfileDocumentPanel", () => ({
+  default: () => <div data-testid="mock-profile-document-panel" />,
+}));
+
 const mockProfiles: RoleProfile[] = [
   {
     id: "prof-1",
@@ -212,13 +221,13 @@ describe("Active Batch State and Role Isolation", () => {
     const profileSelect = screen.getByTestId("profile-select") as HTMLSelectElement;
     fireEvent.change(profileSelect, { target: { value: "prof-2" } });
 
-    // There should be no ingestion or dashboard calls. Review jobs may load for the selected profile,
-    // but no latest-batch discovery endpoint exists or is called.
+    // There should be no ingestion, review, or dashboard calls from profile switching
+    // on the chat-first workspace. No latest-batch discovery endpoint exists or is called.
     expect(searchJobs).not.toHaveBeenCalled();
     expect(parseJobUrl).not.toHaveBeenCalled();
     expect(parseJobText).not.toHaveBeenCalled();
     expect(getJobs).not.toHaveBeenCalled();
-    expect(getReviewJobs).toHaveBeenCalledWith("prof-2");
+    expect(getReviewJobs).not.toHaveBeenCalled();
 
     // Verify localStorage key for prof-2 doesn't trigger any API fetch
     const storedBatchId = localStorage.getItem("job-agent.activeBatchId.prof-2");

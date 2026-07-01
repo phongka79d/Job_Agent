@@ -15,7 +15,16 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.api.schemas import (
+    AgentToolCallListResponse,
+    AgentToolCallResponse,
     BatchSummaryResponse,
+    ChatConversationCreateRequest,
+    ChatConversationListResponse,
+    ChatConversationResponse,
+    ChatMessageCreateRequest,
+    ChatMessageCreateResponse,
+    ChatMessageListResponse,
+    ChatMessageResponse,
     IngestionResponse,
     JobListResponse,
     JobResponse,
@@ -104,6 +113,33 @@ ENDPOINTS = {
         "path": "/api/batches/{batch_id}/summary",
         "response_schema": "BatchSummaryResponse",
     },
+    "createConversation": {
+        "method": "POST",
+        "path": "/api/chat/conversations",
+        "request_schema": "ChatConversationCreateRequest",
+        "response_schema": "ChatConversationResponse",
+    },
+    "listConversations": {
+        "method": "GET",
+        "path": "/api/chat/conversations",
+        "response_schema": "ChatConversationListResponse",
+    },
+    "sendChatMessage": {
+        "method": "POST",
+        "path": "/api/chat/conversations/{conversation_id}/messages",
+        "request_schema": "ChatMessageCreateRequest",
+        "response_schema": "ChatMessageCreateResponse",
+    },
+    "listChatMessages": {
+        "method": "GET",
+        "path": "/api/chat/conversations/{conversation_id}/messages",
+        "response_schema": "ChatMessageListResponse",
+    },
+    "listAgentToolCalls": {
+        "method": "GET",
+        "path": "/api/chat/conversations/{conversation_id}/tool-calls",
+        "response_schema": "AgentToolCallListResponse",
+    },
     "uploadProfileDocument": {
         "method": "POST",
         "path": "/api/role-profiles/{role_profile_id}/documents",
@@ -129,6 +165,15 @@ SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
     IngestionResponse,
     JobListResponse,
     BatchSummaryResponse,
+    ChatConversationCreateRequest,
+    ChatConversationResponse,
+    ChatConversationListResponse,
+    ChatMessageCreateRequest,
+    ChatMessageResponse,
+    ChatMessageListResponse,
+    ChatMessageCreateResponse,
+    AgentToolCallResponse,
+    AgentToolCallListResponse,
     ProfileDocumentResponse,
     ProfileDocumentListResponse,
 )
