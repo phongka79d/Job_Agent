@@ -21,6 +21,7 @@ class AgentEventService:
         input_summary: str,
         safe_payload: dict[str, Any] | None = None,
     ) -> AgentToolCall:
+        """Persist only caller-sanitized, allowlisted summaries and safe payload."""
         call = AgentToolCall(
             conversation_id=conversation_id,
             tool_name=tool_name,
@@ -65,6 +66,7 @@ class AgentEventService:
         *,
         error_message: str,
     ) -> AgentToolCall:
+        """Persist only a caller-sanitized frontend-safe error message."""
         call = await self._get_call(session, tool_call_id)
         call.status = "failed"
         call.error_message = error_message
