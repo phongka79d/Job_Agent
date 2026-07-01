@@ -38,6 +38,15 @@ describe("IngestionPanel", () => {
     vi.clearAllMocks();
   });
 
+  it("renders labeled empty ingestion controls without reference sample values", () => {
+    render(<IngestionPanel activeProfileId="prof-1" />);
+    const query = screen.getByLabelText("Public job search query");
+    expect(query).toHaveValue("");
+    expect(query).not.toHaveAttribute("placeholder");
+    expect(screen.queryByDisplayValue(/AI Engineer OR Machine Learning/i)).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(/Ha Noi, Vietnam/i)).not.toBeInTheDocument();
+  });
+
   it("should require an active role profile before enabling ingestion actions", () => {
     // Render without an active profile
     render(<IngestionPanel activeProfileId={null} />);

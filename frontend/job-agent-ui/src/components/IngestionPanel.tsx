@@ -1,20 +1,23 @@
 import React, { useState } from "react";
-import { Search, Link, FileText, Loader2, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
 import { searchJobs, parseJobUrl, parseJobText, ApiClientError } from "../api/client";
 import type { IngestionResponse } from "../types/api";
+import IngestionModeTabs from "./ingestion/IngestionModeTabs";
+import type { IngestionMode } from "./ingestion/IngestionModeTabs";
+import SearchIngestionForm from "./ingestion/SearchIngestionForm";
+import UrlIngestionForm from "./ingestion/UrlIngestionForm";
+import TextIngestionForm from "./ingestion/TextIngestionForm";
 
 interface IngestionPanelProps {
   activeProfileId: string | null;
   onIngestionSuccess?: (batchId: string) => void;
 }
 
-type TabType = "search" | "url" | "text";
-
 export default function IngestionPanel({
   activeProfileId,
   onIngestionSuccess,
 }: IngestionPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("search");
+  const [activeTab, setActiveTab] = useState<IngestionMode>("search");
   const [isInFlight, setIsInFlight] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<IngestionResponse | null>(null);
@@ -121,19 +124,8 @@ export default function IngestionPanel({
   const isDisabled = !activeProfileId || isInFlight;
 
   return (
-    <div className="glass-panel" style={{ padding: "16px" }} data-testid="ingestion-panel">
-      <div
-        style={{
-          fontSize: "11px",
-          color: "var(--text-muted)",
-          marginBottom: "12px",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          fontWeight: 600,
-        }}
-      >
-        Ingestion Controls
-      </div>
+    <section className="rail-section ingestion-panel" data-testid="ingestion-panel">
+      <h2 className="rail-section-title">Job ingestion</h2>
 
       {!activeProfileId && (
         <div
@@ -148,227 +140,44 @@ export default function IngestionPanel({
         </div>
       )}
 
-      {/* Tab Selectors */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          borderBottom: "1px solid var(--border-color)",
-          marginBottom: "12px",
-          gap: "4px",
+      <IngestionModeTabs
+        activeMode={activeTab}
+        disabled={isInFlight}
+        onChange={(mode) => {
+          setActiveTab(mode);
+          resetMessages();
         }}
-      >
-        <button
-          onClick={() => {
-            setActiveTab("search");
-            resetMessages();
-          }}
-          disabled={isInFlight}
-          style={{
-            background: "transparent",
-            border: "none",
-            borderBottom: activeTab === "search" ? "2px solid var(--accent)" : "2px solid transparent",
-            color: activeTab === "search" ? "var(--accent)" : "var(--text-muted)",
-            padding: "6px 8px",
-            cursor: isInFlight ? "not-allowed" : "pointer",
-            fontSize: "12px",
-            fontWeight: activeTab === "search" ? 600 : 400,
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            opacity: isDisabled && activeTab !== "search" ? 0.5 : 1,
-          }}
-          data-testid="tab-search"
-        >
-          <Search size={12} /> Search
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("url");
-            resetMessages();
-          }}
-          disabled={isInFlight}
-          style={{
-            background: "transparent",
-            border: "none",
-            borderBottom: activeTab === "url" ? "2px solid var(--accent)" : "2px solid transparent",
-            color: activeTab === "url" ? "var(--accent)" : "var(--text-muted)",
-            padding: "6px 8px",
-            cursor: isInFlight ? "not-allowed" : "pointer",
-            fontSize: "12px",
-            fontWeight: activeTab === "url" ? 600 : 400,
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            opacity: isDisabled && activeTab !== "url" ? 0.5 : 1,
-          }}
-          data-testid="tab-url"
-        >
-          <Link size={12} /> URL
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("text");
-            resetMessages();
-          }}
-          disabled={isInFlight}
-          style={{
-            background: "transparent",
-            border: "none",
-            borderBottom: activeTab === "text" ? "2px solid var(--accent)" : "2px solid transparent",
-            color: activeTab === "text" ? "var(--accent)" : "var(--text-muted)",
-            padding: "6px 8px",
-            cursor: isInFlight ? "not-allowed" : "pointer",
-            fontSize: "12px",
-            fontWeight: activeTab === "text" ? 600 : 400,
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            opacity: isDisabled && activeTab !== "text" ? 0.5 : 1,
-          }}
-          data-testid="tab-text"
-        >
-          <FileText size={12} /> Text
-        </button>
-      </div>
+      />
 
-      {/* Forms based on active tab */}
-      {activeTab === "search" && (
-        <form onSubmit={handleSearchSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }} data-testid="form-search">
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <label style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-              Public Job Search Query
-            </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="e.g. React Developer in London"
-              disabled={isDisabled}
-              style={{
-                padding: "8px 10px",
-                background: "var(--bg-canvas)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "var(--radius-md)",
-                color: "var(--text-primary)",
-                fontSize: "13px",
-                outline: "none",
-                opacity: isDisabled ? 0.6 : 1,
-              }}
-              required
-              data-testid="input-search-query"
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center", fontSize: "13px" }}
-            disabled={isDisabled || !searchQuery.trim()}
-            data-testid="btn-search-submit"
-          >
-            {isInFlight ? (
-              <>
-                <Loader2 size={14} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
-                Searching...
-              </>
-            ) : (
-              "Search Jobs"
-            )}
-          </button>
-        </form>
-      )}
+      {activeTab === "search" ? (
+        <SearchIngestionForm
+          value={searchQuery}
+          disabled={isDisabled}
+          isInFlight={isInFlight}
+          onChange={setSearchQuery}
+          onSubmit={handleSearchSubmit}
+        />
+      ) : null}
 
-      {activeTab === "url" && (
-        <form onSubmit={handleUrlSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }} data-testid="form-url">
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <label style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-              Job Posting URL
-            </label>
-            <input
-              type="url"
-              value={jobUrl}
-              onChange={(e) => setJobUrl(e.target.value)}
-              placeholder="https://example.com/jobs/react-engineer"
-              disabled={isDisabled}
-              style={{
-                padding: "8px 10px",
-                background: "var(--bg-canvas)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "var(--radius-md)",
-                color: "var(--text-primary)",
-                fontSize: "13px",
-                outline: "none",
-                opacity: isDisabled ? 0.6 : 1,
-              }}
-              required
-              data-testid="input-url"
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center", fontSize: "13px" }}
-            disabled={isDisabled || !jobUrl.trim()}
-            data-testid="btn-url-submit"
-          >
-            {isInFlight ? (
-              <>
-                <Loader2 size={14} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
-                Parsing...
-              </>
-            ) : (
-              "Parse URL"
-            )}
-          </button>
-        </form>
-      )}
+      {activeTab === "url" ? (
+        <UrlIngestionForm
+          value={jobUrl}
+          disabled={isDisabled}
+          isInFlight={isInFlight}
+          onChange={setJobUrl}
+          onSubmit={handleUrlSubmit}
+        />
+      ) : null}
 
-      {activeTab === "text" && (
-        <form onSubmit={handleTextSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }} data-testid="form-text">
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <label style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-              Job Description Text
-            </label>
-            <textarea
-              value={jobText}
-              onChange={(e) => setJobText(e.target.value)}
-              placeholder="Paste the raw job description here..."
-              disabled={isDisabled}
-              style={{
-                padding: "8px 10px",
-                background: "var(--bg-canvas)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "var(--radius-md)",
-                color: "var(--text-primary)",
-                fontSize: "13px",
-                outline: "none",
-                resize: "vertical",
-                minHeight: "100px",
-                fontFamily: "var(--font-sans)",
-                opacity: isDisabled ? 0.6 : 1,
-              }}
-              required
-              data-testid="input-text"
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center", fontSize: "13px" }}
-            disabled={isDisabled || !jobText.trim()}
-            data-testid="btn-text-submit"
-          >
-            {isInFlight ? (
-              <>
-                <Loader2 size={14} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
-                Parsing...
-              </>
-            ) : (
-              "Parse Text"
-            )}
-          </button>
-        </form>
-      )}
+      {activeTab === "text" ? (
+        <TextIngestionForm
+          value={jobText}
+          disabled={isDisabled}
+          isInFlight={isInFlight}
+          onChange={setJobText}
+          onSubmit={handleTextSubmit}
+        />
+      ) : null}
 
       {/* Safe Error display */}
       {error && (
@@ -396,7 +205,7 @@ export default function IngestionPanel({
       {showUrlManualInputWarning && (
         <div
           style={{
-            color: "#eab308", // Amber
+            color: "#eab308",
             fontSize: "12px",
             display: "flex",
             alignItems: "flex-start",
@@ -480,6 +289,6 @@ export default function IngestionPanel({
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
