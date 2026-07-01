@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.services.job_search_workflow import ingest_search_jobs
+from app.services.job_text_ingestion_workflow import ingest_raw_job_text
 
 
 @dataclass(frozen=True)
@@ -118,6 +119,21 @@ def build_retrieve_profile_documents_handler(
     return handler
 
 
+def _safe_ingestion_summary(
+    *,
+    inserted_jobs: int,
+    skipped_duplicates: int,
+    warning_count: int,
+) -> str:
+    job_word = "job" if inserted_jobs == 1 else "jobs"
+    summary = f"Added {inserted_jobs} {job_word} to Review Queue."
+    if skipped_duplicates:
+        summary = f"{summary} Skipped {skipped_duplicates} duplicate jobs."
+    if warning_count:
+        summary = f"{summary} Encountered {warning_count} processing warnings."
+    return summary
+
+
 def build_search_jobs_handler(
     session: object,
     *,
@@ -145,11 +161,11 @@ def build_search_jobs_handler(
             getattr(result, "skipped_dedup_key_duplicates", 0)
         )
         warnings = list(getattr(result, "warnings", []))
-        summary = f"Added {inserted_jobs} jobs to Review Queue."
-        if skipped_duplicates:
-            summary = f"{summary} Skipped {skipped_duplicates} duplicate jobs."
-        if warnings:
-            summary = f"{summary} Encountered {len(warnings)} processing warnings."
+        summary = _safe_ingestion_summary(
+            inserted_jobs=inserted_jobs,
+            skipped_duplicates=skipped_duplicates,
+            warning_count=len(warnings),
+        )
 
         return ToolResult(
             content=summary,
@@ -159,6 +175,58 @@ def build_search_jobs_handler(
                 "skipped_duplicates": skipped_duplicates,
                 "warning_count": len(warnings),
                 "review_queue_path": "/review",
+            },
+        )
+
+    return handler
+
+
+def build_extract_job_from_text_handler(
+    session: object,
+    *,
+    text_workflow: Callable[..., Awaitable[object]] = ingest_raw_job_text,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        raw_text = str(request.arguments.get("raw_text", "")).strip()
+        if not raw_text:
+            raise ValueError("extract_job_from_text requires raw_text")
+
+        kwargs = {}
+        source_url = request.arguments.get("source_url")
+        if source_url:
+            kwargs["source_url"] = str(source_url)
+        progress_callback = request.context.get("on_progress")
+        if progress_callback is not None:
+            kwargs["on_progress"] = progress_callback
+
+        result = await text_workflow(
+            session,
+            role_profile_id=str(request.context["role_profile_id"]),
+            raw_text=raw_text,
+            **kwargs,
+        )
+        inserted_jobs = int(getattr(result, "inserted_jobs", 0))
+        skipped_duplicates = int(getattr(result, "skipped_exact_duplicates", 0)) + int(
+            getattr(result, "skipped_dedup_key_duplicates", 0)
+        )
+        warnings = list(getattr(result, "warnings", []))
+        job_ids = list(getattr(result, "job_ids", []))
+        summary = _safe_ingestion_summary(
+            inserted_jobs=inserted_jobs,
+            skipped_duplicates=skipped_duplicates,
+            warning_count=len(warnings),
+        )
+
+        return ToolResult(
+            content=summary,
+            result_summary=summary,
+            safe_payload={
+                "inserted_jobs": inserted_jobs,
+                "skipped_duplicates": skipped_duplicates,
+                "warning_count": len(warnings),
+                "review_queue_path": "/review",
+                "job_ids": job_ids,
+                "batch_id": str(getattr(result, "batch_id", "")),
             },
         )
 

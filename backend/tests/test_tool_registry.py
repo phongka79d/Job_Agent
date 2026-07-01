@@ -107,3 +107,88 @@ async def test_search_jobs_handler_delegates_to_search_workflow():
             "max_urls": 4,
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_extract_job_from_text_handler_delegates_to_text_workflow():
+    from app.services.tool_registry import build_extract_job_from_text_handler
+
+    progress_messages = []
+    calls = []
+
+    async def progress_cb(message):
+        progress_messages.append(message)
+
+    async def workflow(session, *, role_profile_id, raw_text, source_url=None, on_progress=None):
+        calls.append(
+            {
+                "session": session,
+                "role_profile_id": role_profile_id,
+                "raw_text": raw_text,
+                "source_url": source_url,
+                "on_progress": on_progress,
+            }
+        )
+        if on_progress:
+            await on_progress("Extracting structured job data...")
+
+        class Result:
+            batch_id = "batch-1"
+            inserted_jobs = 1
+            skipped_exact_duplicates = 0
+            skipped_dedup_key_duplicates = 1
+            inserted_duplicate_metadata = 0
+            warnings = ["warning"]
+            job_ids = ["job-1"]
+
+        return Result()
+
+    session = object()
+    handler = build_extract_job_from_text_handler(session, text_workflow=workflow)
+
+    result = await handler(
+        ToolRequest(
+            name="extract_job_from_text",
+            arguments={
+                "raw_text": "Senior AI Engineer\nResponsibilities: build AI tools.",
+                "source_url": "https://example.com/job",
+            },
+            context={
+                "role_profile_id": "profile-1",
+                "on_progress": progress_cb,
+            },
+        )
+    )
+
+    assert calls[0]["session"] is session
+    assert calls[0]["role_profile_id"] == "profile-1"
+    assert calls[0]["raw_text"].startswith("Senior AI Engineer")
+    assert calls[0]["source_url"] == "https://example.com/job"
+    assert progress_messages == ["Extracting structured job data..."]
+    assert result.content == "Added 1 job to Review Queue. Skipped 1 duplicate jobs. Encountered 1 processing warnings."
+    assert result.result_summary == result.content
+    assert result.safe_payload == {
+        "inserted_jobs": 1,
+        "skipped_duplicates": 1,
+        "warning_count": 1,
+        "review_queue_path": "/review",
+        "job_ids": ["job-1"],
+        "batch_id": "batch-1",
+    }
+    assert "Senior AI Engineer" not in str(result.safe_payload)
+
+
+@pytest.mark.asyncio
+async def test_extract_job_from_text_handler_requires_raw_text():
+    from app.services.tool_registry import build_extract_job_from_text_handler
+
+    handler = build_extract_job_from_text_handler(object())
+
+    with pytest.raises(ValueError, match="extract_job_from_text requires raw_text"):
+        await handler(
+            ToolRequest(
+                name="extract_job_from_text",
+                arguments={"raw_text": "   "},
+                context={"role_profile_id": "profile-1"},
+            )
+        )
