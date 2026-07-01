@@ -91,8 +91,8 @@ async def test_search_jobs_handler_delegates_to_search_workflow():
         )
     )
 
-    assert result.content == "Đã đưa 3 job vào Review Queue. Bỏ qua 1 job trùng."
-    assert result.result_summary == "Đã đưa 3 job vào Review Queue. Bỏ qua 1 job trùng."
+    assert result.content == "Added 3 jobs to Review Queue. Skipped 1 duplicate jobs."
+    assert result.result_summary == "Added 3 jobs to Review Queue. Skipped 1 duplicate jobs."
     assert result.safe_payload == {
         "inserted_jobs": 3,
         "skipped_duplicates": 1,

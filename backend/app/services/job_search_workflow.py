@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
@@ -33,8 +35,12 @@ async def ingest_search_jobs(
     role_profile_id: str,
     query: str,
     max_urls: int | None,
+    on_progress: Callable[[str], Awaitable[None]] | None = None,
 ) -> SearchIngestionResult:
     batch_id = uuid4()
+
+    if on_progress:
+        await on_progress("Connecting to Tavily to search job pages...")
 
     try:
         search_results = await search_service.search_jobs(query, max_urls=max_urls)
@@ -44,9 +50,16 @@ async def ingest_search_jobs(
             detail=str(exc) or "Search provider failed",
         ) from exc
 
+    total = len(search_results)
+    if on_progress:
+        await on_progress(f"Found {total} recruiting pages. Extracting job data...")
+
     result = SearchIngestionResult(batch_id=batch_id)
 
-    for search_result in search_results:
+    for idx, search_result in enumerate(search_results):
+        if on_progress:
+            domain = urlparse(search_result.url).netloc or "web"
+            await on_progress(f"Analyzing listing {idx + 1}/{total} from {domain}...")
         try:
             extraction_state = await extract_from_url(
                 batch_id=str(batch_id),

@@ -128,22 +128,28 @@ def build_search_jobs_handler(
         if not query:
             raise ValueError("search_jobs requires a query")
 
+        kwargs = {}
+        progress_callback = request.context.get("on_progress")
+        if progress_callback is not None:
+            kwargs["on_progress"] = progress_callback
+
         result = await search_workflow(
             session,
             role_profile_id=str(request.context["role_profile_id"]),
             query=query,
             max_urls=request.arguments.get("max_urls"),
+            **kwargs,
         )
         inserted_jobs = int(getattr(result, "inserted_jobs", 0))
         skipped_duplicates = int(getattr(result, "skipped_exact_duplicates", 0)) + int(
             getattr(result, "skipped_dedup_key_duplicates", 0)
         )
         warnings = list(getattr(result, "warnings", []))
-        summary = f"Đã đưa {inserted_jobs} job vào Review Queue."
+        summary = f"Added {inserted_jobs} jobs to Review Queue."
         if skipped_duplicates:
-            summary = f"{summary} Bỏ qua {skipped_duplicates} job trùng."
+            summary = f"{summary} Skipped {skipped_duplicates} duplicate jobs."
         if warnings:
-            summary = f"{summary} Có {len(warnings)} cảnh báo khi xử lý."
+            summary = f"{summary} Encountered {len(warnings)} processing warnings."
 
         return ToolResult(
             content=summary,

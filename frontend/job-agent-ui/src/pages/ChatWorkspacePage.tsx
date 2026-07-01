@@ -2,17 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   createConversation,
-  deleteConversation,
   listAgentToolCalls,
   listConversationMessages,
-  listConversations,
   sendChatMessage,
   streamChatResponse,
 } from "../api/chatClient";
 import ChatComposer from "../components/chat/ChatComposer";
-import ChatMessageList from "../components/chat/ChatMessageList";
-import ConversationToolbar from "../components/chat/ConversationToolbar";
-import ToolCallTimeline from "../components/chat/ToolCallTimeline";
+import ChatTranscript from "../components/chat/ChatTranscript";
 import type { AgentToolCall, ChatConversation, ChatMessage } from "../types/chat";
 
 interface OutletContext {
@@ -20,10 +16,22 @@ interface OutletContext {
   triggerMetricsRefresh?: () => void;
 }
 
-interface ConversationState {
-  profileId: string;
-  generation: number;
-  conversation: ChatConversation;
+interface ChatWorkspacePageProps {
+  contextOverride?: {
+    activeConversationId: string | null;
+    onConversationCreated: (created: ChatConversation) => Promise<void> | void;
+    onMessageSent: () => Promise<void> | void;
+    isSendingGlobal: boolean;
+    setIsSendingGlobal: (val: boolean) => void;
+  };
+}
+
+function streamValue(data: unknown, key: string): string | null {
+  if (!data || typeof data !== "object" || !(key in data)) {
+    return null;
+  }
+  const value = (data as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : null;
 }
 
 function shouldOpenReviewQueue(toolCalls: AgentToolCall[]): boolean {
@@ -44,161 +52,133 @@ function shouldOpenReviewQueue(toolCalls: AgentToolCall[]): boolean {
   });
 }
 
-export default function ChatWorkspacePage() {
+export default function ChatWorkspacePage({ contextOverride }: ChatWorkspacePageProps = {}) {
   const { activeProfileId, triggerMetricsRefresh } = useOutletContext<OutletContext>();
   const navigate = useNavigate();
-  const [conversation, setConversation] = useState<ConversationState | null>(null);
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+
+  const activeConversationId = contextOverride?.activeConversationId ?? null;
+  const onConversationCreated = contextOverride?.onConversationCreated;
+  const onMessageSent = contextOverride?.onMessageSent;
+  const isSendingGlobal = contextOverride?.isSendingGlobal ?? false;
+  const setIsSendingGlobal = contextOverride?.setIsSendingGlobal ?? (() => undefined);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toolCalls, setToolCalls] = useState<AgentToolCall[]>([]);
-  const [isSending, setIsSending] = useState(false);
+  const [localIsSending, setLocalIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const conversationRef = useRef<ConversationState | null>(null);
-  const conversationRequestRef = useRef<{
-    profileId: string;
-    generation: number;
-    promise: Promise<ChatConversation>;
-  } | null>(null);
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [progressLogs, setProgressLogs] = useState<string[]>([]);
+
+  const updateStreamStatus = (status: string | null) => {
+    setStreamStatus(status);
+    if (status) {
+      setProgressLogs((prev) => {
+        if (prev.includes(status)) return prev;
+        return [...prev, status];
+      });
+    }
+  };
+
+  const isSending = contextOverride ? isSendingGlobal : localIsSending;
+  const setIsSending = contextOverride ? setIsSendingGlobal : setLocalIsSending;
+
   const sendingRef = useRef(false);
   const activeProfileIdRef = useRef<string | null>(activeProfileId);
   const profileGenerationRef = useRef(0);
+  const lastLoadedConversationIdRef = useRef<string | null>(null);
+  const pendingRefreshedDataRef = useRef<{ messages: ChatMessage[]; toolCalls: AgentToolCall[] } | null>(null);
+  const streamFinishedRef = useRef(false);
+  const activeStreamRequestRef = useRef<{ profileId: string; generation: number } | null>(null);
 
+  const handleTypewriterComplete = () => {
+    const activeReq = activeStreamRequestRef.current;
+    if (!activeReq || !isCurrentRequest(activeReq.profileId, activeReq.generation)) {
+      setStreamingText(null);
+      setIsSending(false);
+      sendingRef.current = false;
+      pendingRefreshedDataRef.current = null;
+      streamFinishedRef.current = false;
+      activeStreamRequestRef.current = null;
+      return;
+    }
+
+    if (pendingRefreshedDataRef.current) {
+      const { messages: refreshedMsgs, toolCalls: refreshedTools } = pendingRefreshedDataRef.current;
+      setMessages(refreshedMsgs);
+      setToolCalls(refreshedTools);
+      if (shouldOpenReviewQueue(refreshedTools)) {
+        triggerMetricsRefresh?.();
+        navigate("/review");
+      }
+    }
+    setStreamingText(null);
+    setIsSending(false);
+    sendingRef.current = false;
+    pendingRefreshedDataRef.current = null;
+    streamFinishedRef.current = false;
+    activeStreamRequestRef.current = null;
+    setProgressLogs([]);
+  };
   if (activeProfileIdRef.current !== activeProfileId) {
     activeProfileIdRef.current = activeProfileId;
     profileGenerationRef.current += 1;
-    conversationRef.current = null;
-    conversationRequestRef.current = null;
     sendingRef.current = false;
   }
 
   const isCurrentRequest = (profileId: string, generation: number) =>
     activeProfileIdRef.current === profileId && profileGenerationRef.current === generation;
 
-  const refreshConversations = async (profileId: string, generation: number) => {
-    const history = await listConversations(profileId);
-    if (isCurrentRequest(profileId, generation)) {
-      setConversations(history);
-    }
-    return history;
-  };
-
   useEffect(() => {
+    if (!activeConversationId) {
+      setMessages([]);
+      setToolCalls([]);
+      setError(null);
+      lastLoadedConversationIdRef.current = null;
+      setStreamingText(null);
+      setStreamStatus(null);
+      pendingRefreshedDataRef.current = null;
+      streamFinishedRef.current = false;
+      activeStreamRequestRef.current = null;
+      setProgressLogs([]);
+      return;
+    }
+
+    if (!activeProfileId) {
+      return;
+    }
+
+    if (lastLoadedConversationIdRef.current === activeConversationId) {
+      return;
+    }
+
+    const generation = profileGenerationRef.current;
     const profileId = activeProfileId;
-    const generation = profileGenerationRef.current;
-    setConversation(null);
-    setConversations([]);
-    setMessages([]);
-    setToolCalls([]);
-    setError(null);
-    setIsSending(false);
-    conversationRef.current = null;
-    conversationRequestRef.current = null;
-    sendingRef.current = false;
 
-    if (!profileId) return;
-
-    void refreshConversations(profileId, generation).catch((historyError) => {
-      if (isCurrentRequest(profileId, generation)) {
-        setError(historyError instanceof Error ? historyError.message : "Failed to load chat history.");
-      }
-    });
-  }, [activeProfileId]);
-
-  const ensureConversation = async (profileId: string, generation: number) => {
-    if (
-      conversationRef.current?.profileId === profileId &&
-      conversationRef.current.generation === generation
-    ) {
-      return conversationRef.current.conversation;
-    }
-    if (conversation?.profileId === profileId && conversation.generation === generation) {
-      conversationRef.current = conversation;
-      return conversation.conversation;
-    }
-    if (
-      conversationRequestRef.current?.profileId === profileId &&
-      conversationRequestRef.current.generation === generation
-    ) {
-      return conversationRequestRef.current.promise;
-    }
-    const request = createConversation({
-      role_profile_id: profileId,
-    })
-      .then((created) => {
+    const loadChatData = async () => {
+      setError(null);
+      try {
+        const loadedMessages = await listConversationMessages(activeConversationId);
         if (isCurrentRequest(profileId, generation)) {
-          const nextConversation = { profileId, generation, conversation: created };
-          conversationRef.current = nextConversation;
-          setConversation(nextConversation);
+          setMessages(loadedMessages);
         }
-        return created;
-      })
-      .finally(() => {
-        if (conversationRequestRef.current?.promise === request) {
-          conversationRequestRef.current = null;
+        const loadedToolCalls = await listAgentToolCalls(activeConversationId);
+        if (isCurrentRequest(profileId, generation)) {
+          setToolCalls(loadedToolCalls);
         }
-      });
-    conversationRequestRef.current = { profileId, generation, promise: request };
-    return request;
-  };
-
-  const handleSelectConversation = async (selected: ChatConversation) => {
-    if (!activeProfileId || selected.role_profile_id !== activeProfileId) return;
-    const generation = profileGenerationRef.current;
-    const nextConversation = {
-      profileId: activeProfileId,
-      generation,
-      conversation: selected,
+        lastLoadedConversationIdRef.current = activeConversationId;
+      } catch (loadError) {
+        if (isCurrentRequest(profileId, generation)) {
+          setError(loadError instanceof Error ? loadError.message : "Failed to load chat.");
+        }
+      }
     };
-    conversationRef.current = nextConversation;
-    setConversation(nextConversation);
-    setError(null);
-    try {
-      const loadedMessages = await listConversationMessages(selected.id);
-      if (isCurrentRequest(activeProfileId, generation)) {
-        setMessages(loadedMessages);
-      }
-      const loadedToolCalls = await listAgentToolCalls(selected.id);
-      if (isCurrentRequest(activeProfileId, generation)) {
-        setToolCalls(loadedToolCalls);
-      }
-    } catch (loadError) {
-      if (isCurrentRequest(activeProfileId, generation)) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to load chat.");
-      }
-    }
-  };
 
-  const handleNewConversation = () => {
-    conversationRef.current = null;
-    conversationRequestRef.current = null;
-    setConversation(null);
-    setMessages([]);
-    setToolCalls([]);
-    setError(null);
-  };
-
-  const handleDeleteConversation = async (target: ChatConversation) => {
-    if (!activeProfileId) return;
-    const generation = profileGenerationRef.current;
-    setError(null);
-    try {
-      await deleteConversation(target.id);
-      if (conversationRef.current?.conversation.id === target.id) {
-        conversationRef.current = null;
-        setConversation(null);
-        setMessages([]);
-        setToolCalls([]);
-      }
-      await refreshConversations(activeProfileId, generation);
-    } catch (deleteError) {
-      if (isCurrentRequest(activeProfileId, generation)) {
-        setError(deleteError instanceof Error ? deleteError.message : "Failed to delete chat.");
-      }
-    }
-  };
+    void loadChatData();
+  }, [activeConversationId, activeProfileId]);
 
   const handleSend = async (content: string) => {
-    if (sendingRef.current) return;
+    if (sendingRef.current || isSending) return;
     if (!activeProfileId) throw new Error("Select a role profile before chatting.");
 
     const sendProfileId = activeProfileId;
@@ -207,21 +187,78 @@ export default function ChatWorkspacePage() {
     sendingRef.current = true;
     setIsSending(true);
     setError(null);
+    updateStreamStatus("Server: Preparing...");
+    setStreamingText(null);
+    setProgressLogs([]);
+    activeStreamRequestRef.current = { profileId: sendProfileId, generation: sendGeneration };
 
     try {
-      const activeConversation = await ensureConversation(sendProfileId, sendGeneration);
-      const response = await sendChatMessage(activeConversation.id, { content });
-      await streamChatResponse(response.stream_url);
-      const refreshed = await listConversationMessages(activeConversation.id);
-      const refreshedToolCalls = await listAgentToolCalls(activeConversation.id);
-      await refreshConversations(sendProfileId, sendGeneration);
-      if (isCurrentRequest(sendProfileId, sendGeneration)) {
-        setMessages(refreshed);
-        setToolCalls(refreshedToolCalls);
-        if (shouldOpenReviewQueue(refreshedToolCalls)) {
-          triggerMetricsRefresh?.();
-          navigate("/review");
+      let currentConversationId = activeConversationId;
+      if (!currentConversationId) {
+        updateStreamStatus("Server: Creating conversation...");
+        const created = await createConversation({
+          role_profile_id: sendProfileId,
+        });
+        currentConversationId = created.id;
+        if (onConversationCreated) {
+          await onConversationCreated(created);
         }
+      }
+
+      updateStreamStatus("Server: Sending message...");
+      const response = await sendChatMessage(currentConversationId, { content });
+
+      updateStreamStatus("LLM: Analyzing...");
+      let receivedAssistantText = false;
+      await streamChatResponse(response.stream_url, (event) => {
+        const toolName = streamValue(event.data, "tool_name") ?? "tool";
+        switch (event.event) {
+          case "message_started":
+            updateStreamStatus("LLM: Starting response...");
+            break;
+          case "tool_call_started":
+            updateStreamStatus(`Tool: Running ${toolName}...`);
+            break;
+          case "tool_call_completed":
+            updateStreamStatus(`Tool: ${toolName} completed.`);
+            break;
+          case "tool_call_failed":
+            updateStreamStatus(`Tool: ${toolName} failed.`);
+            break;
+          case "tool_call_progress":
+            updateStreamStatus(`Tool: ${streamValue(event.data, "message") ?? "Working..."}`);
+            break;
+          case "assistant_delta":
+            updateStreamStatus("LLM: Writing response...");
+            {
+              const content = streamValue(event.data, "content");
+              if (content) {
+                receivedAssistantText = true;
+                setStreamingText(content);
+              }
+            }
+            break;
+          case "message_completed":
+            updateStreamStatus(null);
+            break;
+        }
+      });
+
+      updateStreamStatus("Server: Refreshing conversation...");
+      const refreshed = await listConversationMessages(currentConversationId);
+      const refreshedToolCalls = await listAgentToolCalls(currentConversationId);
+
+      if (onMessageSent) {
+        await onMessageSent();
+      }
+
+      lastLoadedConversationIdRef.current = currentConversationId;
+
+      pendingRefreshedDataRef.current = { messages: refreshed, toolCalls: refreshedToolCalls };
+      streamFinishedRef.current = true;
+
+      if (!receivedAssistantText) {
+        handleTypewriterComplete();
       }
     } catch (sendError) {
       if (isCurrentRequest(sendProfileId, sendGeneration)) {
@@ -229,27 +266,26 @@ export default function ChatWorkspacePage() {
       }
       throw sendError;
     } finally {
-      if (isCurrentRequest(sendProfileId, sendGeneration)) {
+      if (!streamFinishedRef.current && isCurrentRequest(sendProfileId, sendGeneration)) {
         sendingRef.current = false;
         setIsSending(false);
+        updateStreamStatus(null);
+        setStreamingText(null);
+        setProgressLogs([]);
       }
     }
   };
 
   return (
     <section className="chat-workspace">
-      <ConversationToolbar
-        conversations={conversations}
-        activeConversationId={conversation?.conversation.id ?? null}
-        disabled={!activeProfileId || isSending}
-        onSelect={(selected) => void handleSelectConversation(selected)}
-        onCreate={handleNewConversation}
-        onDelete={(target) => void handleDeleteConversation(target)}
+      <ChatTranscript
+        messages={messages}
+        toolCalls={toolCalls}
+        streamStatus={streamStatus}
+        streamingText={streamingText}
+        onTypewriterComplete={handleTypewriterComplete}
+        progressLogs={progressLogs}
       />
-      <div className="chat-transcript">
-        <ChatMessageList messages={messages} />
-        <ToolCallTimeline toolCalls={toolCalls} />
-      </div>
       {error ? <div className="chat-error" role="alert">{error}</div> : null}
       <ChatComposer disabled={!activeProfileId || isSending} onSend={handleSend} />
     </section>

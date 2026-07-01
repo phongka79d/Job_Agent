@@ -80,7 +80,35 @@ export async function sendChatMessage(
   }
 }
 
-export async function streamChatResponse(streamUrl: string): Promise<void> {
+const streamEventNames = [
+  "message_started",
+  "tool_call_started",
+  "tool_call_completed",
+  "tool_call_failed",
+  "tool_call_progress",
+  "assistant_delta",
+  "message_completed",
+] as const;
+
+export type StreamEventName = (typeof streamEventNames)[number];
+
+export interface StreamEvent {
+  event: StreamEventName;
+  data: unknown;
+}
+
+function parseStreamPayload(data: string): unknown {
+  try {
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return data;
+  }
+}
+
+export async function streamChatResponse(
+  streamUrl: string,
+  onEvent?: (event: StreamEvent) => void
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const eventSource = new EventSource(resolveApiUrl(streamUrl));
     let settled = false;
@@ -99,7 +127,20 @@ export async function streamChatResponse(streamUrl: string): Promise<void> {
       reject(new Error("Chat response stream failed"));
     };
 
-    eventSource.addEventListener("message_completed", finish);
+    streamEventNames.forEach((eventName) => {
+      eventSource.addEventListener(eventName, (e) => {
+        const payload = parseStreamPayload(e.data);
+
+        if (onEvent) {
+          onEvent({ event: eventName, data: payload });
+        }
+
+        if (eventName === "message_completed") {
+          finish();
+        }
+      });
+    });
+
     eventSource.addEventListener("error", fail);
   });
 }

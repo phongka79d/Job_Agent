@@ -14,6 +14,34 @@ const postSpy = vi.spyOn(apiClient, "post");
 const getSpy = vi.spyOn(apiClient, "get");
 const deleteSpy = vi.spyOn(apiClient, "delete");
 
+type FakeEventSourceInstance = {
+  url: string;
+  close: ReturnType<typeof vi.fn>;
+  listeners: Record<string, Array<(event: MessageEvent) => void>>;
+};
+
+function stubEventSource() {
+  const instances: FakeEventSourceInstance[] = [];
+
+  class FakeEventSource {
+    url: string;
+    close = vi.fn();
+    listeners: Record<string, Array<(event: MessageEvent) => void>> = {};
+
+    constructor(url: string) {
+      this.url = url;
+      instances.push(this);
+    }
+
+    addEventListener(eventName: string, listener: (event: MessageEvent) => void) {
+      this.listeners[eventName] = [...(this.listeners[eventName] ?? []), listener];
+    }
+  }
+
+  vi.stubGlobal("EventSource", FakeEventSource);
+  return instances;
+}
+
 describe("chatClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -80,8 +108,8 @@ describe("chatClient", () => {
             assistant_message_id: null,
             tool_name: "search_jobs",
             status: "success",
-            input_summary: "Tìm kiếm việc làm",
-            result_summary: "Đã đưa 2 job vào Review Queue.",
+            input_summary: "Job search",
+            result_summary: "Added 2 jobs to Review Queue.",
             safe_payload_json: "{\"inserted_jobs\":2,\"review_queue_path\":\"/review\"}",
             error_message: null,
             started_at: null,
@@ -100,27 +128,7 @@ describe("chatClient", () => {
   });
 
   it("resolves chat stream when message_completed arrives", async () => {
-    const instances: Array<{
-      url: string;
-      close: ReturnType<typeof vi.fn>;
-      listeners: Record<string, Array<(event: MessageEvent) => void>>;
-    }> = [];
-    class FakeEventSource {
-      url: string;
-      close = vi.fn();
-      listeners: Record<string, Array<(event: MessageEvent) => void>> = {};
-
-      constructor(url: string) {
-        this.url = url;
-        instances.push(this);
-      }
-
-      addEventListener(eventName: string, listener: (event: MessageEvent) => void) {
-        this.listeners[eventName] = [...(this.listeners[eventName] ?? []), listener];
-      }
-    }
-    vi.stubGlobal("EventSource", FakeEventSource);
-
+    const instances = stubEventSource();
     const streamed = streamChatResponse("/api/chat/conversations/conv-1/stream");
 
     expect(instances[0].url).toBe("http://localhost:8000/api/chat/conversations/conv-1/stream");
@@ -129,6 +137,26 @@ describe("chatClient", () => {
     );
     await expect(streamed).resolves.toBeUndefined();
     expect(instances[0].close).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("passes parsed stream events to the event callback", async () => {
+    const instances = stubEventSource();
+    const onEvent = vi.fn();
+    const streamed = streamChatResponse("/api/chat/conversations/conv-1/stream", onEvent);
+
+    instances[0].listeners.tool_call_progress[0](
+      new MessageEvent("tool_call_progress", { data: '{"message":"Searching"}' })
+    );
+    instances[0].listeners.message_completed[0](
+      new MessageEvent("message_completed", { data: "{}" })
+    );
+
+    await expect(streamed).resolves.toBeUndefined();
+    expect(onEvent).toHaveBeenCalledWith({
+      event: "tool_call_progress",
+      data: { message: "Searching" },
+    });
     vi.unstubAllGlobals();
   });
 });

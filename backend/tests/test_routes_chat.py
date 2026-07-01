@@ -160,10 +160,10 @@ async def test_stream_search_intent_calls_search_tool_and_persists_visible_event
     async def search_handler(request: ToolRequest) -> ToolResult:
         assert request.name == "search_jobs"
         assert request.context["role_profile_id"] == role_profile.id
-        assert request.arguments["query"] == "Bắt đầu tìm việc về AI Engineer Level Intern"
+        assert request.arguments["query"] == "Start searching for AI Engineer Level Intern jobs"
         return ToolResult(
             content="Inserted 2 jobs into Review Queue.",
-            result_summary="Đã đưa 2 job vào Review Queue.",
+            result_summary="Added 2 jobs to Review Queue.",
             safe_payload={"inserted_jobs": 2, "review_queue_path": "/review"},
         )
 
@@ -182,7 +182,7 @@ async def test_stream_search_intent_calls_search_tool_and_persists_visible_event
     conversation = conversation_response.json()
     message_response = await client.post(
         f"/api/chat/conversations/{conversation['id']}/messages",
-        json={"content": "Bắt đầu tìm việc về AI Engineer Level Intern"},
+        json={"content": "Start searching for AI Engineer Level Intern jobs"},
     )
     after_message_id = message_response.json()["message"]["id"]
 
@@ -194,8 +194,8 @@ async def test_stream_search_intent_calls_search_tool_and_persists_visible_event
     assert response.status_code == 200
     assert "event: tool_call_started" in response.text
     assert "event: tool_call_completed" in response.text
-    assert "Đã gọi 1 công cụ: Tìm kiếm việc làm." in response.text
-    assert "Công ty XYZ" not in response.text
+    assert "Called 1 tool: Job search." in response.text
+    assert "Company XYZ" not in response.text
 
     calls = (
         await db_session.execute(
@@ -207,8 +207,8 @@ async def test_stream_search_intent_calls_search_tool_and_persists_visible_event
     assert len(calls) == 1
     assert calls[0].tool_name == "search_jobs"
     assert calls[0].status == "success"
-    assert calls[0].input_summary == "Tìm kiếm việc làm: Bắt đầu tìm việc về AI Engineer Level Intern"
-    assert calls[0].result_summary == "Đã đưa 2 job vào Review Queue."
+    assert calls[0].input_summary == "Job search: Start searching for AI Engineer Level Intern jobs"
+    assert calls[0].result_summary == "Added 2 jobs to Review Queue."
     assert json.loads(calls[0].safe_payload_json) == {
         "inserted_jobs": 2,
         "review_queue_path": "/review",
@@ -219,8 +219,8 @@ async def test_stream_search_intent_calls_search_tool_and_persists_visible_event
     )
     messages = messages_response.json()["messages"]
     assert messages[1]["content"] == (
-        "Đã gọi 1 công cụ: Tìm kiếm việc làm. "
-        "Đã đưa 2 job vào Review Queue. Mở Review Queue để xem và duyệt job."
+        "Called 1 tool: Job search. "
+        "Added 2 jobs to Review Queue. Open Review Queue to review jobs."
     )
 
 

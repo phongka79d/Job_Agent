@@ -3,22 +3,18 @@ import { useOutletContext } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createConversation,
-  deleteConversation,
   listAgentToolCalls,
   listConversationMessages,
-  listConversations,
   sendChatMessage,
   streamChatResponse,
 } from "../api/chatClient";
 import ChatWorkspacePage from "../pages/ChatWorkspacePage";
-import type { AgentToolCall, ChatConversation, ChatMessage } from "../types/chat";
+import type { AgentToolCall, ChatMessage } from "../types/chat";
 
 vi.mock("../api/chatClient", () => ({
   createConversation: vi.fn(),
-  deleteConversation: vi.fn(),
   listAgentToolCalls: vi.fn(),
   listConversationMessages: vi.fn(),
-  listConversations: vi.fn(),
   sendChatMessage: vi.fn(),
   streamChatResponse: vi.fn(),
 }));
@@ -40,23 +36,14 @@ const assistantMessage: ChatMessage = {
   created_at: "2026-01-01T00:00:00Z",
 };
 
-const existingConversation: ChatConversation = {
-  id: "conv-existing",
-  role_profile_id: "profile-1",
-  title: "Existing chat",
-  status: "active",
-  created_at: "2026-01-01T00:00:00Z",
-  updated_at: "2026-01-01T00:00:00Z",
-};
-
 const searchToolCall: AgentToolCall = {
   id: "tool-1",
   conversation_id: "conv-1",
   assistant_message_id: null,
   tool_name: "search_jobs",
   status: "success",
-  input_summary: "T\u00ecm ki\u1ebfm vi\u1ec7c l\u00e0m: AI Engineer Intern",
-  result_summary: "\u0110\u00e3 \u0111\u01b0a 2 job v\u00e0o Review Queue.",
+  input_summary: "Job search: AI Engineer Intern",
+  result_summary: "Added 2 jobs to Review Queue.",
   safe_payload_json: "{\"inserted_jobs\":2,\"review_queue_path\":\"/review\"}",
   error_message: null,
   started_at: "2026-01-01T00:00:00Z",
@@ -68,16 +55,22 @@ const searchToolCall: AgentToolCall = {
 describe("ChatWorkspacePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(listConversations).mockResolvedValue([]);
     vi.mocked(listAgentToolCalls).mockResolvedValue([]);
     vi.mocked(streamChatResponse).mockResolvedValue();
-    vi.mocked(deleteConversation).mockResolvedValue();
   });
+
+  const defaultContextOverride = {
+    activeConversationId: null,
+    onConversationCreated: vi.fn(),
+    onMessageSent: vi.fn(),
+    isSendingGlobal: false,
+    setIsSendingGlobal: vi.fn(),
+  };
 
   it("disables message sending until a role profile is active", () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: null });
 
-    render(<ChatWorkspacePage />);
+    render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
 
     expect(screen.getByLabelText("Message")).toBeDisabled();
     expect(screen.getByRole("button", { name: /send message/i })).toBeDisabled();
@@ -107,7 +100,7 @@ describe("ChatWorkspacePage", () => {
     });
     vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
 
-    render(<ChatWorkspacePage />);
+    render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
 
     fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Find jobs" } });
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
@@ -117,7 +110,7 @@ describe("ChatWorkspacePage", () => {
         role_profile_id: "profile-1",
       });
       expect(sendChatMessage).toHaveBeenCalledWith("conv-1", { content: "Find jobs" });
-      expect(streamChatResponse).toHaveBeenCalledWith("/stream");
+      expect(streamChatResponse).toHaveBeenCalledWith("/stream", expect.any(Function));
       expect(listConversationMessages).toHaveBeenCalledWith("conv-1");
       expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
     });
@@ -127,7 +120,7 @@ describe("ChatWorkspacePage", () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
     vi.mocked(createConversation).mockRejectedValue(new Error("Chat service unavailable"));
 
-    render(<ChatWorkspacePage />);
+    render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
 
     fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Find jobs" } });
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
@@ -162,11 +155,35 @@ describe("ChatWorkspacePage", () => {
     });
     vi.mocked(listConversationMessages).mockResolvedValue([]);
 
-    render(<ChatWorkspacePage />);
+    let isSendingGlobal = false;
+    const setIsSendingGlobal = vi.fn((val) => {
+      isSendingGlobal = val;
+    });
+
+    const { rerender } = render(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          isSendingGlobal,
+          setIsSendingGlobal,
+        }}
+      />
+    );
 
     const messageInput = screen.getByLabelText("Message");
     fireEvent.change(messageInput, { target: { value: "Find jobs" } });
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    // Rerender with isSendingGlobal: true to simulate state updates
+    rerender(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          isSendingGlobal: true,
+          setIsSendingGlobal,
+        }}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /send message/i })).toBeDisabled();
@@ -185,6 +202,17 @@ describe("ChatWorkspacePage", () => {
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     });
+
+    // Rerender back to normal state
+    rerender(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          isSendingGlobal: false,
+          setIsSendingGlobal,
+        }}
+      />
+    );
 
     await waitFor(() => {
       expect(sendChatMessage).toHaveBeenCalledTimes(1);
@@ -211,7 +239,7 @@ describe("ChatWorkspacePage", () => {
         id: "msg-1",
         conversation_id: "conv-1",
         role: "user",
-        content: "B\u1eaft \u0111\u1ea7u t\u00ecm vi\u1ec7c AI Engineer Intern",
+        content: "Start searching for AI Engineer Intern jobs",
         token_count: null,
         metadata_json: null,
         created_at: "2026-01-01T00:00:00Z",
@@ -221,17 +249,17 @@ describe("ChatWorkspacePage", () => {
     vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
     vi.mocked(listAgentToolCalls).mockResolvedValue([searchToolCall]);
 
-    render(<ChatWorkspacePage />);
+    render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
 
     fireEvent.change(screen.getByLabelText("Message"), {
-      target: { value: "B\u1eaft \u0111\u1ea7u t\u00ecm vi\u1ec7c AI Engineer Intern" },
+      target: { value: "Start searching for AI Engineer Intern jobs" },
     });
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
       expect(listAgentToolCalls).toHaveBeenCalledWith("conv-1");
       expect(screen.getByText("search_jobs")).toBeInTheDocument();
-      expect(screen.getByText("\u0110\u00e3 \u0111\u01b0a 2 job v\u00e0o Review Queue.")).toBeInTheDocument();
+      expect(screen.getByText("Added 2 jobs to Review Queue.")).toBeInTheDocument();
       expect(navigate).toHaveBeenCalledWith("/review");
     });
   });
@@ -266,7 +294,7 @@ describe("ChatWorkspacePage", () => {
       })
     );
 
-    const { rerender } = render(<ChatWorkspacePage />);
+    const { rerender } = render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
 
     fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Find jobs" } });
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
@@ -278,9 +306,9 @@ describe("ChatWorkspacePage", () => {
     });
 
     activeProfileId = "profile-2";
-    rerender(<ChatWorkspacePage />);
+    rerender(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
     activeProfileId = "profile-1";
-    rerender(<ChatWorkspacePage />);
+    rerender(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
 
     resolveConversation({
       id: "conv-1",
@@ -313,19 +341,30 @@ describe("ChatWorkspacePage", () => {
     expect(screen.queryByText("Old profile result")).not.toBeInTheDocument();
   });
 
-  it("loads chat history and selecting a conversation loads its messages", async () => {
+  it("loads messages when activeConversationId is provided", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
-    vi.mocked(listConversations).mockResolvedValue([existingConversation]);
     vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
 
-    render(<ChatWorkspacePage />);
+    const { rerender } = render(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          activeConversationId: null,
+        }}
+      />
+    );
 
-    await waitFor(() => {
-      expect(listConversations).toHaveBeenCalledWith("profile-1");
-      expect(screen.getByRole("option", { name: "Existing chat" })).toBeInTheDocument();
-    });
+    expect(screen.queryByText("I found several roles to review.")).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Chat history"), { target: { value: "conv-existing" } });
+    // Rerender with activeConversationId
+    rerender(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          activeConversationId: "conv-existing",
+        }}
+      />
+    );
 
     await waitFor(() => {
       expect(listConversationMessages).toHaveBeenCalledWith("conv-existing");
@@ -333,27 +372,34 @@ describe("ChatWorkspacePage", () => {
     });
   });
 
-  it("deletes the active conversation and clears messages", async () => {
+  it("clears messages when activeConversationId becomes null", async () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
-    vi.mocked(listConversations)
-      .mockResolvedValueOnce([existingConversation])
-      .mockResolvedValueOnce([]);
     vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
 
-    render(<ChatWorkspacePage />);
+    const { rerender } = render(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          activeConversationId: "conv-existing",
+        }}
+      />
+    );
 
-    await waitFor(() => {
-      expect(screen.getByRole("option", { name: "Existing chat" })).toBeInTheDocument();
-    });
-    fireEvent.change(screen.getByLabelText("Chat history"), { target: { value: "conv-existing" } });
     await waitFor(() => {
       expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete current chat" }));
+    // Rerender with null activeConversationId
+    rerender(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          activeConversationId: null,
+        }}
+      />
+    );
 
     await waitFor(() => {
-      expect(deleteConversation).toHaveBeenCalledWith("conv-existing");
       expect(screen.queryByText("I found several roles to review.")).not.toBeInTheDocument();
     });
   });

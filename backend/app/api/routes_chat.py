@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -228,7 +229,7 @@ async def stream_conversation_events(
                 session,
                 conversation_id=str(conversation_id),
                 tool_name="search_jobs",
-                input_summary=f"Tìm kiếm việc làm: {user_message.content}",
+                input_summary=f"Job search: {user_message.content}",
                 safe_payload={"query": user_message.content},
             )
             tool_call = await agent_event_service.mark_running(session, tool_call.id)
@@ -242,19 +243,59 @@ async def stream_conversation_events(
                 },
             )
             try:
-                tool_result = await build_tool_registry(session).execute(
-                    ToolRequest(
-                        name="search_jobs",
-                        arguments={
-                            "query": user_message.content,
-                            "max_urls": None,
-                        },
-                        context={
-                            "role_profile_id": conversation.role_profile_id,
-                            "conversation_id": str(conversation_id),
-                        },
+                queue = asyncio.Queue()
+
+                async def progress_callback(msg: str):
+                    await queue.put(
+                        _sse_event(
+                            "tool_call_progress",
+                            {
+                                "tool_call_id": tool_call.id,
+                                "tool_name": tool_call.tool_name,
+                                "message": msg,
+                            },
+                        )
                     )
-                )
+
+                async def run_tool():
+                    try:
+                        res = await build_tool_registry(session).execute(
+                            ToolRequest(
+                                name="search_jobs",
+                                arguments={
+                                    "query": user_message.content,
+                                    "max_urls": None,
+                                },
+                                context={
+                                    "role_profile_id": conversation.role_profile_id,
+                                    "conversation_id": str(conversation_id),
+                                    "on_progress": progress_callback,
+                                },
+                            )
+                        )
+                        await queue.put(res)
+                    except Exception as exc:
+                        await queue.put(exc)
+
+                task = asyncio.create_task(run_tool())
+                tool_result_raw = None
+
+                while not task.done() or not queue.empty():
+                    try:
+                        item = await asyncio.wait_for(queue.get(), timeout=0.1)
+                        if isinstance(item, str):
+                            yield item
+                        elif isinstance(item, Exception):
+                            raise item
+                        else:
+                            tool_result_raw = item
+                    except asyncio.TimeoutError:
+                        continue
+
+                if tool_result_raw is None:
+                    raise RuntimeError("Search tool failed without returning result")
+
+                tool_result = tool_result_raw
             except Exception:
                 logger.exception("search_jobs tool failed")
                 tool_call = await agent_event_service.mark_failed(
@@ -263,8 +304,8 @@ async def stream_conversation_events(
                     error_message="Search tool failed. Check search, extraction, and provider settings.",
                 )
                 assistant_content = (
-                    "Đã gọi 1 công cụ: Tìm kiếm việc làm, nhưng công cụ thất bại. "
-                    "Kiểm tra cấu hình Tavily/OpenAI/Qdrant rồi thử lại."
+                    "Called 1 tool: Job search, but the tool failed. "
+                    "Check Tavily/OpenAI/Qdrant configuration and try again."
                 )
                 agent_metadata_source = "chat_agent_tool_error"
                 yield _sse_event(
@@ -284,8 +325,8 @@ async def stream_conversation_events(
                     safe_payload=tool_result.safe_payload,
                 )
                 assistant_content = (
-                    "Đã gọi 1 công cụ: Tìm kiếm việc làm. "
-                    f"{tool_result.result_summary} Mở Review Queue để xem và duyệt job."
+                    "Called 1 tool: Job search. "
+                    f"{tool_result.result_summary} Open Review Queue to review jobs."
                 )
                 agent_metadata_source = "chat_agent_tool"
                 yield _sse_event(
