@@ -52,6 +52,22 @@ const searchToolCall: AgentToolCall = {
   updated_at: "2026-01-01T00:00:01Z",
 };
 
+const textExtractionToolCall: AgentToolCall = {
+  id: "tool-text-1",
+  conversation_id: "conv-1",
+  assistant_message_id: null,
+  tool_name: "extract_job_from_text",
+  status: "success",
+  input_summary: "Pasted job text, 280 characters",
+  result_summary: "Added 1 job to Review Queue.",
+  safe_payload_json: "{\"inserted_jobs\":1,\"review_queue_path\":\"/review\"}",
+  error_message: null,
+  started_at: "2026-01-01T00:00:00Z",
+  completed_at: "2026-01-01T00:00:01Z",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:01Z",
+};
+
 describe("ChatWorkspacePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -260,6 +276,48 @@ describe("ChatWorkspacePage", () => {
       expect(listAgentToolCalls).toHaveBeenCalledWith("conv-1");
       expect(screen.getByText("search_jobs")).toBeInTheDocument();
       expect(screen.getByText("Added 2 jobs to Review Queue.")).toBeInTheDocument();
+      expect(navigate).toHaveBeenCalledWith("/review");
+    });
+  });
+
+  it("navigates to review queue after pasted job text extraction succeeds", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({
+      activeProfileId: "profile-1",
+      triggerMetricsRefresh: vi.fn(),
+    });
+    vi.mocked(createConversation).mockResolvedValue({
+      id: "conv-1",
+      role_profile_id: "profile-1",
+      title: "Job paste session",
+      status: "active",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    vi.mocked(sendChatMessage).mockResolvedValue({
+      message: {
+        id: "msg-1",
+        conversation_id: "conv-1",
+        role: "user",
+        content: "Senior AI Engineer\nResponsibilities: build AI systems.",
+        token_count: null,
+        metadata_json: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      stream_url: "/stream",
+    });
+    vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
+    vi.mocked(listAgentToolCalls).mockResolvedValue([textExtractionToolCall]);
+
+    render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Senior AI Engineer\nResponsibilities: build AI systems." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("extract_job_from_text")).toBeInTheDocument();
+      expect(screen.getByText("Added 1 job to Review Queue.")).toBeInTheDocument();
       expect(navigate).toHaveBeenCalledWith("/review");
     });
   });

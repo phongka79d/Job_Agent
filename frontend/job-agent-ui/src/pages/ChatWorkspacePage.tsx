@@ -36,7 +36,8 @@ function streamValue(data: unknown, key: string): string | null {
 
 function shouldOpenReviewQueue(toolCalls: AgentToolCall[]): boolean {
   return toolCalls.some((toolCall) => {
-    if (toolCall.tool_name !== "search_jobs" || toolCall.status !== "success") {
+    const opensReviewQueue = new Set(["search_jobs", "extract_job_from_text"]);
+    if (!opensReviewQueue.has(toolCall.tool_name) || toolCall.status !== "success") {
       return false;
     }
     if (!toolCall.safe_payload_json) return false;
