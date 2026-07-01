@@ -323,7 +323,7 @@ the commit and record it for the final integrated commit.
 - Modify: `frontend/job-agent-ui/src/components/RoleProfilePanel.tsx`
 - Modify: `frontend/job-agent-ui/src/test/RoleProfilePanel.test.tsx`
 
-- [ ] **Step 1: Add failing tests for real profile rendering**
+- [x] **Step 1: Add failing tests for real profile rendering**
 
 Extend `RoleProfilePanel.test.tsx`:
 
@@ -350,7 +350,7 @@ Update the existing select-option count assertion to expect exactly the API
 profiles, because auto-selection means no synthetic placeholder option is
 needed.
 
-- [ ] **Step 2: Run the profile test and verify RED**
+- [x] **Step 2: Run the profile test and verify RED**
 
 ```powershell
 npm test -- --run src/test/RoleProfilePanel.test.tsx
@@ -359,7 +359,7 @@ npm test -- --run src/test/RoleProfilePanel.test.tsx
 Expected: FAIL because the current selector includes a placeholder option and
 does not expose the active location in the compact rail.
 
-- [ ] **Step 3: Extract `RoleProfileForm`**
+- [x] **Step 3: Extract `RoleProfileForm`**
 
 Move the six controlled fields and `createRoleProfile` call into
 `RoleProfileForm.tsx`. Use this interface:
@@ -395,7 +395,7 @@ await onCreated(created);
 Keep visible `<label>` elements and remove example `placeholder` attributes.
 Preserve the existing test IDs so current integration tests remain valid.
 
-- [ ] **Step 4: Reduce `RoleProfilePanel` to fetch/select/layout**
+- [x] **Step 4: Reduce `RoleProfilePanel` to fetch/select/layout**
 
 Render:
 
@@ -447,7 +447,7 @@ Render:
 
 Keep the existing auto-selection behavior after fetching.
 
-- [ ] **Step 5: Run profile tests**
+- [x] **Step 5: Run profile tests**
 
 ```powershell
 npm test -- --run src/test/RoleProfilePanel.test.tsx
@@ -456,7 +456,7 @@ npm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add frontend/job-agent-ui/src/components/profile/RoleProfileForm.tsx frontend/job-agent-ui/src/components/RoleProfilePanel.tsx frontend/job-agent-ui/src/test/RoleProfilePanel.test.tsx
@@ -475,7 +475,7 @@ git commit -m "refactor: adapt role profiles to workspace rail"
 - Modify: `frontend/job-agent-ui/src/components/IngestionPanel.tsx`
 - Modify: `frontend/job-agent-ui/src/test/IngestionPanel.test.tsx`
 
-- [ ] **Step 1: Add a failing no-placeholder test**
+- [x] **Step 1: Add a failing no-placeholder test**
 
 Add:
 
@@ -490,7 +490,7 @@ it("renders labeled empty ingestion controls without reference sample values", (
 });
 ```
 
-- [ ] **Step 2: Run the ingestion test and verify RED**
+- [x] **Step 2: Run the ingestion test and verify RED**
 
 ```powershell
 npm test -- --run src/test/IngestionPanel.test.tsx
@@ -499,7 +499,7 @@ npm test -- --run src/test/IngestionPanel.test.tsx
 Expected: FAIL because current fields use example placeholders and labels are not
 connected by `htmlFor`.
 
-- [ ] **Step 3: Implement the mode tabs**
+- [x] **Step 3: Implement the mode tabs**
 
 Use:
 
@@ -522,7 +522,7 @@ const modes = [
 Render buttons with `role="tab"`, `aria-selected`, existing `data-testid`
 values, and Lucide icons.
 
-- [ ] **Step 4: Implement the three controlled forms**
+- [x] **Step 4: Implement the three controlled forms**
 
 Each form receives value, disabled state, in-flight state, change handler, and
 submit handler. For example:
@@ -564,7 +564,7 @@ export default function SearchIngestionForm(props: SearchIngestionFormProps) {
 Apply the same pattern to URL and Text forms. Do not add placeholder
 attributes. Keep every existing test ID and submitted payload unchanged.
 
-- [ ] **Step 5: Recompose `IngestionPanel`**
+- [x] **Step 5: Recompose `IngestionPanel`**
 
 Keep `handleSearchSubmit`, `handleUrlSubmit`, `handleTextSubmit`,
 `successResult`, warning handling, and API calls in `IngestionPanel`. Replace
@@ -616,7 +616,7 @@ After the form block, retain the existing `ingestion-error`,
 `ingestion-warnings-list` elements with their existing state conditions and
 text.
 
-- [ ] **Step 6: Run ingestion tests**
+- [x] **Step 6: Run ingestion tests**
 
 ```powershell
 npm test -- --run src/test/IngestionPanel.test.tsx src/test/apiClient.test.ts
@@ -625,7 +625,7 @@ npm run typecheck
 
 Expected: PASS with the same request payload assertions.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add frontend/job-agent-ui/src/components/ingestion frontend/job-agent-ui/src/components/IngestionPanel.tsx frontend/job-agent-ui/src/test/IngestionPanel.test.tsx
@@ -645,7 +645,7 @@ git commit -m "refactor: split workspace ingestion controls"
 - Modify: `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`
 - Modify: `frontend/job-agent-ui/src/test/BatchMetrics.test.tsx`
 
-- [ ] **Step 1: Write failing active-profile tests**
+- [x] **Step 1: Write failing active-profile tests**
 
 ```tsx
 import { render, screen } from "@testing-library/react";
@@ -683,7 +683,7 @@ describe("ActiveProfileSummary", () => {
 });
 ```
 
-- [ ] **Step 2: Run context tests and verify RED**
+- [x] **Step 2: Run context tests and verify RED**
 
 ```powershell
 npm test -- --run src/test/ActiveProfileSummary.test.tsx
@@ -691,7 +691,7 @@ npm test -- --run src/test/ActiveProfileSummary.test.tsx
 
 Expected: FAIL because the component does not exist.
 
-- [ ] **Step 3: Implement `ActiveProfileSummary`**
+- [x] **Step 3: Implement `ActiveProfileSummary`**
 
 ```tsx
 interface ActiveProfileSummaryProps {
@@ -724,7 +724,7 @@ export default function ActiveProfileSummary({ profile }: ActiveProfileSummaryPr
 }
 ```
 
-- [ ] **Step 4: Restyle documents using only document fields**
+- [x] **Step 4: Restyle documents using only document fields**
 
 For each document, render `original_filename`, `status`, `file_size_bytes`,
 `chunk_count`, and a localized `updated_at`. Compute the date:
@@ -739,7 +739,7 @@ const updatedAt = new Intl.DateTimeFormat(undefined, {
 Do not render relative phrases such as a hardcoded “4 mins ago”. Keep upload
 behavior and API tests unchanged.
 
-- [ ] **Step 5: Remove metric fallback values**
+- [x] **Step 5: Remove metric fallback values**
 
 Replace `N/A` formatters with conditional rows:
 
@@ -758,7 +758,7 @@ Render numeric zero values normally. Continue to show the existing truthful
 empty state when no batch exists. Add an assertion that `"N/A"` is absent when
 nullable metrics are missing.
 
-- [ ] **Step 6: Run context tests**
+- [x] **Step 6: Run context tests**
 
 ```powershell
 npm test -- --run src/test/ActiveProfileSummary.test.tsx src/test/ProfileDocumentPanel.test.tsx src/test/BatchMetrics.test.tsx
@@ -767,7 +767,7 @@ npm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add frontend/job-agent-ui/src/components/workspace/ActiveProfileSummary.tsx frontend/job-agent-ui/src/components/profile frontend/job-agent-ui/src/components/BatchMetrics.tsx frontend/job-agent-ui/src/test/ActiveProfileSummary.test.tsx frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx frontend/job-agent-ui/src/test/BatchMetrics.test.tsx
@@ -788,7 +788,7 @@ git commit -m "feat: add API-backed workspace context rail"
 - Modify: `frontend/job-agent-ui/src/test/ChatWorkspacePage.test.tsx`
 - Modify: `frontend/job-agent-ui/src/test/ToolCallTimeline.test.tsx`
 
-- [ ] **Step 1: Write failing conversation toolbar tests**
+- [x] **Step 1: Write failing conversation toolbar tests**
 
 ```tsx
 it("renders only persisted conversations and exposes icon commands", () => {
@@ -809,7 +809,7 @@ it("renders only persisted conversations and exposes icon commands", () => {
 });
 ```
 
-- [ ] **Step 2: Run toolbar tests and verify RED**
+- [x] **Step 2: Run toolbar tests and verify RED**
 
 ```powershell
 npm test -- --run src/test/ConversationToolbar.test.tsx
@@ -817,7 +817,7 @@ npm test -- --run src/test/ConversationToolbar.test.tsx
 
 Expected: FAIL because `ConversationToolbar` does not exist.
 
-- [ ] **Step 3: Implement `ConversationToolbar`**
+- [x] **Step 3: Implement `ConversationToolbar`**
 
 Use a real conversation `<select>` and icon commands:
 
@@ -878,7 +878,7 @@ export default function ConversationToolbar({
 
 The `Chat history` option is a control label, not a domain record.
 
-- [ ] **Step 4: Recompose `ChatWorkspacePage` without replacing logic**
+- [x] **Step 4: Recompose `ChatWorkspacePage` without replacing logic**
 
 Preserve all current refs, stale-request guards, tool-call refreshes, and
 Review Queue navigation. Replace only the returned JSX and conversation button
@@ -914,7 +914,7 @@ createConversation({ role_profile_id: profileId })
 Do not set the synthetic `"Job agent session"` title. Update existing tests to
 expect the request without `title`.
 
-- [ ] **Step 5: Restyle real messages and tool calls**
+- [x] **Step 5: Restyle real messages and tool calls**
 
 `ChatMessageList` must render an assistant or user Lucide icon, message content,
 and actual timestamp:
@@ -932,14 +932,14 @@ and actual timestamp:
 only `tool_name`, `status`, `input_summary`, `result_summary`, and
 `error_message`.
 
-- [ ] **Step 6: Restyle the composer**
+- [x] **Step 6: Restyle the composer**
 
 Keep the controlled empty value and no placeholder. Use a stable one-row
 minimum height, an icon-only Send button with `aria-label`, and visible focus
 styles. Do not add attachment or suggestion buttons because they are not
 implemented.
 
-- [ ] **Step 7: Run chat tests**
+- [x] **Step 7: Run chat tests**
 
 ```powershell
 npm test -- --run src/test/ConversationToolbar.test.tsx src/test/ChatWorkspacePage.test.tsx src/test/ToolCallTimeline.test.tsx src/test/chatClient.test.ts
@@ -949,7 +949,7 @@ npm run typecheck
 Expected: PASS, including the existing tool-driven search and `/review`
 navigation test.
 
-- [ ] **Step 8: Commit non-overlapping files and review integrated chat diff**
+- [x] **Step 8: Commit non-overlapping files and review integrated chat diff**
 
 ```powershell
 git diff -- frontend/job-agent-ui/src/pages/ChatWorkspacePage.tsx frontend/job-agent-ui/src/test/ChatWorkspacePage.test.tsx
@@ -976,7 +976,7 @@ they contain the approved uncommitted search-tool flow.
 - Modify: `frontend/job-agent-ui/src/test/DashboardPage.test.tsx`
 - Modify: `frontend/job-agent-ui/src/test/JobCard.test.tsx`
 
-- [ ] **Step 1: Write failing shared-state and null-job tests**
+- [x] **Step 1: Write failing shared-state and null-job tests**
 
 Create `PageState.test.tsx`:
 
@@ -999,7 +999,7 @@ it("omits absent job fields instead of rendering placeholder values", () => {
 });
 ```
 
-- [ ] **Step 2: Run focused tests and verify RED**
+- [x] **Step 2: Run focused tests and verify RED**
 
 ```powershell
 npm test -- --run src/test/PageState.test.tsx src/test/JobCard.test.tsx
@@ -1008,7 +1008,7 @@ npm test -- --run src/test/PageState.test.tsx src/test/JobCard.test.tsx
 Expected: FAIL because `PageState` does not exist and `JobCard` currently
 renders synthetic fallback labels.
 
-- [ ] **Step 3: Implement `PageState`**
+- [x] **Step 3: Implement `PageState`**
 
 ```tsx
 interface PageStateProps {
@@ -1027,7 +1027,7 @@ export default function PageState({ kind, children }: PageStateProps) {
 }
 ```
 
-- [ ] **Step 4: Recompose both pages**
+- [x] **Step 4: Recompose both pages**
 
 Use the same route structure:
 
@@ -1079,7 +1079,7 @@ description `Monitor saved jobs and application progress.`, empty text
 Do not change fetch scope: Review remains profile-wide pending review; Dashboard
 remains profile-wide tracked jobs.
 
-- [ ] **Step 5: Remove synthetic job fallbacks**
+- [x] **Step 5: Remove synthetic job fallbacks**
 
 Render title, company, source, JD status, location, and other metadata only when
 the corresponding `Job` property exists. Keep `"Not scored"` because it is a
@@ -1088,7 +1088,7 @@ truthful computed state from `formatPercentScore`, not a fabricated score.
 Use CSS classes instead of inline layout styles. Keep approve, reject, source
 link, score breakdown, and status mutation behavior unchanged.
 
-- [ ] **Step 6: Run page and card tests**
+- [x] **Step 6: Run page and card tests**
 
 ```powershell
 npm test -- --run src/test/PageState.test.tsx src/test/ReviewPage.test.tsx src/test/DashboardPage.test.tsx src/test/JobCard.test.tsx src/test/StatusSelect.test.tsx
@@ -1097,7 +1097,7 @@ npm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add frontend/job-agent-ui/src/components/PageState.tsx frontend/job-agent-ui/src/components/JobCard.tsx frontend/job-agent-ui/src/components/ScoreBreakdown.tsx frontend/job-agent-ui/src/components/StatusSelect.tsx frontend/job-agent-ui/src/pages/ReviewPage.tsx frontend/job-agent-ui/src/pages/DashboardPage.tsx frontend/job-agent-ui/src/test/PageState.test.tsx frontend/job-agent-ui/src/test/ReviewPage.test.tsx frontend/job-agent-ui/src/test/DashboardPage.test.tsx frontend/job-agent-ui/src/test/JobCard.test.tsx
@@ -1113,7 +1113,7 @@ git commit -m "feat: unify job workflow views"
 - Modify: `frontend/job-agent-ui/src/components/AppShell.tsx`
 - Modify: `frontend/job-agent-ui/src/test/AppShell.test.tsx`
 
-- [ ] **Step 1: Add a failing structure assertion**
+- [x] **Step 1: Add a failing structure assertion**
 
 Extend `AppShell.test.tsx`:
 
@@ -1124,7 +1124,7 @@ expect(screen.getByRole("complementary", { name: "Profile and navigation" })).to
 expect(screen.getByRole("complementary", { name: "Workspace context" })).toBeInTheDocument();
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 ```powershell
 npm test -- --run src/test/AppShell.test.tsx
@@ -1133,7 +1133,7 @@ npm test -- --run src/test/AppShell.test.tsx
 Expected: FAIL until the two asides have accessible labels and the landmark
 structure is complete.
 
-- [ ] **Step 3: Add responsive layout rules**
+- [x] **Step 3: Add responsive layout rules**
 
 Append:
 
@@ -1179,7 +1179,7 @@ Append:
 }
 ```
 
-- [ ] **Step 4: Enforce interaction and sizing rules**
+- [x] **Step 4: Enforce interaction and sizing rules**
 
 Ensure:
 
@@ -1212,7 +1212,7 @@ Use:
 }
 ```
 
-- [ ] **Step 5: Run all frontend tests, lint, and build**
+- [x] **Step 5: Run all frontend tests, lint, and build**
 
 ```powershell
 npm run typecheck
@@ -1224,7 +1224,7 @@ npm run build
 Expected: all commands exit `0`. Record pre-existing lint warnings separately;
 do not add new warnings.
 
-- [ ] **Step 6: Commit stylesheet and accessibility adjustments**
+- [x] **Step 6: Commit stylesheet and accessibility adjustments**
 
 ```powershell
 git add frontend/job-agent-ui/src/styles/app.css frontend/job-agent-ui/src/test/AppShell.test.tsx
@@ -1242,7 +1242,7 @@ styles; include it in the final integrated commit after diff review.
 - Review all modified frontend files
 - Review pre-existing backend and frontend chat-search changes
 
-- [ ] **Step 1: Scan runtime source for forbidden reference values**
+- [x] **Step 1: Scan runtime source for forbidden reference values**
 
 Run:
 
@@ -1252,7 +1252,7 @@ rg -n "07d78eef|CV_Harvard_like|LinkedIn|TopCV|New session started|AI Engineer O
 
 Expected: no matches.
 
-- [ ] **Step 2: Scan for placeholder attributes and synthetic fallbacks**
+- [x] **Step 2: Scan for placeholder attributes and synthetic fallbacks**
 
 Run:
 
@@ -1263,7 +1263,7 @@ rg -n "placeholder=|Untitled Position|Unknown Company|>Unknown<|\\|\\| ['\\\"]No
 Expected: no runtime matches. Test fixtures may contain fake values because
 test-only doubles are allowed, but runtime source must not.
 
-- [ ] **Step 3: Review the complete integrated diff**
+- [x] **Step 3: Review the complete integrated diff**
 
 Run:
 
@@ -1282,7 +1282,7 @@ Confirm:
 - No backend file was changed by the UI redesign.
 - No user change was reverted.
 
-- [ ] **Step 4: Run complete verification**
+- [x] **Step 4: Run complete verification**
 
 Backend:
 
@@ -1305,7 +1305,7 @@ npm run build
 Expected: backend tests pass, compileall exits `0`, frontend tests pass,
 typecheck exits `0`, lint adds no warnings, and the production build succeeds.
 
-- [ ] **Step 5: Start the real local stack**
+- [x] **Step 5: Start the real local stack**
 
 Backend:
 
@@ -1324,7 +1324,7 @@ npm run dev -- --host 127.0.0.1 --port 5173
 Probe `http://127.0.0.1:8000/openapi.json` and
 `http://127.0.0.1:5173/`; both must return HTTP `200`.
 
-- [ ] **Step 6: Perform visual verification**
+- [x] **Step 6: Perform visual verification**
 
 Use the in-app browser at:
 
@@ -1342,7 +1342,7 @@ Confirm no overlap, clipping, blank panels, inaccessible controls, copied
 reference values, or fake metrics. Confirm Chat can select/delete a persisted
 conversation and a search tool result still navigates to Review Queue.
 
-- [ ] **Step 7: Create the final integrated commit**
+- [x] **Step 7: Create the final integrated commit**
 
 Stage only reviewed project files:
 
