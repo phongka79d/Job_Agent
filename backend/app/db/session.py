@@ -55,6 +55,8 @@ async def init_db() -> None:
         "chat_messages",
         "job_posts",
         "memory_summaries",
+        "profile_cv_drafts",
+        "profile_cv_improvement_suggestions",
         "profile_document_chunks",
         "profile_document_versions",
         "profile_documents",

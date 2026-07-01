@@ -95,6 +95,83 @@ class RoleProfile(Base):
     updated_at: Mapped[updated_timestamp]
 
 
+class ProfileCvDraft(Base):
+    """Editable CV draft created from a real profile document version."""
+    __tablename__ = "profile_cv_drafts"
+
+    __table_args__ = (
+        Index("idx_profile_cv_drafts_role_profile_updated", "role_profile_id", text("updated_at DESC")),
+        Index("idx_profile_cv_drafts_document_updated", "document_id", text("updated_at DESC")),
+    )
+
+    id: Mapped[uuid_pk]
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    base_version_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="draft")
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    structure_json: Mapped[str] = mapped_column(Text, nullable=False)
+    edit_plan_json: Mapped[str] = mapped_column(Text, nullable=False)
+    structure_status_at_creation: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[str] = mapped_column(Text, nullable=False, default="ai")
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
+class ProfileCvImprovementSuggestion(Base):
+    """Targeted CV improvement suggestion grounded in existing CV evidence."""
+    __tablename__ = "profile_cv_improvement_suggestions"
+
+    __table_args__ = (
+        Index("idx_profile_cv_suggestions_role_profile_status", "role_profile_id", "status"),
+        Index("idx_profile_cv_suggestions_document_created", "document_id", text("created_at DESC")),
+    )
+
+    id: Mapped[uuid_pk]
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    version_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    job_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("job_posts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    requirement: Mapped[str] = mapped_column(Text, nullable=False)
+    current_cv_evidence: Mapped[str] = mapped_column(Text, nullable=False)
+    missing_or_weak_evidence: Mapped[str] = mapped_column(Text, nullable=False)
+    proposed_edit: Mapped[str] = mapped_column(Text, nullable=False)
+    edit_kind: Mapped[str] = mapped_column(Text, nullable=False)
+    risk_level: Mapped[str] = mapped_column(Text, nullable=False)
+    requires_confirmation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="suggested")
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
 class JobPost(Base):
     """
     JobPost ORM model representing a retrieved job listing and its processing metadata.
