@@ -9,7 +9,7 @@ import {
   uploadProfileDocument,
 } from "../api/profileDocumentsClient";
 import ProfileDocumentPanel from "../components/profile/ProfileDocumentPanel";
-import type { CvDraftPreview, ProfileDocument } from "../types/profileDocuments";
+import type { ProfileDocument } from "../types/profileDocuments";
 
 vi.mock("../api/profileDocumentsClient", () => ({
   activateProfileDocumentVersion: vi.fn(),
