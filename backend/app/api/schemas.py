@@ -347,3 +347,69 @@ def _parse_string_list(value: Any) -> list[str]:
         if isinstance(parsed, list):
             return [str(item) for item in parsed]
     raise ValueError("skills must be a list of strings")
+
+
+class CvImprovementSuggestionCreateRequest(ApiSchema):
+    requirement: str = Field(min_length=1)
+    current_cv_evidence: str = Field(min_length=1)
+    missing_or_weak_evidence: str = Field(min_length=1)
+    proposed_edit: str = Field(min_length=1)
+    edit_kind: str = Field(pattern="^(wording_only|requires_user_fact)$")
+    risk_level: str = Field(pattern="^(low|medium|high)$")
+    requires_confirmation: bool = True
+    job_id: UUID | None = None
+
+
+class CvImprovementSuggestionResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    document_id: UUID
+    version_id: UUID
+    job_id: UUID | None
+    requirement: str
+    current_cv_evidence: str
+    missing_or_weak_evidence: str
+    proposed_edit: str
+    edit_kind: str
+    risk_level: str
+    requires_confirmation: bool
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class CvImprovementSuggestionListResponse(ApiSchema):
+    suggestions: list[CvImprovementSuggestionResponse] = Field(default_factory=list)
+
+
+class CvDraftCreateRequest(ApiSchema):
+    title: str = Field(min_length=1, max_length=200)
+    suggestion_ids: list[UUID] = Field(default_factory=list)
+    confirmed: bool = False
+
+
+class CvDraftResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    document_id: UUID
+    base_version_id: UUID
+    status: str
+    title: str
+    structure_status_at_creation: str
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class CvDraftListResponse(ApiSchema):
+    drafts: list[CvDraftResponse] = Field(default_factory=list)
+
+
+class CvDraftPreviewResponse(ApiSchema):
+    draft_id: UUID
+    title: str
+    status: str
+    structure_status: str
+    recommendation: str | None = None
+    sections: list[dict[str, Any]] = Field(default_factory=list)
+    edits: list[dict[str, Any]] = Field(default_factory=list)

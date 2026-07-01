@@ -14,12 +14,24 @@ from app.api.routes_role_profiles import SessionDep
 from app.api.schemas import (
     ActivateCvVersionRequest,
     ActiveCvResponse,
+    CvDraftCreateRequest,
+    CvDraftListResponse,
+    CvDraftPreviewResponse,
+    CvDraftResponse,
+    CvImprovementSuggestionCreateRequest,
+    CvImprovementSuggestionListResponse,
+    CvImprovementSuggestionResponse,
     ProfileDocumentListResponse,
     ProfileDocumentResponse,
     ProfileDocumentVersionListResponse,
     ProfileDocumentVersionResponse,
 )
 from app.db.models import RoleProfile
+from app.services.profile_cv_draft_service import (
+    CreateCvDraftRequest,
+    CreateCvSuggestionRequest,
+    ProfileCvDraftService,
+)
 from app.services.profile_document_service import ProfileDocumentFileInfo, ProfileDocumentService
 
 
@@ -28,6 +40,7 @@ router = APIRouter(
     tags=["profile-documents"],
 )
 profile_document_service = ProfileDocumentService()
+profile_cv_draft_service = ProfileCvDraftService()
 
 
 async def _require_profile(session: SessionDep, role_profile_id: str) -> RoleProfile:
@@ -263,6 +276,123 @@ async def delete_profile_document(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.post(
+    "/{document_id}/versions/{version_id}/suggestions",
+    response_model=CvImprovementSuggestionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_cv_suggestion(
+    role_profile_id: UUID,
+    document_id: UUID,
+    version_id: UUID,
+    request: CvImprovementSuggestionCreateRequest,
+    session: SessionDep,
+):
+    await _require_profile(session, str(role_profile_id))
+    try:
+        return await profile_cv_draft_service.create_suggestion(
+            session,
+            CreateCvSuggestionRequest(
+                role_profile_id=str(role_profile_id),
+                document_id=str(document_id),
+                version_id=str(version_id),
+                job_id=str(request.job_id) if request.job_id else None,
+                requirement=request.requirement,
+                current_cv_evidence=request.current_cv_evidence,
+                missing_or_weak_evidence=request.missing_or_weak_evidence,
+                proposed_edit=request.proposed_edit,
+                edit_kind=request.edit_kind,  # type: ignore[arg-type]
+                risk_level=request.risk_level,  # type: ignore[arg-type]
+                requires_confirmation=request.requires_confirmation,
+            ),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.get("/{document_id}/suggestions", response_model=CvImprovementSuggestionListResponse)
+async def list_cv_suggestions(
+    role_profile_id: UUID,
+    document_id: UUID,
+    session: SessionDep,
+) -> CvImprovementSuggestionListResponse:
+    await _require_profile(session, str(role_profile_id))
+    suggestions = await profile_cv_draft_service.list_suggestions(
+        session,
+        role_profile_id=str(role_profile_id),
+        document_id=str(document_id),
+    )
+    return CvImprovementSuggestionListResponse(suggestions=suggestions)
+
+
+@router.post(
+    "/{document_id}/versions/{version_id}/drafts",
+    response_model=CvDraftResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_cv_draft(
+    role_profile_id: UUID,
+    document_id: UUID,
+    version_id: UUID,
+    request: CvDraftCreateRequest,
+    session: SessionDep,
+):
+    await _require_profile(session, str(role_profile_id))
+    try:
+        return await profile_cv_draft_service.create_draft(
+            session,
+            CreateCvDraftRequest(
+                role_profile_id=str(role_profile_id),
+                document_id=str(document_id),
+                base_version_id=str(version_id),
+                title=request.title,
+                suggestion_ids=[str(suggestion_id) for suggestion_id in request.suggestion_ids],
+                confirmed=request.confirmed,
+                created_by="ai",
+            ),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.get("/{document_id}/drafts", response_model=CvDraftListResponse)
+async def list_cv_drafts(
+    role_profile_id: UUID,
+    document_id: UUID,
+    session: SessionDep,
+) -> CvDraftListResponse:
+    await _require_profile(session, str(role_profile_id))
+    drafts = await profile_cv_draft_service.list_drafts(
+        session,
+        role_profile_id=str(role_profile_id),
+        document_id=str(document_id),
+    )
+    return CvDraftListResponse(drafts=drafts)
+
+
+@router.get("/{document_id}/drafts/{draft_id}/preview", response_model=CvDraftPreviewResponse)
+async def preview_cv_draft(
+    role_profile_id: UUID,
+    document_id: UUID,
+    draft_id: UUID,
+    session: SessionDep,
+) -> CvDraftPreviewResponse:
+    await _require_profile(session, str(role_profile_id))
+    try:
+        preview = await profile_cv_draft_service.preview_draft(
+            session,
+            role_profile_id=str(role_profile_id),
+            draft_id=str(draft_id),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return CvDraftPreviewResponse(**preview)
 
 
 active_cv_router = APIRouter(

@@ -187,3 +187,71 @@ async def test_activate_profile_cv_version_requires_confirmation(client, role_pr
 
     assert response.status_code == 409
     assert "requires confirmation" in response.json()["detail"]
+
+
+async def upload_ready_profile_document(client, role_profile):
+    upload = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents",
+        files={"file": ("cv.pdf", b"%PDF-test", "application/pdf")},
+    )
+    assert upload.status_code == 201
+    document = upload.json()
+    version_response = await client.get(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions"
+    )
+    assert version_response.status_code == 200
+    version = version_response.json()["versions"][0]
+    return document, version
+
+
+@pytest.mark.asyncio
+async def test_cv_suggestion_and_draft_routes(client, role_profile, db_session):
+    document, version = await upload_ready_profile_document(client, role_profile)
+
+    suggestion_response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version['id']}/suggestions",
+        json={
+            "requirement": "FastAPI",
+            "current_cv_evidence": "Active CV evidence: FastAPI project",
+            "missing_or_weak_evidence": "FastAPI impact is weakly worded.",
+            "proposed_edit": "Lead the project bullet with FastAPI service delivery.",
+            "edit_kind": "wording_only",
+            "risk_level": "low",
+            "requires_confirmation": True,
+        },
+    )
+    assert suggestion_response.status_code == 201
+    suggestion = suggestion_response.json()
+    assert suggestion["status"] == "suggested"
+
+    draft_response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version['id']}/drafts",
+        json={
+            "title": "FastAPI emphasis draft",
+            "suggestion_ids": [suggestion["id"]],
+            "confirmed": True,
+        },
+    )
+    assert draft_response.status_code == 201
+    draft = draft_response.json()
+    assert draft["status"] == "draft"
+
+    preview_response = await client.get(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/drafts/{draft['id']}/preview"
+    )
+    assert preview_response.status_code == 200
+    assert preview_response.json()["draft_id"] == draft["id"]
+    assert preview_response.json()["edits"][0]["requirement"] == "FastAPI"
+
+
+@pytest.mark.asyncio
+async def test_cv_draft_creation_requires_confirmation(client, role_profile, db_session):
+    document, version = await upload_ready_profile_document(client, role_profile)
+
+    response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version['id']}/drafts",
+        json={"title": "Draft", "suggestion_ids": [], "confirmed": False},
+    )
+
+    assert response.status_code == 409
+    assert "confirmation" in response.json()["detail"].lower()
