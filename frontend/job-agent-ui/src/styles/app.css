@@ -224,9 +224,74 @@ h1, h2, h3, h4, h5, h6 {
 
 .chat-workspace {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   height: 100%;
   gap: 12px;
+}
+
+.chat-history {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.chat-history-new {
+  height: 36px;
+}
+
+.chat-history-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.chat-history-item {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) 32px;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.chat-history-item-active {
+  border-color: rgba(34, 211, 238, 0.4);
+  background: var(--accent-muted);
+}
+
+.chat-history-select,
+.chat-history-delete {
+  min-height: 34px;
+  border: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.chat-history-select {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.chat-history-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--border-color);
+}
+
+.chat-history-select:hover:not(:disabled),
+.chat-history-delete:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
 }
 
 .chat-message-list {

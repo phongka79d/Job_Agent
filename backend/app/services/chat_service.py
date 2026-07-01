@@ -89,3 +89,16 @@ class ChatService:
             .limit(limit)
         )
         return list(result.scalars())
+
+    async def delete_conversation(
+        self,
+        session: AsyncSession,
+        *,
+        conversation_id: str,
+    ) -> bool:
+        conversation = await session.get(ChatConversation, conversation_id)
+        if conversation is None:
+            return False
+        await session.delete(conversation)
+        await session.commit()
+        return True

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -22,14 +23,17 @@ from app.api.schemas import (
 )
 from app.db.models import ChatConversation, ChatMessage, RoleProfile
 from app.services.agent_event_service import AgentEventService
+from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClient
 from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
 chat_service = ChatService()
 agent_event_service = AgentEventService()
 memory_service = ChatMemoryService()
+chat_llm_client = OpenAIChatLLMClient()
 
 
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
@@ -117,6 +121,25 @@ async def list_conversations(
     return ChatConversationListResponse(conversations=conversations)
 
 
+@router.delete(
+    "/conversations/{conversation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_conversation(
+    conversation_id: UUID,
+    session: SessionDep,
+) -> None:
+    deleted = await chat_service.delete_conversation(
+        session,
+        conversation_id=str(conversation_id),
+    )
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="conversation not found",
+        )
+
+
 @router.get(
     "/conversations/{conversation_id}/messages",
     response_model=ChatMessageListResponse,
@@ -177,24 +200,34 @@ async def stream_conversation_events(
             conversation_id=str(conversation_id),
             current_user_message=user_message.content,
         )
-        result = await run_chat_turn(
-            {
-                "conversation_id": str(conversation_id),
-                "role_profile_id": conversation.role_profile_id,
-                "user_message": user_message.content,
-                "working_memory": memory.context_text,
-                "tool_results": [],
-            },
-            llm_client=None,
-            tool_registry=None,
-        )
+        agent_metadata_source = "chat_agent"
+        try:
+            result = await run_chat_turn(
+                {
+                    "conversation_id": str(conversation_id),
+                    "role_profile_id": conversation.role_profile_id,
+                    "user_message": user_message.content,
+                    "working_memory": memory.context_text,
+                    "tool_results": [],
+                },
+                llm_client=chat_llm_client,
+                tool_registry=None,
+            )
+            assistant_content = result["final_answer"]
+        except ChatLLMProviderError:
+            logger.exception("Chat LLM is unavailable")
+            agent_metadata_source = "chat_agent_error"
+            assistant_content = (
+                "Chat LLM is unavailable. Check OPENAI_API_KEY and provider settings, "
+                "then try again."
+            )
         assistant = await chat_service.append_message(
             session,
             conversation_id=str(conversation_id),
             role="assistant",
-            content=result["final_answer"],
+            content=assistant_content,
             metadata={
-                "source": "chat_agent",
+                "source": agent_metadata_source,
                 "memory_tokens": memory.total_tokens,
                 "dropped_memory_keys": memory.dropped_keys,
             },

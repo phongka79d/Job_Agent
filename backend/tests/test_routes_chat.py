@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 
 import pytest
@@ -5,9 +6,33 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from app.api.routes_role_profiles import get_session
-from app.db.models import RoleProfile
+from sqlalchemy import select
+
+from app.db.models import AgentToolCall, ChatMessage, RoleProfile
 from app.main import app
 from app.services.agent_event_service import AgentEventService
+
+
+class ChatLLMDouble:
+    def __init__(self, answer: str = "Live LLM route answer") -> None:
+        self.answer = answer
+        self.calls = []
+
+    async def generate_reply(self, *, user_message: str, working_memory: str) -> str:
+        self.calls.append(
+            {
+                "user_message": user_message,
+                "working_memory": working_memory,
+            }
+        )
+        return self.answer
+
+
+class FailingChatLLMDouble:
+    async def generate_reply(self, *, user_message: str, working_memory: str) -> str:
+        from app.services.chat_llm_client import ChatLLMProviderError
+
+        raise ChatLLMProviderError("missing key")
 
 
 @pytest_asyncio.fixture
@@ -81,7 +106,12 @@ async def test_append_user_message_returns_stream_url(client, role_profile):
 async def test_stream_conversation_events_returns_agent_sse_and_persists_assistant(
     client,
     role_profile,
+    monkeypatch,
 ):
+    from app.api import routes_chat
+
+    llm_client = ChatLLMDouble(answer="I will search AI Engineer Intern jobs in Hanoi.")
+    monkeypatch.setattr(routes_chat, "chat_llm_client", llm_client, raising=False)
     conversation_response = await client.post(
         "/api/chat/conversations",
         json={
@@ -106,14 +136,56 @@ async def test_stream_conversation_events_returns_agent_sse_and_persists_assista
     assert "event: message_started" in response.text
     assert "event: assistant_delta" in response.text
     assert "event: message_completed" in response.text
-    assert "job search" in response.text
+    assert "I will search AI Engineer Intern jobs in Hanoi." in response.text
 
     messages_response = await client.get(
         f"/api/chat/conversations/{conversation['id']}/messages"
     )
     messages = messages_response.json()["messages"]
     assert [message["role"] for message in messages] == ["user", "assistant"]
-    assert messages[1]["content"]
+    assert messages[1]["content"] == "I will search AI Engineer Intern jobs in Hanoi."
+    assert llm_client.calls
+
+
+@pytest.mark.asyncio
+async def test_stream_conversation_events_persists_visible_message_when_llm_unavailable(
+    client,
+    role_profile,
+    monkeypatch,
+):
+    from app.api import routes_chat
+
+    monkeypatch.setattr(routes_chat, "chat_llm_client", FailingChatLLMDouble())
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "Session",
+        },
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": "Find AI Engineer Intern jobs in Hanoi"},
+    )
+    after_message_id = message_response.json()["message"]["id"]
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": after_message_id},
+    )
+
+    assert response.status_code == 200
+    assert "event: assistant_delta" in response.text
+    assert "Chat LLM is unavailable" in response.text
+    assert "event: message_completed" in response.text
+
+    messages_response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/messages"
+    )
+    messages = messages_response.json()["messages"]
+    assert messages[1]["content"].startswith("Chat LLM is unavailable.")
+    assert json.loads(messages[1]["metadata_json"])["source"] == "chat_agent_error"
 
 
 @pytest.mark.asyncio
@@ -248,6 +320,63 @@ async def test_list_tool_calls_returns_serialized_calls_in_order(
 @pytest.mark.asyncio
 async def test_list_tool_calls_returns_404_for_missing_conversation(client):
     response = await client.get(f"/api/chat/conversations/{uuid4()}/tool-calls")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "conversation not found"
+
+
+@pytest.mark.asyncio
+async def test_delete_conversation_removes_messages_and_tool_calls(
+    client,
+    db_session,
+    role_profile,
+):
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "Session",
+        },
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": "Find jobs"},
+    )
+    service = AgentEventService()
+    await service.create_tool_call(
+        db_session,
+        conversation_id=conversation["id"],
+        tool_name="search_jobs",
+        input_summary="Search jobs",
+        safe_payload={},
+    )
+
+    response = await client.delete(f"/api/chat/conversations/{conversation['id']}")
+
+    assert response.status_code == 204
+    messages = (
+        await db_session.execute(
+            select(ChatMessage).where(ChatMessage.conversation_id == conversation["id"])
+        )
+    ).scalars().all()
+    tool_calls = (
+        await db_session.execute(
+            select(AgentToolCall).where(
+                AgentToolCall.conversation_id == conversation["id"]
+            )
+        )
+    ).scalars().all()
+    assert messages == []
+    assert tool_calls == []
+    assert (
+        await client.get(f"/api/chat/conversations/{conversation['id']}/messages")
+    ).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_conversation_returns_404_for_missing_conversation(client):
+    response = await client.delete(f"/api/chat/conversations/{uuid4()}")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "conversation not found"

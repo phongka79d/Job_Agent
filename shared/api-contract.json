@@ -44,6 +44,10 @@
       "request_schema": "RoleProfileCreateRequest",
       "response_schema": "RoleProfileResponse"
     },
+    "deleteConversation": {
+      "method": "DELETE",
+      "path": "/api/chat/conversations/{conversation_id}"
+    },
     "getBatchSummary": {
       "method": "GET",
       "path": "/api/batches/{batch_id}/summary",

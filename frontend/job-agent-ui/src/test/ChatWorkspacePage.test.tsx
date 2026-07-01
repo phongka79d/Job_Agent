@@ -3,16 +3,22 @@ import { useOutletContext } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createConversation,
+  deleteConversation,
   listConversationMessages,
+  listConversations,
   sendChatMessage,
+  streamChatResponse,
 } from "../api/chatClient";
 import ChatWorkspacePage from "../pages/ChatWorkspacePage";
-import type { ChatMessage } from "../types/chat";
+import type { ChatConversation, ChatMessage } from "../types/chat";
 
 vi.mock("../api/chatClient", () => ({
   createConversation: vi.fn(),
+  deleteConversation: vi.fn(),
   listConversationMessages: vi.fn(),
+  listConversations: vi.fn(),
   sendChatMessage: vi.fn(),
+  streamChatResponse: vi.fn(),
 }));
 
 vi.mock("react-router-dom", () => ({
@@ -29,9 +35,21 @@ const assistantMessage: ChatMessage = {
   created_at: "2026-01-01T00:00:00Z",
 };
 
+const existingConversation: ChatConversation = {
+  id: "conv-existing",
+  role_profile_id: "profile-1",
+  title: "Existing chat",
+  status: "active",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
 describe("ChatWorkspacePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(listConversations).mockResolvedValue([]);
+    vi.mocked(streamChatResponse).mockResolvedValue();
+    vi.mocked(deleteConversation).mockResolvedValue();
   });
 
   it("disables message sending until a role profile is active", () => {
@@ -78,6 +96,7 @@ describe("ChatWorkspacePage", () => {
         title: "Job agent session",
       });
       expect(sendChatMessage).toHaveBeenCalledWith("conv-1", { content: "Find jobs" });
+      expect(streamChatResponse).toHaveBeenCalledWith("/stream");
       expect(listConversationMessages).toHaveBeenCalledWith("conv-1");
       expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
     });
@@ -148,6 +167,7 @@ describe("ChatWorkspacePage", () => {
 
     await waitFor(() => {
       expect(sendChatMessage).toHaveBeenCalledTimes(1);
+      expect(streamChatResponse).toHaveBeenCalledTimes(1);
       expect(listConversationMessages).toHaveBeenCalledTimes(1);
     });
   });
@@ -228,5 +248,50 @@ describe("ChatWorkspacePage", () => {
       expect(screen.getByLabelText("Message")).not.toBeDisabled();
     });
     expect(screen.queryByText("Old profile result")).not.toBeInTheDocument();
+  });
+
+  it("loads chat history and selecting a conversation loads its messages", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
+    vi.mocked(listConversations).mockResolvedValue([existingConversation]);
+    vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
+
+    render(<ChatWorkspacePage />);
+
+    await waitFor(() => {
+      expect(listConversations).toHaveBeenCalledWith("profile-1");
+      expect(screen.getByRole("button", { name: "Existing chat" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Existing chat" }));
+
+    await waitFor(() => {
+      expect(listConversationMessages).toHaveBeenCalledWith("conv-existing");
+      expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
+    });
+  });
+
+  it("deletes the active conversation and clears messages", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
+    vi.mocked(listConversations)
+      .mockResolvedValueOnce([existingConversation])
+      .mockResolvedValueOnce([]);
+    vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
+
+    render(<ChatWorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Existing chat" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Existing chat" }));
+    await waitFor(() => {
+      expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /delete existing chat/i }));
+
+    await waitFor(() => {
+      expect(deleteConversation).toHaveBeenCalledWith("conv-existing");
+      expect(screen.queryByText("I found several roles to review.")).not.toBeInTheDocument();
+    });
   });
 });

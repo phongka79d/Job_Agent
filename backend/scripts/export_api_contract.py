@@ -124,6 +124,10 @@ ENDPOINTS = {
         "path": "/api/chat/conversations",
         "response_schema": "ChatConversationListResponse",
     },
+    "deleteConversation": {
+        "method": "DELETE",
+        "path": "/api/chat/conversations/{conversation_id}",
+    },
     "sendChatMessage": {
         "method": "POST",
         "path": "/api/chat/conversations/{conversation_id}/messages",

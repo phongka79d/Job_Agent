@@ -1,6 +1,14 @@
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { createConversation, listConversationMessages, sendChatMessage } from "../api/chatClient";
+import {
+  createConversation,
+  deleteConversation,
+  listConversationMessages,
+  listConversations,
+  sendChatMessage,
+  streamChatResponse,
+} from "../api/chatClient";
 import ChatComposer from "../components/chat/ChatComposer";
 import ChatMessageList from "../components/chat/ChatMessageList";
 import type { ChatConversation, ChatMessage } from "../types/chat";
@@ -15,9 +23,14 @@ interface ConversationState {
   conversation: ChatConversation;
 }
 
+function conversationLabel(conversation: ChatConversation): string {
+  return conversation.title || new Date(conversation.created_at).toLocaleString();
+}
+
 export default function ChatWorkspacePage() {
   const { activeProfileId } = useOutletContext<OutletContext>();
   const [conversation, setConversation] = useState<ConversationState | null>(null);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,18 +52,37 @@ export default function ChatWorkspacePage() {
     sendingRef.current = false;
   }
 
+  const isCurrentRequest = (profileId: string, generation: number) =>
+    activeProfileIdRef.current === profileId && profileGenerationRef.current === generation;
+
+  const refreshConversations = async (profileId: string, generation: number) => {
+    const history = await listConversations(profileId);
+    if (isCurrentRequest(profileId, generation)) {
+      setConversations(history);
+    }
+    return history;
+  };
+
   useEffect(() => {
+    const profileId = activeProfileId;
+    const generation = profileGenerationRef.current;
     setConversation(null);
+    setConversations([]);
     setMessages([]);
     setError(null);
     setIsSending(false);
     conversationRef.current = null;
     conversationRequestRef.current = null;
     sendingRef.current = false;
-  }, [activeProfileId]);
 
-  const isCurrentRequest = (profileId: string, generation: number) =>
-    activeProfileIdRef.current === profileId && profileGenerationRef.current === generation;
+    if (!profileId) return;
+
+    void refreshConversations(profileId, generation).catch((historyError) => {
+      if (isCurrentRequest(profileId, generation)) {
+        setError(historyError instanceof Error ? historyError.message : "Failed to load chat history.");
+      }
+    });
+  }, [activeProfileId]);
 
   const ensureConversation = async (profileId: string, generation: number) => {
     if (
@@ -90,6 +122,56 @@ export default function ChatWorkspacePage() {
     return request;
   };
 
+  const handleSelectConversation = async (selected: ChatConversation) => {
+    if (!activeProfileId || selected.role_profile_id !== activeProfileId) return;
+    const generation = profileGenerationRef.current;
+    const nextConversation = {
+      profileId: activeProfileId,
+      generation,
+      conversation: selected,
+    };
+    conversationRef.current = nextConversation;
+    setConversation(nextConversation);
+    setError(null);
+    try {
+      const loadedMessages = await listConversationMessages(selected.id);
+      if (isCurrentRequest(activeProfileId, generation)) {
+        setMessages(loadedMessages);
+      }
+    } catch (loadError) {
+      if (isCurrentRequest(activeProfileId, generation)) {
+        setError(loadError instanceof Error ? loadError.message : "Failed to load chat.");
+      }
+    }
+  };
+
+  const handleNewConversation = () => {
+    conversationRef.current = null;
+    conversationRequestRef.current = null;
+    setConversation(null);
+    setMessages([]);
+    setError(null);
+  };
+
+  const handleDeleteConversation = async (target: ChatConversation) => {
+    if (!activeProfileId) return;
+    const generation = profileGenerationRef.current;
+    setError(null);
+    try {
+      await deleteConversation(target.id);
+      if (conversationRef.current?.conversation.id === target.id) {
+        conversationRef.current = null;
+        setConversation(null);
+        setMessages([]);
+      }
+      await refreshConversations(activeProfileId, generation);
+    } catch (deleteError) {
+      if (isCurrentRequest(activeProfileId, generation)) {
+        setError(deleteError instanceof Error ? deleteError.message : "Failed to delete chat.");
+      }
+    }
+  };
+
   const handleSend = async (content: string) => {
     if (sendingRef.current) return;
     if (!activeProfileId) throw new Error("Select a role profile before chatting.");
@@ -103,8 +185,10 @@ export default function ChatWorkspacePage() {
 
     try {
       const activeConversation = await ensureConversation(sendProfileId, sendGeneration);
-      await sendChatMessage(activeConversation.id, { content });
+      const response = await sendChatMessage(activeConversation.id, { content });
+      await streamChatResponse(response.stream_url);
       const refreshed = await listConversationMessages(activeConversation.id);
+      await refreshConversations(sendProfileId, sendGeneration);
       if (isCurrentRequest(sendProfileId, sendGeneration)) {
         setMessages(refreshed);
       }
@@ -123,6 +207,46 @@ export default function ChatWorkspacePage() {
 
   return (
     <section className="chat-workspace">
+      <div className="chat-history" aria-label="Chat history">
+        <button
+          type="button"
+          className="btn-secondary chat-history-new"
+          onClick={handleNewConversation}
+          disabled={!activeProfileId || isSending}
+        >
+          <Plus size={14} /> New chat
+        </button>
+        <div className="chat-history-list">
+          {conversations.map((historyConversation) => {
+            const active = conversation?.conversation.id === historyConversation.id;
+            const label = conversationLabel(historyConversation);
+            return (
+              <div
+                key={historyConversation.id}
+                className={`chat-history-item${active ? " chat-history-item-active" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="chat-history-select"
+                  onClick={() => void handleSelectConversation(historyConversation)}
+                  disabled={isSending}
+                >
+                  {label}
+                </button>
+                <button
+                  type="button"
+                  className="chat-history-delete"
+                  aria-label={`Delete ${label}`}
+                  onClick={() => void handleDeleteConversation(historyConversation)}
+                  disabled={isSending}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       <ChatMessageList messages={messages} />
       {error ? (
         <div className="chat-error" role="alert">

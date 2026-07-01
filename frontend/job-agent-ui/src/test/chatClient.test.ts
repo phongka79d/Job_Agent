@@ -1,9 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "../api/client";
-import { createConversation, listConversationMessages, sendChatMessage } from "../api/chatClient";
+import {
+  createConversation,
+  deleteConversation,
+  listConversationMessages,
+  listConversations,
+  sendChatMessage,
+  streamChatResponse,
+} from "../api/chatClient";
 
 const postSpy = vi.spyOn(apiClient, "post");
 const getSpy = vi.spyOn(apiClient, "get");
+const deleteSpy = vi.spyOn(apiClient, "delete");
 
 describe("chatClient", () => {
   beforeEach(() => {
@@ -40,5 +48,57 @@ describe("chatClient", () => {
 
     expect(getSpy).toHaveBeenCalledWith("/api/chat/conversations/conv-1/messages");
     expect(result).toEqual([{ id: "msg-1", content: "Hello" }]);
+  });
+
+  it("lists conversations for a role profile", async () => {
+    getSpy.mockResolvedValueOnce({ data: { conversations: [{ id: "conv-1" }] } });
+
+    const result = await listConversations("profile-1");
+
+    expect(getSpy).toHaveBeenCalledWith("/api/chat/conversations", {
+      params: { role_profile_id: "profile-1" },
+    });
+    expect(result).toEqual([{ id: "conv-1" }]);
+  });
+
+  it("deletes a conversation", async () => {
+    deleteSpy.mockResolvedValueOnce({ data: undefined });
+
+    await deleteConversation("conv-1");
+
+    expect(deleteSpy).toHaveBeenCalledWith("/api/chat/conversations/conv-1");
+  });
+
+  it("resolves chat stream when message_completed arrives", async () => {
+    const instances: Array<{
+      url: string;
+      close: ReturnType<typeof vi.fn>;
+      listeners: Record<string, Array<(event: MessageEvent) => void>>;
+    }> = [];
+    class FakeEventSource {
+      url: string;
+      close = vi.fn();
+      listeners: Record<string, Array<(event: MessageEvent) => void>> = {};
+
+      constructor(url: string) {
+        this.url = url;
+        instances.push(this);
+      }
+
+      addEventListener(eventName: string, listener: (event: MessageEvent) => void) {
+        this.listeners[eventName] = [...(this.listeners[eventName] ?? []), listener];
+      }
+    }
+    vi.stubGlobal("EventSource", FakeEventSource);
+
+    const streamed = streamChatResponse("/api/chat/conversations/conv-1/stream");
+
+    expect(instances[0].url).toBe("http://localhost:8000/api/chat/conversations/conv-1/stream");
+    instances[0].listeners.message_completed[0](
+      new MessageEvent("message_completed", { data: "{}" })
+    );
+    await expect(streamed).resolves.toBeUndefined();
+    expect(instances[0].close).toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });

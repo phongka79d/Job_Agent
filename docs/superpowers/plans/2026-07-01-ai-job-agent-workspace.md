@@ -108,7 +108,7 @@ frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts
 - Modify: `backend/app/db/models.py`
 - Test: `backend/tests/test_chat_service.py`
 
-- [ ] **Step 1: Write model persistence tests**
+- [x] **Step 1: Write model persistence tests**
 
 Create `backend/tests/test_chat_service.py` with the initial persistence contract:
 
@@ -166,7 +166,7 @@ async def test_create_message_persists_full_content(db_session):
     assert rows[0].metadata_json == '{"source":"chat"}'
 ```
 
-- [ ] **Step 2: Run tests and confirm missing models/service**
+- [x] **Step 2: Run tests and confirm missing models/service**
 
 Run:
 
@@ -177,7 +177,7 @@ cd backend
 
 Expected: failure because `ChatConversation`, `ChatMessage`, and `ChatService` do not exist.
 
-- [ ] **Step 3: Add SQLAlchemy models**
+- [x] **Step 3: Add SQLAlchemy models**
 
 Append to `backend/app/db/models.py`:
 
@@ -223,7 +223,7 @@ class ChatMessage(Base):
     created_at: Mapped[created_timestamp]
 ```
 
-- [ ] **Step 4: Create `ChatService`**
+- [x] **Step 4: Create `ChatService`**
 
 Create `backend/app/services/chat_service.py`:
 
@@ -318,7 +318,7 @@ class ChatService:
         return list(result.scalars())
 ```
 
-- [ ] **Step 5: Run chat service tests**
+- [x] **Step 5: Run chat service tests**
 
 Run:
 
@@ -329,7 +329,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add backend/app/db/models.py backend/app/services/chat_service.py backend/tests/test_chat_service.py
@@ -344,7 +344,7 @@ git commit -m "feat: add chat persistence models"
 - Create: `backend/app/api/routes_chat.py`
 - Test: `backend/tests/test_routes_chat.py`
 
-- [ ] **Step 1: Write route tests**
+- [x] **Step 1: Write route tests**
 
 Create `backend/tests/test_routes_chat.py`:
 
@@ -384,7 +384,7 @@ def test_append_user_message_returns_stream_url(client: TestClient, role_profile
     assert data["stream_url"].startswith(f"/api/chat/conversations/{conversation['id']}/stream")
 ```
 
-- [ ] **Step 2: Run tests and confirm missing route**
+- [x] **Step 2: Run tests and confirm missing route**
 
 Run:
 
@@ -395,7 +395,7 @@ cd backend
 
 Expected: fail with 404 or missing schema imports.
 
-- [ ] **Step 3: Add API schemas**
+- [x] **Step 3: Add API schemas**
 
 Append to `backend/app/api/schemas.py`:
 
@@ -441,7 +441,7 @@ class ChatMessageCreateResponse(ApiSchema):
     stream_url: str
 ```
 
-- [ ] **Step 4: Add route file**
+- [x] **Step 4: Add route file**
 
 Create `backend/app/api/routes_chat.py`:
 
@@ -561,7 +561,7 @@ async def append_user_message(
     )
 ```
 
-- [ ] **Step 5: Register router**
+- [x] **Step 5: Register router**
 
 Modify `backend/app/main.py`:
 
@@ -575,7 +575,7 @@ and include:
 app.include_router(chat_router, prefix="/api")
 ```
 
-- [ ] **Step 6: Run route tests**
+- [x] **Step 6: Run route tests**
 
 Run:
 
@@ -586,7 +586,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add backend/app/api/schemas.py backend/app/api/routes_chat.py backend/app/main.py backend/tests/test_routes_chat.py
@@ -607,7 +607,7 @@ git commit -m "feat: add chat API routes"
 - Test: `frontend/job-agent-ui/src/test/ChatWorkspacePage.test.tsx`
 - Test: `frontend/job-agent-ui/src/test/chatClient.test.ts`
 
-- [ ] **Step 1: Write chat client tests**
+- [x] **Step 1: Write chat client tests**
 
 Create `frontend/job-agent-ui/src/test/chatClient.test.ts`:
 
@@ -644,7 +644,7 @@ describe("chatClient", () => {
 });
 ```
 
-- [ ] **Step 2: Add chat types**
+- [x] **Step 2: Add chat types**
 
 Create `frontend/job-agent-ui/src/types/chat.ts`:
 
@@ -683,7 +683,7 @@ export interface SendChatMessageResponse {
 }
 ```
 
-- [ ] **Step 3: Add chat client**
+- [x] **Step 3: Add chat client**
 
 Create `frontend/job-agent-ui/src/api/chatClient.ts`:
 
@@ -733,7 +733,7 @@ export async function sendChatMessage(
 }
 ```
 
-- [ ] **Step 4: Add composer and message list**
+- [x] **Step 4: Add composer and message list**
 
 Create `frontend/job-agent-ui/src/components/chat/ChatComposer.tsx`:
 
@@ -801,7 +801,7 @@ export default function ChatMessageList({ messages }: ChatMessageListProps) {
 }
 ```
 
-- [ ] **Step 5: Add chat workspace page**
+- [x] **Step 5: Add chat workspace page**
 
 Create `frontend/job-agent-ui/src/pages/ChatWorkspacePage.tsx`:
 
@@ -854,7 +854,7 @@ export default function ChatWorkspacePage() {
 }
 ```
 
-- [ ] **Step 6: Make chat the default route**
+- [x] **Step 6: Make chat the default route**
 
 Modify `frontend/job-agent-ui/src/App.tsx`:
 
@@ -883,7 +883,7 @@ Modify `frontend/job-agent-ui/src/components/AppShell.tsx` navigation labels:
 </NavLink>
 ```
 
-- [ ] **Step 7: Add basic chat styles**
+- [x] **Step 7: Add basic chat styles**
 
 Append to `frontend/job-agent-ui/src/styles/app.css`:
 
@@ -933,7 +933,7 @@ Append to `frontend/job-agent-ui/src/styles/app.css`:
 }
 ```
 
-- [ ] **Step 8: Run frontend tests**
+- [x] **Step 8: Run frontend tests**
 
 Run:
 
@@ -946,7 +946,7 @@ npm test -- --run ChatWorkspacePage
 
 Expected: pass.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```powershell
 git add frontend/job-agent-ui/src
@@ -964,7 +964,7 @@ git commit -m "feat: add chat workspace shell"
 - Modify: `backend/app/api/routes_chat.py`
 - Test: `backend/tests/test_agent_event_service.py`
 
-- [ ] **Step 1: Write event service tests**
+- [x] **Step 1: Write event service tests**
 
 Create `backend/tests/test_agent_event_service.py`:
 
@@ -1001,7 +1001,7 @@ async def test_tool_call_lifecycle_persists_safe_summaries(db_session):
     assert succeeded.safe_payload_json == '{"query":"AI Engineer Intern Hanoi"}'
 ```
 
-- [ ] **Step 2: Add model**
+- [x] **Step 2: Add model**
 
 Append to `backend/app/db/models.py`:
 
@@ -1037,7 +1037,7 @@ class AgentToolCall(Base):
     updated_at: Mapped[updated_timestamp]
 ```
 
-- [ ] **Step 3: Create event service**
+- [x] **Step 3: Create event service**
 
 Create `backend/app/services/agent_event_service.py`:
 
@@ -1138,7 +1138,7 @@ class AgentEventService:
         return call
 ```
 
-- [ ] **Step 4: Add schemas and list endpoint**
+- [x] **Step 4: Add schemas and list endpoint**
 
 Add to `backend/app/api/schemas.py`:
 
@@ -1185,7 +1185,7 @@ async def list_tool_calls(
     return AgentToolCallListResponse(tool_calls=tool_calls)
 ```
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run:
 
@@ -1196,7 +1196,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add backend/app/db/models.py backend/app/api/schemas.py backend/app/api/routes_chat.py backend/app/services/agent_event_service.py backend/tests/test_agent_event_service.py
@@ -1209,7 +1209,7 @@ git commit -m "feat: persist visible agent tool calls"
 - Create: `backend/app/services/tool_registry.py`
 - Test: `backend/tests/test_tool_registry.py`
 
-- [ ] **Step 1: Write registry tests**
+- [x] **Step 1: Write registry tests**
 
 Create `backend/tests/test_tool_registry.py`:
 
@@ -1238,7 +1238,7 @@ async def test_unknown_tool_fails_cleanly():
         await registry.execute(ToolRequest(name="missing", arguments={}, context={}))
 ```
 
-- [ ] **Step 2: Create registry types**
+- [x] **Step 2: Create registry types**
 
 Create `backend/app/services/tool_registry.py`:
 
@@ -1330,7 +1330,7 @@ class ToolRegistry:
         return await tool.handler(request)
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run:
 
@@ -1341,7 +1341,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add backend/app/services/tool_registry.py backend/tests/test_tool_registry.py
@@ -1357,7 +1357,7 @@ git commit -m "feat: add agent tool registry"
 - Modify: `frontend/job-agent-ui/src/types/chat.ts`
 - Test: `frontend/job-agent-ui/src/test/ToolCallTimeline.test.tsx`
 
-- [ ] **Step 1: Add backend SSE endpoint**
+- [x] **Step 1: Add backend SSE endpoint**
 
 Add to `backend/app/api/routes_chat.py`:
 
@@ -1393,7 +1393,7 @@ async def stream_conversation_events(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 ```
 
-- [ ] **Step 2: Add frontend tool-call types**
+- [x] **Step 2: Add frontend tool-call types**
 
 Append to `frontend/job-agent-ui/src/types/chat.ts`:
 
@@ -1417,7 +1417,7 @@ export interface AgentToolCall {
 }
 ```
 
-- [ ] **Step 3: Add timeline components**
+- [x] **Step 3: Add timeline components**
 
 Create `frontend/job-agent-ui/src/components/chat/ToolCallCard.tsx`:
 
@@ -1464,7 +1464,7 @@ export default function ToolCallTimeline({ toolCalls }: ToolCallTimelineProps) {
 }
 ```
 
-- [ ] **Step 4: Add timeline tests**
+- [x] **Step 4: Add timeline tests**
 
 Create `frontend/job-agent-ui/src/test/ToolCallTimeline.test.tsx`:
 
@@ -1504,7 +1504,7 @@ describe("ToolCallTimeline", () => {
 });
 ```
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run:
 
@@ -1519,7 +1519,7 @@ npm test -- --run ToolCallTimeline
 
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add backend/app/api/routes_chat.py frontend/job-agent-ui/src
@@ -1534,7 +1534,7 @@ git commit -m "feat: stream chat events and show tool timeline"
 - Create: `backend/app/services/token_budget_service.py`
 - Test: `backend/tests/test_token_budget_service.py`
 
-- [ ] **Step 1: Write budget tests**
+- [x] **Step 1: Write budget tests**
 
 Create `backend/tests/test_token_budget_service.py`:
 
@@ -1558,7 +1558,7 @@ def test_budget_keeps_required_items_and_drops_low_priority_overflow():
     assert selected.dropped_keys == ["retrieval-low"]
 ```
 
-- [ ] **Step 2: Create budget service**
+- [x] **Step 2: Create budget service**
 
 Create `backend/app/services/token_budget_service.py`:
 
@@ -1618,7 +1618,7 @@ class TokenBudgetService:
         return BudgetSelection(items=selected, total_tokens=total, dropped_keys=dropped)
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run:
 
@@ -1629,7 +1629,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add backend/app/services/token_budget_service.py backend/tests/test_token_budget_service.py
@@ -1643,7 +1643,7 @@ git commit -m "feat: add deterministic token budget service"
 - Create: `backend/app/services/chat_memory_service.py`
 - Test: `backend/tests/test_chat_memory_service.py`
 
-- [ ] **Step 1: Write memory assembly tests**
+- [x] **Step 1: Write memory assembly tests**
 
 Create `backend/tests/test_chat_memory_service.py`:
 
@@ -1679,7 +1679,7 @@ async def test_memory_uses_summary_profile_and_recent_messages(db_session):
     assert memory.total_tokens <= 100
 ```
 
-- [ ] **Step 2: Add memory model**
+- [x] **Step 2: Add memory model**
 
 Append to `backend/app/db/models.py`:
 
@@ -1705,7 +1705,7 @@ class MemorySummary(Base):
     updated_at: Mapped[updated_timestamp]
 ```
 
-- [ ] **Step 3: Create memory service**
+- [x] **Step 3: Create memory service**
 
 Create `backend/app/services/chat_memory_service.py`:
 
@@ -1835,7 +1835,7 @@ class ChatMemoryService:
         return list(reversed(result.scalars().all()))
 ```
 
-- [ ] **Step 4: Run memory tests**
+- [x] **Step 4: Run memory tests**
 
 Run:
 
@@ -1846,7 +1846,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add backend/app/db/models.py backend/app/services/chat_memory_service.py backend/tests/test_chat_memory_service.py
@@ -1863,7 +1863,7 @@ git commit -m "feat: assemble bounded chat memory"
 - Create: `backend/app/services/pdf_text_extraction_service.py`
 - Test: `backend/tests/test_profile_document_service.py`
 
-- [ ] **Step 1: Add PDF dependency**
+- [x] **Step 1: Add PDF dependency**
 
 Modify `backend/requirements.txt`:
 
@@ -1873,7 +1873,7 @@ pypdf
 
 Keep dependency sorted consistently with the existing file.
 
-- [ ] **Step 2: Add document models**
+- [x] **Step 2: Add document models**
 
 Append to `backend/app/db/models.py`:
 
@@ -1925,7 +1925,7 @@ class ProfileDocumentChunk(Base):
     created_at: Mapped[created_timestamp]
 ```
 
-- [ ] **Step 3: Create PDF text extraction service**
+- [x] **Step 3: Create PDF text extraction service**
 
 Create `backend/app/services/pdf_text_extraction_service.py`:
 
@@ -1957,7 +1957,7 @@ class PdfTextExtractionService:
         return text.strip()
 ```
 
-- [ ] **Step 4: Run focused import check**
+- [x] **Step 4: Run focused import check**
 
 Run:
 
@@ -1973,7 +1973,7 @@ Expected output includes:
 PdfTextExtractionService
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add backend/requirements.txt backend/app/db/models.py backend/app/services/pdf_text_extraction_service.py
@@ -1991,7 +1991,7 @@ git commit -m "feat: add profile document storage models"
 - Test: `backend/tests/test_profile_document_service.py`
 - Test: `backend/tests/test_routes_profile_documents.py`
 
-- [ ] **Step 1: Extend Qdrant collection service**
+- [x] **Step 1: Extend Qdrant collection service**
 
 Modify `backend/app/services/qdrant_service.py` with constants:
 
@@ -2039,7 +2039,7 @@ async def ensure_collection() -> None:
     await service.ensure_profile_document_collection()
 ```
 
-- [ ] **Step 2: Add API schemas**
+- [x] **Step 2: Add API schemas**
 
 Append to `backend/app/api/schemas.py`:
 
@@ -2062,7 +2062,7 @@ class ProfileDocumentListResponse(ApiSchema):
     documents: list[ProfileDocumentResponse] = Field(default_factory=list)
 ```
 
-- [ ] **Step 3: Create profile document service**
+- [x] **Step 3: Create profile document service**
 
 Create `backend/app/services/profile_document_service.py`:
 
@@ -2176,7 +2176,7 @@ class ProfileDocumentService:
         return chunks
 ```
 
-- [ ] **Step 4: Create upload route**
+- [x] **Step 4: Create upload route**
 
 Create `backend/app/api/routes_profile_documents.py`:
 
@@ -2237,7 +2237,7 @@ async def list_profile_documents(
     return ProfileDocumentListResponse(documents=documents)
 ```
 
-- [ ] **Step 5: Register route**
+- [x] **Step 5: Register route**
 
 Modify `backend/app/main.py`:
 
@@ -2251,7 +2251,7 @@ and include:
 app.include_router(profile_documents_router, prefix="/api")
 ```
 
-- [ ] **Step 6: Run tests and contract export**
+- [x] **Step 6: Run tests and contract export**
 
 Run:
 
@@ -2263,7 +2263,7 @@ cd backend
 
 Expected: pass and contract regenerated.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add backend/app/services/qdrant_service.py backend/app/services/profile_document_service.py backend/app/api/routes_profile_documents.py backend/app/main.py backend/app/api/schemas.py backend/tests/test_profile_document_service.py backend/tests/test_routes_profile_documents.py shared/api-contract.json
@@ -2277,7 +2277,7 @@ git commit -m "feat: add profile PDF upload API"
 - Modify: `backend/app/services/tool_registry.py`
 - Test: `backend/tests/test_profile_document_retrieval_service.py`
 
-- [ ] **Step 1: Write retrieval tests**
+- [x] **Step 1: Write retrieval tests**
 
 Create `backend/tests/test_profile_document_retrieval_service.py`:
 
@@ -2329,7 +2329,7 @@ async def test_retrieval_filters_chunks_by_role_profile(db_session):
     assert chunks[0].role_profile_id == profile.id
 ```
 
-- [ ] **Step 2: Create retrieval service**
+- [x] **Step 2: Create retrieval service**
 
 Create `backend/app/services/profile_document_retrieval_service.py`:
 
@@ -2373,7 +2373,7 @@ class ProfileDocumentRetrievalService:
 
 This SQLite lexical fallback is deterministic and testable. In a later step, replace ranking internals with Qdrant query while preserving the service interface.
 
-- [ ] **Step 3: Wire retrieval tool**
+- [x] **Step 3: Wire retrieval tool**
 
 Modify `backend/app/services/tool_registry.py` by adding a handler factory later used by the chat graph:
 
@@ -2395,7 +2395,7 @@ def build_retrieve_profile_documents_handler(retrieval_service, session):
     return handler
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -2406,7 +2406,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add backend/app/services/profile_document_retrieval_service.py backend/app/services/tool_registry.py backend/tests/test_profile_document_retrieval_service.py
@@ -2423,7 +2423,7 @@ git commit -m "feat: add profile document retrieval service"
 - Create: `backend/app/agents/chat_graph.py`
 - Test: `backend/tests/test_chat_graph.py`
 
-- [ ] **Step 1: Write graph behavior test**
+- [x] **Step 1: Write graph behavior test**
 
 Create `backend/tests/test_chat_graph.py`:
 
@@ -2451,7 +2451,7 @@ async def test_chat_turn_returns_final_answer_without_fake_production_client():
     assert result["tool_calls"] == []
 ```
 
-- [ ] **Step 2: Add chat state**
+- [x] **Step 2: Add chat state**
 
 Create `backend/app/agents/chat_state.py`:
 
@@ -2474,7 +2474,7 @@ class ChatAgentState(TypedDict, total=False):
     error_reason: str | None
 ```
 
-- [ ] **Step 3: Add prompt owner**
+- [x] **Step 3: Add prompt owner**
 
 Create `backend/app/agents/chat_prompts.py`:
 
@@ -2489,7 +2489,7 @@ Ask for confirmation before profile updates, job status changes, deletions, or b
 Keep answers concise and cite visible tool results when relevant."""
 ```
 
-- [ ] **Step 4: Add graph skeleton**
+- [x] **Step 4: Add graph skeleton**
 
 Create `backend/app/agents/chat_graph.py`:
 
@@ -2520,7 +2520,7 @@ async def run_chat_turn(
     }
 ```
 
-- [ ] **Step 5: Run graph test**
+- [x] **Step 5: Run graph test**
 
 Run:
 
@@ -2531,7 +2531,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add backend/app/agents/chat_state.py backend/app/agents/chat_prompts.py backend/app/agents/chat_graph.py backend/tests/test_chat_graph.py
@@ -2546,7 +2546,7 @@ git commit -m "feat: add chat agent graph skeleton"
 - Test: `backend/tests/test_tool_registry.py`
 - Test: `backend/tests/test_routes_jobs.py`
 
-- [ ] **Step 1: Extract reusable job ingestion helper if needed**
+- [x] **Step 1: Extract reusable job ingestion helper if needed**
 
 If `routes_jobs.py` has route-local helpers that tools need, move only reusable orchestration into `backend/app/services/job_ingestion_service.py`:
 
@@ -2571,7 +2571,7 @@ class JobIngestionService:
 
 Keep route response semantics unchanged. Do not duplicate business logic.
 
-- [ ] **Step 2: Add safe tool handler tests**
+- [x] **Step 2: Add safe tool handler tests**
 
 Extend `backend/tests/test_tool_registry.py`:
 
@@ -2599,7 +2599,7 @@ async def test_tool_result_exposes_summary_not_secret_payload():
     assert "api" not in str(result.safe_payload).lower()
 ```
 
-- [ ] **Step 3: Allow handler overrides in registry**
+- [x] **Step 3: Allow handler overrides in registry**
 
 Modify `ToolRegistry.__init__`:
 
@@ -2621,7 +2621,7 @@ def __init__(self, overrides: dict[str, ToolHandler] | None = None) -> None:
         )
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -2632,7 +2632,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add backend/app/services/tool_registry.py backend/tests/test_tool_registry.py
@@ -2647,7 +2647,7 @@ git commit -m "feat: prepare job tools for chat agent"
 - Modify: `backend/app/agents/chat_graph.py`
 - Test: `backend/tests/test_routes_chat.py`
 
-- [ ] **Step 1: Extend route test**
+- [x] **Step 1: Extend route test**
 
 Add to `backend/tests/test_routes_chat.py`:
 
@@ -2669,7 +2669,7 @@ def test_stream_endpoint_emits_agent_events(client: TestClient, role_profile):
     assert "message_completed" in response.text
 ```
 
-- [ ] **Step 2: Persist assistant response during stream**
+- [x] **Step 2: Persist assistant response during stream**
 
 Modify the stream generator in `routes_chat.py` so it assembles memory, runs the chat graph, and persists the assistant message:
 
@@ -2716,7 +2716,7 @@ async def stream_conversation_events(...):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run:
 
@@ -2727,7 +2727,7 @@ cd backend
 
 Expected: pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add backend/app/api/routes_chat.py backend/app/services/chat_service.py backend/app/agents/chat_graph.py backend/tests/test_routes_chat.py
@@ -2746,7 +2746,7 @@ git commit -m "feat: run chat agent turns from stream"
 - Modify: `frontend/job-agent-ui/src/App.tsx`
 - Test: `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`
 
-- [ ] **Step 1: Add types**
+- [x] **Step 1: Add types**
 
 Create `frontend/job-agent-ui/src/types/profileDocuments.ts`:
 
@@ -2766,7 +2766,7 @@ export interface ProfileDocument {
 }
 ```
 
-- [ ] **Step 2: Add client**
+- [x] **Step 2: Add client**
 
 Create `frontend/job-agent-ui/src/api/profileDocumentsClient.ts`:
 
@@ -2801,7 +2801,7 @@ export async function uploadProfileDocument(roleProfileId: string, file: File): 
 }
 ```
 
-- [ ] **Step 3: Add panel**
+- [x] **Step 3: Add panel**
 
 Create `frontend/job-agent-ui/src/components/profile/ProfileDocumentPanel.tsx`:
 
@@ -2858,7 +2858,7 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
 }
 ```
 
-- [ ] **Step 4: Add panel to sidebar**
+- [x] **Step 4: Add panel to sidebar**
 
 Modify `frontend/job-agent-ui/src/App.tsx`:
 
@@ -2872,7 +2872,7 @@ Add below `RoleProfilePanel`:
 <ProfileDocumentPanel activeProfileId={activeProfile?.id || null} />
 ```
 
-- [ ] **Step 5: Run frontend tests**
+- [x] **Step 5: Run frontend tests**
 
 Run:
 
@@ -2884,7 +2884,7 @@ npm test -- --run ProfileDocumentPanel
 
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add frontend/job-agent-ui/src
