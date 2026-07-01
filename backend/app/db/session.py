@@ -4,7 +4,7 @@ Async database session configuration, connection pragmas, and initialization uti
 This module establishes the SQLAlchemy async engine and session maker for SQLite via
 aiosqlite. It configures startup SQLite PRAGMAs (foreign keys and WAL mode) via
 event listeners, and provides a database initialization function with safety guards
-to ensure only the three MVP tables are created.
+to ensure only the persisted application tables are created.
 """
 
 from pathlib import Path
@@ -43,11 +43,21 @@ async_session_maker = async_sessionmaker(
 
 async def init_db() -> None:
     """
-    Initialize the database, creating the schema for exactly the three MVP models.
+    Initialize the database, creating the schema for persisted application models.
     
     Guards against creating any out-of-scope tables and verifies table names before creation.
     """
-    expected_tables = {"applications", "job_posts", "role_profiles"}
+    expected_tables = {
+        "agent_tool_calls",
+        "applications",
+        "chat_conversations",
+        "chat_messages",
+        "job_posts",
+        "memory_summaries",
+        "profile_document_chunks",
+        "profile_documents",
+        "role_profiles",
+    }
     metadata_tables = set(Base.metadata.tables.keys())
     
     if metadata_tables != expected_tables:

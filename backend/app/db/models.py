@@ -222,3 +222,151 @@ class Application(Base):
         doc="Application timestamp (UTC)"
     )
     updated_at: Mapped[updated_timestamp]
+
+
+class ChatConversation(Base):
+    """Persisted chat session scoped to one role profile."""
+    __tablename__ = "chat_conversations"
+
+    __table_args__ = (
+        Index("idx_chat_conversations_role_profile_updated", "role_profile_id", text("updated_at DESC")),
+    )
+
+    id: Mapped[uuid_pk]
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="active")
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
+class ChatMessage(Base):
+    """Full persisted chat message history. Working memory is bounded separately."""
+    __tablename__ = "chat_messages"
+
+    __table_args__ = (
+        Index("idx_chat_messages_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[uuid_pk]
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("chat_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[created_timestamp]
+
+
+class MemorySummary(Base):
+    """Long-term conversation summary for messages outside the recent working window."""
+    __tablename__ = "memory_summaries"
+
+    __table_args__ = (
+        Index("idx_memory_summaries_conversation_updated", "conversation_id", text("updated_at DESC")),
+    )
+
+    id: Mapped[uuid_pk]
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("chat_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    summary_text: Mapped[str] = mapped_column(Text, nullable=False)
+    covered_message_id_until: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
+class ProfileDocument(Base):
+    """Uploaded profile PDF metadata scoped to a role profile."""
+    __tablename__ = "profile_documents"
+
+    __table_args__ = (
+        Index("idx_profile_documents_role_profile_created", "role_profile_id", text("created_at DESC")),
+        Index("idx_profile_documents_content_hash", "content_hash"),
+    )
+
+    id: Mapped[uuid_pk]
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    original_filename: Mapped[str] = mapped_column(Text, nullable=False)
+    stored_path: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    mime_type: Mapped[str] = mapped_column(Text, nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    extracted_text_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="processing")
+    error_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
+class ProfileDocumentChunk(Base):
+    """Text chunk from an uploaded profile document with a Qdrant point ID."""
+    __tablename__ = "profile_document_chunks"
+
+    __table_args__ = (
+        Index("idx_profile_document_chunks_document", "document_id", "chunk_index"),
+        Index("idx_profile_document_chunks_role_profile", "role_profile_id"),
+    )
+
+    id: Mapped[uuid_pk]
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profile_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    qdrant_point_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    created_at: Mapped[created_timestamp]
+
+
+class AgentToolCall(Base):
+    """Sanitized visible tool call event persisted for chat UI."""
+    __tablename__ = "agent_tool_calls"
+
+    __table_args__ = (
+        Index("idx_agent_tool_calls_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[uuid_pk]
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("chat_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    assistant_message_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("chat_messages.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    tool_name: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    input_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    safe_payload_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]

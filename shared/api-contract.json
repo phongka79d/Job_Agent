@@ -32,6 +32,12 @@
       "path": "/api/jobs/{id}/approve",
       "response_schema": "StatusMutationResponse"
     },
+    "createConversation": {
+      "method": "POST",
+      "path": "/api/chat/conversations",
+      "request_schema": "ChatConversationCreateRequest",
+      "response_schema": "ChatConversationResponse"
+    },
     "createRoleProfile": {
       "method": "POST",
       "path": "/api/role-profiles",
@@ -57,6 +63,26 @@
       "method": "GET",
       "path": "/api/jobs/review",
       "response_schema": "JobListResponse"
+    },
+    "listAgentToolCalls": {
+      "method": "GET",
+      "path": "/api/chat/conversations/{conversation_id}/tool-calls",
+      "response_schema": "AgentToolCallListResponse"
+    },
+    "listChatMessages": {
+      "method": "GET",
+      "path": "/api/chat/conversations/{conversation_id}/messages",
+      "response_schema": "ChatMessageListResponse"
+    },
+    "listConversations": {
+      "method": "GET",
+      "path": "/api/chat/conversations",
+      "response_schema": "ChatConversationListResponse"
+    },
+    "listProfileDocuments": {
+      "method": "GET",
+      "path": "/api/role-profiles/{role_profile_id}/documents",
+      "response_schema": "ProfileDocumentListResponse"
     },
     "listRoleProfiles": {
       "method": "GET",
@@ -86,11 +112,22 @@
       "request_schema": "SearchJobsRequest",
       "response_schema": "IngestionResponse"
     },
+    "sendChatMessage": {
+      "method": "POST",
+      "path": "/api/chat/conversations/{conversation_id}/messages",
+      "request_schema": "ChatMessageCreateRequest",
+      "response_schema": "ChatMessageCreateResponse"
+    },
     "updateJobStatus": {
       "method": "PATCH",
       "path": "/api/jobs/{id}/status",
       "request_schema": "StatusUpdateRequest",
       "response_schema": "StatusMutationResponse"
+    },
+    "uploadProfileDocument": {
+      "method": "POST",
+      "path": "/api/role-profiles/{role_profile_id}/documents",
+      "response_schema": "ProfileDocumentResponse"
     }
   },
   "extraction_statuses": [
@@ -125,6 +162,265 @@
     "failed"
   ],
   "schemas": {
+    "AgentToolCallListResponse": {
+      "$defs": {
+        "AgentToolCallResponse": {
+          "properties": {
+            "assistant_message_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Assistant Message Id"
+            },
+            "completed_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Completed At"
+            },
+            "conversation_id": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "error_message": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Message"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "input_summary": {
+              "title": "Input Summary",
+              "type": "string"
+            },
+            "result_summary": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Result Summary"
+            },
+            "safe_payload_json": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Safe Payload Json"
+            },
+            "started_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started At"
+            },
+            "status": {
+              "title": "Status",
+              "type": "string"
+            },
+            "tool_name": {
+              "title": "Tool Name",
+              "type": "string"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "conversation_id",
+            "assistant_message_id",
+            "tool_name",
+            "status",
+            "input_summary",
+            "result_summary",
+            "safe_payload_json",
+            "error_message",
+            "started_at",
+            "completed_at",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "AgentToolCallResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "tool_calls": {
+          "items": {
+            "$ref": "#/$defs/AgentToolCallResponse"
+          },
+          "title": "Tool Calls",
+          "type": "array"
+        }
+      },
+      "title": "AgentToolCallListResponse",
+      "type": "object"
+    },
+    "AgentToolCallResponse": {
+      "properties": {
+        "assistant_message_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Assistant Message Id"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Completed At"
+        },
+        "conversation_id": {
+          "format": "uuid",
+          "title": "Conversation Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "error_message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Message"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "input_summary": {
+          "title": "Input Summary",
+          "type": "string"
+        },
+        "result_summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Result Summary"
+        },
+        "safe_payload_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Safe Payload Json"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Started At"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "tool_name": {
+          "title": "Tool Name",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "conversation_id",
+        "assistant_message_id",
+        "tool_name",
+        "status",
+        "input_summary",
+        "result_summary",
+        "safe_payload_json",
+        "error_message",
+        "started_at",
+        "completed_at",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "AgentToolCallResponse",
+      "type": "object"
+    },
     "BatchSummaryResponse": {
       "properties": {
         "average_extraction_time_ms": {
@@ -184,6 +480,375 @@
         "average_extraction_time_ms"
       ],
       "title": "BatchSummaryResponse",
+      "type": "object"
+    },
+    "ChatConversationCreateRequest": {
+      "properties": {
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "role_profile_id"
+      ],
+      "title": "ChatConversationCreateRequest",
+      "type": "object"
+    },
+    "ChatConversationListResponse": {
+      "$defs": {
+        "ChatConversationResponse": {
+          "properties": {
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "role_profile_id": {
+              "format": "uuid",
+              "title": "Role Profile Id",
+              "type": "string"
+            },
+            "status": {
+              "title": "Status",
+              "type": "string"
+            },
+            "title": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Title"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "role_profile_id",
+            "title",
+            "status",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "ChatConversationResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "conversations": {
+          "items": {
+            "$ref": "#/$defs/ChatConversationResponse"
+          },
+          "title": "Conversations",
+          "type": "array"
+        }
+      },
+      "title": "ChatConversationListResponse",
+      "type": "object"
+    },
+    "ChatConversationResponse": {
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Title"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role_profile_id",
+        "title",
+        "status",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ChatConversationResponse",
+      "type": "object"
+    },
+    "ChatMessageCreateRequest": {
+      "properties": {
+        "content": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "ChatMessageCreateRequest",
+      "type": "object"
+    },
+    "ChatMessageCreateResponse": {
+      "$defs": {
+        "ChatMessageResponse": {
+          "properties": {
+            "content": {
+              "title": "Content",
+              "type": "string"
+            },
+            "conversation_id": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "metadata_json": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metadata Json"
+            },
+            "role": {
+              "title": "Role",
+              "type": "string"
+            },
+            "token_count": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token Count"
+            }
+          },
+          "required": [
+            "id",
+            "conversation_id",
+            "role",
+            "content",
+            "token_count",
+            "metadata_json",
+            "created_at"
+          ],
+          "title": "ChatMessageResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "message": {
+          "$ref": "#/$defs/ChatMessageResponse"
+        },
+        "stream_url": {
+          "title": "Stream Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "stream_url"
+      ],
+      "title": "ChatMessageCreateResponse",
+      "type": "object"
+    },
+    "ChatMessageListResponse": {
+      "$defs": {
+        "ChatMessageResponse": {
+          "properties": {
+            "content": {
+              "title": "Content",
+              "type": "string"
+            },
+            "conversation_id": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "metadata_json": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metadata Json"
+            },
+            "role": {
+              "title": "Role",
+              "type": "string"
+            },
+            "token_count": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token Count"
+            }
+          },
+          "required": [
+            "id",
+            "conversation_id",
+            "role",
+            "content",
+            "token_count",
+            "metadata_json",
+            "created_at"
+          ],
+          "title": "ChatMessageResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/ChatMessageResponse"
+          },
+          "title": "Messages",
+          "type": "array"
+        }
+      },
+      "title": "ChatMessageListResponse",
+      "type": "object"
+    },
+    "ChatMessageResponse": {
+      "properties": {
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "conversation_id": {
+          "format": "uuid",
+          "title": "Conversation Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "metadata_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Metadata Json"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "token_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Token Count"
+        }
+      },
+      "required": [
+        "id",
+        "conversation_id",
+        "role",
+        "content",
+        "token_count",
+        "metadata_json",
+        "created_at"
+      ],
+      "title": "ChatMessageResponse",
       "type": "object"
     },
     "IngestionResponse": {
@@ -1589,6 +2254,169 @@
         "source_url"
       ],
       "title": "ParseJobUrlRequest",
+      "type": "object"
+    },
+    "ProfileDocumentListResponse": {
+      "$defs": {
+        "ProfileDocumentResponse": {
+          "properties": {
+            "chunk_count": {
+              "title": "Chunk Count",
+              "type": "integer"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "error_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Reason"
+            },
+            "extracted_text_chars": {
+              "title": "Extracted Text Chars",
+              "type": "integer"
+            },
+            "file_size_bytes": {
+              "title": "File Size Bytes",
+              "type": "integer"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "mime_type": {
+              "title": "Mime Type",
+              "type": "string"
+            },
+            "original_filename": {
+              "title": "Original Filename",
+              "type": "string"
+            },
+            "role_profile_id": {
+              "format": "uuid",
+              "title": "Role Profile Id",
+              "type": "string"
+            },
+            "status": {
+              "title": "Status",
+              "type": "string"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "role_profile_id",
+            "original_filename",
+            "mime_type",
+            "file_size_bytes",
+            "extracted_text_chars",
+            "chunk_count",
+            "status",
+            "error_reason",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "ProfileDocumentResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/ProfileDocumentResponse"
+          },
+          "title": "Documents",
+          "type": "array"
+        }
+      },
+      "title": "ProfileDocumentListResponse",
+      "type": "object"
+    },
+    "ProfileDocumentResponse": {
+      "properties": {
+        "chunk_count": {
+          "title": "Chunk Count",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "error_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Reason"
+        },
+        "extracted_text_chars": {
+          "title": "Extracted Text Chars",
+          "type": "integer"
+        },
+        "file_size_bytes": {
+          "title": "File Size Bytes",
+          "type": "integer"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "mime_type": {
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "original_filename": {
+          "title": "Original Filename",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role_profile_id",
+        "original_filename",
+        "mime_type",
+        "file_size_bytes",
+        "extracted_text_chars",
+        "chunk_count",
+        "status",
+        "error_reason",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ProfileDocumentResponse",
       "type": "object"
     },
     "RoleProfileCreateRequest": {

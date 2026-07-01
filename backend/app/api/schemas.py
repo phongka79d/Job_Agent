@@ -218,6 +218,85 @@ class BatchSummaryResponse(ApiSchema):
     average_extraction_time_ms: float | None
 
 
+class ChatConversationCreateRequest(ApiSchema):
+    role_profile_id: UUID
+    title: str | None = Field(default=None, max_length=200)
+
+
+class ChatConversationResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    title: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChatConversationListResponse(ApiSchema):
+    conversations: list[ChatConversationResponse] = Field(default_factory=list)
+
+
+class ChatMessageCreateRequest(ApiSchema):
+    content: str = Field(min_length=1, max_length=20000)
+
+
+class ChatMessageResponse(ApiSchema):
+    id: UUID
+    conversation_id: UUID
+    role: str
+    content: str
+    token_count: int | None
+    metadata_json: str | None
+    created_at: datetime
+
+
+class ChatMessageListResponse(ApiSchema):
+    messages: list[ChatMessageResponse] = Field(default_factory=list)
+
+
+class ChatMessageCreateResponse(ApiSchema):
+    message: ChatMessageResponse
+    stream_url: str
+
+
+class AgentToolCallResponse(ApiSchema):
+    id: UUID
+    conversation_id: UUID
+    assistant_message_id: UUID | None
+    tool_name: str
+    status: str
+    input_summary: str
+    result_summary: str | None
+    safe_payload_json: str | None
+    error_message: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentToolCallListResponse(ApiSchema):
+    tool_calls: list[AgentToolCallResponse] = Field(default_factory=list)
+
+
+class ProfileDocumentResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    original_filename: str
+    mime_type: str
+    file_size_bytes: int
+    extracted_text_chars: int
+    chunk_count: int
+    status: str
+    error_reason: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProfileDocumentListResponse(ApiSchema):
+    documents: list[ProfileDocumentResponse] = Field(default_factory=list)
+
+
 def _parse_string_list(value: Any) -> list[str]:
     if value is None:
         return []
