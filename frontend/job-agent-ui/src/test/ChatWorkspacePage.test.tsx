@@ -151,4 +151,82 @@ describe("ChatWorkspacePage", () => {
       expect(listConversationMessages).toHaveBeenCalledTimes(1);
     });
   });
+
+  it("ignores old-profile async completions after the active profile changes", async () => {
+    let activeProfileId = "profile-1";
+    vi.mocked(useOutletContext).mockImplementation(() => ({ activeProfileId }));
+    let resolveConversation: (
+      value: Awaited<ReturnType<typeof createConversation>>
+    ) => void = () => {};
+    let resolveMessages: (value: ChatMessage[]) => void = () => {};
+    vi.mocked(createConversation).mockReturnValue(
+      new Promise((resolve) => {
+        resolveConversation = resolve;
+      })
+    );
+    vi.mocked(sendChatMessage).mockResolvedValue({
+      message: {
+        id: "msg-1",
+        conversation_id: "conv-1",
+        role: "user",
+        content: "Find jobs",
+        token_count: null,
+        metadata_json: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      stream_url: "/stream",
+    });
+    vi.mocked(listConversationMessages).mockReturnValue(
+      new Promise((resolve) => {
+        resolveMessages = resolve;
+      })
+    );
+
+    const { rerender } = render(<ChatWorkspacePage />);
+
+    fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Find jobs" } });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(createConversation).toHaveBeenCalledWith({
+        role_profile_id: "profile-1",
+        title: "Job agent session",
+      });
+    });
+
+    activeProfileId = "profile-2";
+    rerender(<ChatWorkspacePage />);
+    activeProfileId = "profile-1";
+    rerender(<ChatWorkspacePage />);
+
+    resolveConversation({
+      id: "conv-1",
+      role_profile_id: "profile-1",
+      title: "Old session",
+      status: "active",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    await waitFor(() => {
+      expect(listConversationMessages).toHaveBeenCalledWith("conv-1");
+    });
+
+    resolveMessages([
+      {
+        id: "msg-old",
+        conversation_id: "conv-1",
+        role: "assistant",
+        content: "Old profile result",
+        token_count: null,
+        metadata_json: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Message")).not.toBeDisabled();
+    });
+    expect(screen.queryByText("Old profile result")).not.toBeInTheDocument();
+  });
 });
