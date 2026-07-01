@@ -27,11 +27,17 @@ from app.services.agent_event_service import AgentEventService
 from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClient
 from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
+from app.services.profile_document_retrieval_service import ProfileDocumentRetrievalService
 from app.services.tool_registry import (
     ToolRegistry,
     ToolRequest,
+    build_analyze_cv_structure_handler,
     build_extract_job_from_text_handler,
+    build_get_active_profile_cv_handler,
+    build_list_profile_cvs_handler,
+    build_retrieve_profile_cv_chunks_handler,
     build_search_jobs_handler,
+    build_view_profile_cv_metadata_handler,
 )
 
 
@@ -41,6 +47,7 @@ chat_service = ChatService()
 agent_event_service = AgentEventService()
 memory_service = ChatMemoryService()
 chat_llm_client = OpenAIChatLLMClient()
+profile_cv_retrieval_service = ProfileDocumentRetrievalService()
 
 
 def build_tool_registry(session: SessionDep) -> ToolRegistry:
@@ -48,6 +55,12 @@ def build_tool_registry(session: SessionDep) -> ToolRegistry:
         overrides={
             "search_jobs": build_search_jobs_handler(session),
             "extract_job_from_text": build_extract_job_from_text_handler(session),
+            "list_profile_cvs": build_list_profile_cvs_handler(profile_cv_retrieval_service, session),
+            "get_active_profile_cv": build_get_active_profile_cv_handler(profile_cv_retrieval_service, session),
+            "view_profile_cv_metadata": build_view_profile_cv_metadata_handler(profile_cv_retrieval_service, session),
+            "retrieve_profile_cv_chunks": build_retrieve_profile_cv_chunks_handler(profile_cv_retrieval_service, session),
+            "analyze_cv_structure": build_analyze_cv_structure_handler(profile_cv_retrieval_service, session),
+            "retrieve_profile_documents": build_retrieve_profile_cv_chunks_handler(profile_cv_retrieval_service, session),
         }
     )
 
@@ -126,6 +139,26 @@ def _is_pasted_job_text_intent(content: str) -> bool:
         return False
     signal_count = sum(1 for signal in PASTED_JOB_SIGNALS if signal in normalized)
     return signal_count >= 3
+
+
+def _is_profile_cv_read_intent(content: str) -> bool:
+    normalized = content.casefold()
+    cv_terms = ("cv", "resume", "profile", "portfolio", "transcript", "certificate")
+    read_terms = (
+        "read",
+        "analyze",
+        "compare",
+        "skill",
+        "skills",
+        "missing",
+        "improve",
+        "match",
+        "score",
+        "evidence",
+    )
+    return any(term in normalized for term in cv_terms) and any(
+        term in normalized for term in read_terms
+    )
 
 
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
@@ -495,6 +528,78 @@ async def stream_conversation_events(
                 assistant_content = (
                     "Called 1 tool: Extract job from text. "
                     f"{tool_result.result_summary} Open Review Queue to inspect and approve it."
+                )
+                agent_metadata_source = "chat_agent_tool"
+                yield _sse_event(
+                    "tool_call_completed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "result_summary": tool_call.result_summary,
+                        "safe_payload": tool_result.safe_payload,
+                    },
+                )
+        elif _is_profile_cv_read_intent(user_message.content):
+            tool_call = await agent_event_service.create_tool_call(
+                session,
+                conversation_id=str(conversation_id),
+                tool_name="retrieve_profile_cv_chunks",
+                input_summary=f"Active CV retrieval: {user_message.content}",
+                safe_payload={"query": user_message.content},
+            )
+            tool_call = await agent_event_service.mark_running(session, tool_call.id)
+            yield _sse_event(
+                "tool_call_started",
+                {
+                    "tool_call_id": tool_call.id,
+                    "tool_name": tool_call.tool_name,
+                    "status": tool_call.status,
+                    "input_summary": tool_call.input_summary,
+                },
+            )
+            try:
+                tool_result = await build_tool_registry(session).execute(
+                    ToolRequest(
+                        name="retrieve_profile_cv_chunks",
+                        arguments={"query": user_message.content, "limit": 5},
+                        context={
+                            "role_profile_id": conversation.role_profile_id,
+                            "conversation_id": str(conversation_id),
+                        },
+                    )
+                )
+            except Exception:
+                logger.exception("retrieve_profile_cv_chunks tool failed")
+                tool_call = await agent_event_service.mark_failed(
+                    session,
+                    tool_call.id,
+                    error_message="Active CV retrieval failed. Check uploaded CV extraction and indexing.",
+                )
+                assistant_content = (
+                    "Called 1 tool: Retrieve active CV, but retrieval failed. "
+                    "Check that an active text-based CV PDF is uploaded and try again."
+                )
+                agent_metadata_source = "chat_agent_tool_error"
+                yield _sse_event(
+                    "tool_call_failed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "error_message": tool_call.error_message,
+                    },
+                )
+            else:
+                tool_call = await agent_event_service.mark_success(
+                    session,
+                    tool_call.id,
+                    result_summary=tool_result.result_summary,
+                    safe_payload=tool_result.safe_payload,
+                )
+                assistant_content = (
+                    "Called 1 tool: Retrieve active CV. "
+                    f"{tool_result.result_summary}. I used the active CV extracted text as profile evidence."
                 )
                 agent_metadata_source = "chat_agent_tool"
                 yield _sse_event(

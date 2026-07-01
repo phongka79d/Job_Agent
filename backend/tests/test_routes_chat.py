@@ -336,6 +336,72 @@ async def test_stream_conversation_events_returns_404_for_missing_conversation(c
 
 
 @pytest.mark.asyncio
+async def test_stream_cv_question_calls_profile_cv_retrieval_tool(
+    client,
+    db_session,
+    role_profile,
+    monkeypatch,
+):
+    from app.api import routes_chat
+
+    async def retrieve_handler(request: ToolRequest) -> ToolResult:
+        assert request.name == "retrieve_profile_cv_chunks"
+        assert request.context["role_profile_id"] == role_profile.id
+        assert request.arguments["query"] == "What skills are missing from my CV?"
+        return ToolResult(
+            content="Active CV evidence: Python and FastAPI projects.",
+            result_summary="Retrieved 1 active CV chunk",
+            safe_payload={
+                "document_id": "doc-1",
+                "version_id": "version-1",
+                "chunk_count": 1,
+                "used_fallback": False,
+            },
+        )
+
+    def build_registry(session):
+        assert session is db_session
+        return ToolRegistry(overrides={"retrieve_profile_cv_chunks": retrieve_handler})
+
+    monkeypatch.setattr(routes_chat, "build_tool_registry", build_registry)
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={"role_profile_id": role_profile.id, "title": "Session"},
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": "What skills are missing from my CV?"},
+    )
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": message_response.json()["message"]["id"]},
+    )
+
+    assert response.status_code == 200
+    assert "event: tool_call_started" in response.text
+    assert "event: tool_call_completed" in response.text
+    assert "retrieve_profile_cv_chunks" in response.text
+    assert "Active CV evidence" not in response.text
+
+    calls = (
+        await db_session.execute(
+            select(AgentToolCall).where(AgentToolCall.conversation_id == conversation["id"])
+        )
+    ).scalars().all()
+    assert len(calls) == 1
+    assert calls[0].tool_name == "retrieve_profile_cv_chunks"
+    assert calls[0].status == "success"
+    assert json.loads(calls[0].safe_payload_json) == {
+        "document_id": "doc-1",
+        "version_id": "version-1",
+        "chunk_count": 1,
+        "used_fallback": False,
+    }
+
+
+@pytest.mark.asyncio
 async def test_stream_pasted_job_text_calls_extract_text_tool_and_persists_visible_event(
     client,
     db_session,
