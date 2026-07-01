@@ -87,7 +87,11 @@ async def test_stream_conversation_events_returns_placeholder_sse(client, role_p
         },
     )
     conversation = conversation_response.json()
-    after_message_id = uuid4()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": "Find AI Engineer Intern jobs in Hanoi"},
+    )
+    after_message_id = message_response.json()["message"]["id"]
 
     response = await client.get(
         f"/api/chat/conversations/{conversation['id']}/stream",
@@ -104,6 +108,76 @@ async def test_stream_conversation_events_returns_placeholder_sse(client, role_p
         f'data: {{"conversation_id":"{conversation["id"]}",'
         f'"after_message_id":"{after_message_id}"}}\n\n'
     )
+
+
+@pytest.mark.asyncio
+async def test_stream_conversation_events_returns_404_for_missing_message(
+    client,
+    role_profile,
+):
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "Session",
+        },
+    )
+    conversation = conversation_response.json()
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": uuid4()},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "message not found"
+
+
+@pytest.mark.asyncio
+async def test_stream_conversation_events_returns_404_for_message_from_other_conversation(
+    client,
+    role_profile,
+):
+    first_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "First session",
+        },
+    )
+    second_response = await client.post(
+        "/api/chat/conversations",
+        json={
+            "role_profile_id": role_profile.id,
+            "title": "Second session",
+        },
+    )
+    first = first_response.json()
+    second = second_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{second['id']}/messages",
+        json={"content": "Find backend jobs"},
+    )
+    other_message_id = message_response.json()["message"]["id"]
+
+    response = await client.get(
+        f"/api/chat/conversations/{first['id']}/stream",
+        params={"after_message_id": other_message_id},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "message not found"
+
+
+@pytest.mark.asyncio
+async def test_stream_conversation_events_returns_404_for_missing_conversation(client):
+    response = await client.get(
+        f"/api/chat/conversations/{uuid4()}/stream",
+        params={"after_message_id": uuid4()},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "conversation not found"
 
 
 @pytest.mark.asyncio

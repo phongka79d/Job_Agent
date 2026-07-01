@@ -20,7 +20,7 @@ from app.api.schemas import (
     ChatMessageCreateResponse,
     ChatMessageListResponse,
 )
-from app.db.models import ChatConversation, RoleProfile
+from app.db.models import ChatConversation, ChatMessage, RoleProfile
 from app.services.agent_event_service import AgentEventService
 from app.services.chat_service import ChatService
 
@@ -59,6 +59,26 @@ async def _require_conversation(
             detail="conversation not found",
         )
     return conversation
+
+
+async def _require_message_in_conversation(
+    session: SessionDep,
+    conversation_id: str,
+    message_id: str,
+) -> None:
+    result = await session.execute(
+        select(ChatMessage.id)
+        .where(
+            ChatMessage.id == message_id,
+            ChatMessage.conversation_id == conversation_id,
+        )
+        .limit(1)
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="message not found",
+        )
 
 
 @router.post(
@@ -134,6 +154,11 @@ async def stream_conversation_events(
     session: SessionDep,
 ) -> StreamingResponse:
     await _require_conversation(session, str(conversation_id))
+    await _require_message_in_conversation(
+        session,
+        str(conversation_id),
+        str(after_message_id),
+    )
 
     async def event_generator():
         yield _sse_event(

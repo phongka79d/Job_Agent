@@ -15,7 +15,7 @@ describe("ToolCallTimeline", () => {
             status: "running",
             input_summary: "Searching AI Engineer jobs in Hanoi",
             result_summary: null,
-            safe_payload_json: null,
+            safe_payload_json: '{"api_key":"secret-token"}',
             error_message: null,
             started_at: null,
             completed_at: null,
@@ -29,5 +29,6 @@ describe("ToolCallTimeline", () => {
     expect(screen.getByText("search_jobs")).toBeInTheDocument();
     expect(screen.getByText("running")).toBeInTheDocument();
     expect(screen.getByText("Searching AI Engineer jobs in Hanoi")).toBeInTheDocument();
+    expect(screen.queryByText('{"api_key":"secret-token"}')).not.toBeInTheDocument();
   });
 });
