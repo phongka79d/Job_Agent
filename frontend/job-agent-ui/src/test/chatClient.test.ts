@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "../api/client";
-import { createConversation, sendChatMessage } from "../api/chatClient";
+import { createConversation, listConversationMessages, sendChatMessage } from "../api/chatClient";
 
 const postSpy = vi.spyOn(apiClient, "post");
+const getSpy = vi.spyOn(apiClient, "get");
 
 describe("chatClient", () => {
   beforeEach(() => {
@@ -30,5 +31,14 @@ describe("chatClient", () => {
       content: "Find jobs",
     });
     expect(result.stream_url).toBe("/stream");
+  });
+
+  it("lists conversation messages", async () => {
+    getSpy.mockResolvedValueOnce({ data: { messages: [{ id: "msg-1", content: "Hello" }] } });
+
+    const result = await listConversationMessages("conv-1");
+
+    expect(getSpy).toHaveBeenCalledWith("/api/chat/conversations/conv-1/messages");
+    expect(result).toEqual([{ id: "msg-1", content: "Hello" }]);
   });
 });

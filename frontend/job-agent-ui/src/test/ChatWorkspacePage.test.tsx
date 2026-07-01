@@ -82,4 +82,73 @@ describe("ChatWorkspacePage", () => {
       expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
     });
   });
+
+  it("keeps the draft and shows an error when sending fails", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
+    vi.mocked(createConversation).mockRejectedValue(new Error("Chat service unavailable"));
+
+    render(<ChatWorkspacePage />);
+
+    fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Find jobs" } });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Chat service unavailable");
+      expect(screen.getByLabelText("Message")).toHaveValue("Find jobs");
+    });
+  });
+
+  it("prevents a duplicate send while the first conversation is in flight", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
+    let resolveConversation: (
+      value: Awaited<ReturnType<typeof createConversation>>
+    ) => void = () => {};
+    vi.mocked(createConversation).mockReturnValue(
+      new Promise((resolve) => {
+        resolveConversation = resolve;
+      })
+    );
+    vi.mocked(sendChatMessage).mockResolvedValue({
+      message: {
+        id: "msg-1",
+        conversation_id: "conv-1",
+        role: "user",
+        content: "Find jobs",
+        token_count: null,
+        metadata_json: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      stream_url: "/stream",
+    });
+    vi.mocked(listConversationMessages).mockResolvedValue([]);
+
+    render(<ChatWorkspacePage />);
+
+    const messageInput = screen.getByLabelText("Message");
+    fireEvent.change(messageInput, { target: { value: "Find jobs" } });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /send message/i })).toBeDisabled();
+    });
+
+    fireEvent.submit(messageInput.closest("form") as HTMLFormElement);
+
+    expect(createConversation).toHaveBeenCalledTimes(1);
+    expect(sendChatMessage).not.toHaveBeenCalled();
+
+    resolveConversation({
+      id: "conv-1",
+      role_profile_id: "profile-1",
+      title: "Job agent session",
+      status: "active",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    await waitFor(() => {
+      expect(sendChatMessage).toHaveBeenCalledTimes(1);
+      expect(listConversationMessages).toHaveBeenCalledTimes(1);
+    });
+  });
 });

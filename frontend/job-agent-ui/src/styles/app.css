@@ -224,7 +224,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .chat-workspace {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   height: 100%;
   gap: 12px;
 }
@@ -253,6 +253,14 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-muted);
   text-transform: uppercase;
   margin-bottom: 4px;
+}
+
+.chat-error {
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 8px;
+  color: var(--text-danger);
+  background: rgba(248, 113, 113, 0.1);
+  padding: 10px 12px;
 }
 
 .chat-composer {

@@ -1,5 +1,5 @@
 import { Send } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface ChatComposerProps {
   disabled?: boolean;
@@ -8,12 +8,21 @@ interface ChatComposerProps {
 
 export default function ChatComposer({ disabled = false, onSend }: ChatComposerProps) {
   const [content, setContent] = useState("");
+  const isSubmittingRef = useRef(false);
 
   const submit = async () => {
     const trimmed = content.trim();
-    if (!trimmed || disabled) return;
-    setContent("");
-    await onSend(trimmed);
+    if (!trimmed || disabled || isSubmittingRef.current) return;
+
+    isSubmittingRef.current = true;
+    try {
+      await onSend(trimmed);
+      setContent("");
+    } catch {
+      // Keep the draft in place; the page owns the visible error message.
+    } finally {
+      isSubmittingRef.current = false;
+    }
   };
 
   return (
