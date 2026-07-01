@@ -1,6 +1,10 @@
-import { AlertCircle, FileText, Loader2 } from "lucide-react";
+import { AlertCircle, Download, Eye, FileText, Loader2, Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  activateProfileDocumentVersion,
+  deleteProfileDocument,
+  getProfileDocumentDownloadUrl,
+  getProfileDocumentFileUrl,
   listProfileDocuments,
   uploadProfileDocument,
 } from "../../api/profileDocumentsClient";
@@ -56,17 +60,51 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
     };
   }, [activeProfileId]);
 
+  const refreshDocuments = async () => {
+    if (!activeProfileId) return;
+    setDocuments(await listProfileDocuments(activeProfileId));
+  };
+
   const handleUpload = async (file: File) => {
     if (!activeProfileId) return;
     setIsUploading(true);
     setError(null);
     try {
       await uploadProfileDocument(activeProfileId, file);
-      setDocuments(await listProfileDocuments(activeProfileId));
+      await refreshDocuments();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload PDF");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleActivate = async (document: ProfileDocument) => {
+    if (!activeProfileId || !document.active_version_id) return;
+    setError(null);
+    try {
+      await activateProfileDocumentVersion(activeProfileId, document.id, document.active_version_id);
+      await refreshDocuments();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set active CV");
+    }
+  };
+
+  const handleDelete = async (document: ProfileDocument) => {
+    if (!activeProfileId) return;
+    const clearActive = document.is_active;
+    const confirmed = window.confirm(
+      clearActive
+        ? "Delete the active CV and clear active selection?"
+        : "Delete this CV PDF?"
+    );
+    if (!confirmed) return;
+    setError(null);
+    try {
+      await deleteProfileDocument(activeProfileId, document.id, { clearActive });
+      await refreshDocuments();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete CV");
     }
   };
 
@@ -150,6 +188,41 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                     <span>{formatFileSize(document.file_size_bytes)}</span>
                     <span>{document.chunk_count} chunks</span>
                     <span>{updatedAt}</span>
+                  </div>
+                  {document.is_active ? (
+                    <span className="document-active-badge">Active CV</span>
+                  ) : null}
+                  <div className="profile-document-actions">
+                    <a
+                      href={getProfileDocumentFileUrl(activeProfileId!, document.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`View ${document.original_filename}`}
+                    >
+                      <Eye size={14} /> View
+                    </a>
+                    <a
+                      href={getProfileDocumentDownloadUrl(activeProfileId!, document.id)}
+                      aria-label={`Download ${document.original_filename}`}
+                    >
+                      <Download size={14} /> Download
+                    </a>
+                    {!document.is_active && document.active_version_id ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleActivate(document)}
+                        aria-label={`Set ${document.original_filename} active`}
+                      >
+                        <Star size={14} /> Set active
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(document)}
+                      aria-label={`Delete ${document.original_filename}`}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
                   </div>
                 </div>
               </div>

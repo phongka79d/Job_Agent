@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  activateProfileDocumentVersion,
+  deleteProfileDocument,
+  getProfileDocumentDownloadUrl,
+  getProfileDocumentFileUrl,
   listProfileDocuments,
   uploadProfileDocument,
 } from "../api/profileDocumentsClient";
@@ -8,6 +12,14 @@ import ProfileDocumentPanel from "../components/profile/ProfileDocumentPanel";
 import type { ProfileDocument } from "../types/profileDocuments";
 
 vi.mock("../api/profileDocumentsClient", () => ({
+  activateProfileDocumentVersion: vi.fn(),
+  deleteProfileDocument: vi.fn(),
+  getProfileDocumentDownloadUrl: vi.fn(
+    (profileId, documentId) => `/api/role-profiles/${profileId}/documents/${documentId}/download`
+  ),
+  getProfileDocumentFileUrl: vi.fn(
+    (profileId, documentId) => `/api/role-profiles/${profileId}/documents/${documentId}/file`
+  ),
   listProfileDocuments: vi.fn(),
   uploadProfileDocument: vi.fn(),
 }));
@@ -16,6 +28,9 @@ const readyDocument: ProfileDocument = {
   id: "doc-1",
   role_profile_id: "profile-1",
   original_filename: "cv.pdf",
+  document_kind: "cv",
+  active_version_id: "version-1",
+  is_active: true,
   mime_type: "application/pdf",
   file_size_bytes: 1000,
   extracted_text_chars: 500,
@@ -90,6 +105,47 @@ describe("ProfileDocumentPanel", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Only PDF uploads are supported");
       expect(screen.getByText("cv.pdf")).toBeInTheDocument();
+    });
+  });
+
+  it("renders view download active and delete controls", async () => {
+    vi.mocked(listProfileDocuments).mockResolvedValue([readyDocument]);
+
+    render(<ProfileDocumentPanel activeProfileId="profile-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Active CV")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /view cv.pdf/i })).toHaveAttribute(
+        "href",
+        "/api/role-profiles/profile-1/documents/doc-1/file"
+      );
+      expect(screen.getByRole("link", { name: /download cv.pdf/i })).toHaveAttribute(
+        "href",
+        "/api/role-profiles/profile-1/documents/doc-1/download"
+      );
+      expect(screen.getByRole("button", { name: /delete cv.pdf/i })).toBeInTheDocument();
+    });
+  });
+
+  it("activates a non-active ready cv", async () => {
+    const inactiveDocument = { ...readyDocument, is_active: false };
+    vi.mocked(listProfileDocuments)
+      .mockResolvedValueOnce([inactiveDocument])
+      .mockResolvedValueOnce([{ ...inactiveDocument, is_active: true }]);
+    vi.mocked(activateProfileDocumentVersion).mockResolvedValue({
+      id: "version-1",
+    } as never);
+
+    render(<ProfileDocumentPanel activeProfileId="profile-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /set cv.pdf active/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /set cv.pdf active/i }));
+
+    await waitFor(() => {
+      expect(activateProfileDocumentVersion).toHaveBeenCalledWith("profile-1", "doc-1", "version-1");
+      expect(listProfileDocuments).toHaveBeenCalledTimes(2);
     });
   });
 });
