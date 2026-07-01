@@ -140,7 +140,7 @@ describe("DashboardPage component tests", () => {
   it("renders role profile selection prompt when activeProfileId is missing", () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: null, activeBatchId: null });
     render(<DashboardPage />);
-    expect(screen.getByText(/Please select or create a role profile/i)).toBeInTheDocument();
+    expect(screen.getByText(/Select or create a role profile/i)).toBeInTheDocument();
   });
 
   it("fetches tracked jobs when activeBatchId is missing", async () => {
@@ -176,7 +176,7 @@ describe("DashboardPage component tests", () => {
     render(<DashboardPage />);
     
     // Check loading indicator
-    expect(screen.getByTestId("loading-state")).toBeInTheDocument();
+    expect(screen.getByLabelText("Loading")).toBeInTheDocument();
 
     // Resolve promise
     resolveGetJobs({ jobs: mockJobs });

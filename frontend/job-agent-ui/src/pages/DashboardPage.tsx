@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
-import { AlertCircle, Loader } from "lucide-react";
 import { getJobs } from "../api/client";
 import type { Job } from "../types/api";
 import JobCard from "../components/JobCard";
+import PageState from "../components/PageState";
 
 export default function DashboardPage() {
   const { activeProfileId, activeBatchId, triggerMetricsRefresh } = useOutletContext<{
@@ -46,72 +46,20 @@ export default function DashboardPage() {
   }, [activeBatchId, fetchJobs, triggerMetricsRefresh]);
 
   return (
-    <div className="dashboard-page" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ marginBottom: "8px" }}>
-        <h2 style={{ fontSize: "20px", fontWeight: 600, color: "var(--text-primary)" }}>Tracked Jobs Dashboard</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-          Monitor your saved, applied, and active job applications.
-        </p>
-      </div>
-
-      {error && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: "16px",
-            borderColor: "rgba(248, 113, 113, 0.3)",
-            backgroundColor: "rgba(248, 113, 113, 0.05)",
-            color: "var(--text-danger)",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            fontSize: "14px",
-          }}
-        >
-          <AlertCircle size={18} style={{ flexShrink: 0 }} />
-          <span>{error}</span>
-        </div>
-      )}
-
+    <section className="jobs-page">
+      <header className="page-header">
+        <h1>Tracked Jobs</h1>
+        <p>Monitor saved jobs and application progress.</p>
+      </header>
+      {error ? <PageState kind="error">{error}</PageState> : null}
       {!activeProfileId ? (
-        <div
-          className="glass-panel"
-          style={{
-            padding: "32px",
-            textAlign: "center",
-            color: "var(--text-muted)",
-            fontSize: "14px",
-          }}
-      >
-        Please select or create a role profile to view tracked jobs.
-      </div>
+        <PageState kind="empty">Select or create a role profile.</PageState>
       ) : isLoading ? (
-        <div
-          data-testid="loading-state"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "64px",
-            color: "var(--accent)",
-          }}
-        >
-          <Loader className="animate-spin" size={32} />
-        </div>
+        <PageState kind="loading" />
       ) : jobs.length === 0 ? (
-        <div
-          className="glass-panel"
-          style={{
-            padding: "32px",
-            textAlign: "center",
-            color: "var(--text-muted)",
-            fontSize: "14px",
-          }}
-        >
-          No tracked jobs found.
-        </div>
+        <PageState kind="empty">No tracked jobs found.</PageState>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="job-list">
           {jobs.map((job) => (
             <JobCard
               key={job.id}
@@ -121,6 +69,6 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

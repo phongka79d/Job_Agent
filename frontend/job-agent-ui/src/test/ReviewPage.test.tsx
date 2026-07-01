@@ -142,7 +142,7 @@ describe("ReviewPage component tests", () => {
   it("renders role profile selection prompt when activeProfileId is missing", () => {
     vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: null, activeBatchId: null });
     render(<ReviewPage />);
-    expect(screen.getByText(/Please select or create a role profile/i)).toBeInTheDocument();
+    expect(screen.getByText(/Select or create a role profile/i)).toBeInTheDocument();
   });
 
   it("fetches review jobs when activeBatchId is missing", async () => {

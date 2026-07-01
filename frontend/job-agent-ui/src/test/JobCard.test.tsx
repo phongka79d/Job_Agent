@@ -170,6 +170,13 @@ describe("JobCard and ScoreBreakdown components", () => {
     expect(onReject).toHaveBeenCalledWith("job-1");
   });
 
+  it("omits absent job fields instead of rendering placeholder values", () => {
+    render(<JobCard job={{ ...mockScorableJob, title: null, company: null, source_platform: null }} />);
+    expect(screen.queryByText("Untitled Position")).not.toBeInTheDocument();
+    expect(screen.queryByText("Unknown Company")).not.toBeInTheDocument();
+    expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
+  });
+
   it("should disable action buttons when isActionLoading is true", () => {
     const onApprove = vi.fn();
     const onReject = vi.fn();

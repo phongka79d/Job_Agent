@@ -13,6 +13,20 @@ interface JobCardProps {
   isActionLoading?: boolean;
 }
 
+function formatSource(src: string | null): string | null {
+  if (!src) return null;
+  return src.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatJdStatus(status: string | null): string | null {
+  if (!status) return null;
+  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatJobStatus(status: string): string {
+  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function JobCard({
   job,
   onApprove,
@@ -26,248 +40,103 @@ export default function JobCard({
   const shouldScore = job.should_score_similarity && job.final_score !== null && job.final_score_percent !== null;
   const formattedFinalScore = formatPercentScore(job.final_score_percent, shouldScore);
 
-  // Formatting helpers for metadata display
-  const formatSource = (src: string | null) => {
-    if (!src) return "Unknown";
-    return src.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
-  const formatJdStatus = (status: string | null) => {
-    if (!status) return "Unknown";
-    return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
-  const formatJobStatus = (status: string) => {
-    return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
   return (
-    <div 
-      className="glass-panel job-card" 
-      style={{ 
-        display: "flex", 
-        flexDirection: "column", 
-        width: "100%", 
-        textAlign: "left",
-        overflow: "hidden",
-        position: "relative",
-        background: "var(--bg-surface)",
-        backdropFilter: "blur(12px)",
-        border: "1px solid var(--border-color)",
-        borderRadius: "var(--radius-lg)"
-      }}
-    >
-      {/* Top Main Section */}
-      <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", flexGrow: 1 }}>
-        
-        {/* Title, Company, and Score Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0, flex: 1 }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-primary)", margin: 0, overflowWrap: "anywhere" }}>
-              {job.title || "Untitled Position"}
-            </h3>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)", fontSize: "14px", overflowWrap: "anywhere" }}>
-              <Building size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-              <span>{job.company || "Unknown Company"}</span>
-            </div>
+    <div className="job-card">
+      <div className="job-card-main">
+        <div className="job-card-header">
+          <div className="job-card-title-group">
+            {job.title ? <h3>{job.title}</h3> : null}
+            {job.company ? (
+              <div className="job-card-company">
+                <Building size={14} />
+                <span>{job.company}</span>
+              </div>
+            ) : null}
           </div>
-          
-          {/* Score Badge */}
-          <div 
-            style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "flex-end",
-              flexShrink: 0
-            }}
-          >
-            <div 
-              style={{ 
-                fontSize: "20px", 
-                fontWeight: "700", 
-                color: formattedFinalScore === "Not scored" ? "var(--text-muted)" : "var(--accent)",
-                fontFamily: "var(--font-mono)",
-                letterSpacing: "-0.5px"
-              }}
-            >
+          <div className="job-card-score">
+            <div className={`score-badge${formattedFinalScore === "Not scored" ? " not-scored" : ""}`}>
               {formattedFinalScore}
             </div>
-            <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Match Score
-            </div>
+            <div className="score-label">Match Score</div>
           </div>
         </div>
 
-        {/* Location and Work Mode Info */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "13px", color: "var(--text-secondary)" }}>
-          {job.location && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <MapPin size={13} style={{ color: "var(--text-muted)" }} />
-              <span>{job.location}</span>
-            </div>
-          )}
-          {job.work_mode && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Briefcase size={13} style={{ color: "var(--text-muted)" }} />
-              <span>{job.work_mode}</span>
-            </div>
-          )}
+        <div className="job-card-meta">
+          {job.location ? (
+            <span>
+              <MapPin size={13} /> {job.location}
+            </span>
+          ) : null}
+          {job.work_mode ? (
+            <span>
+              <Briefcase size={13} /> {job.work_mode}
+            </span>
+          ) : null}
         </div>
 
-        {/* Persisted Job Error / Processing Warnings */}
         {job.error_reason && (
-          <div 
-            style={{ 
-              display: "flex", 
-              gap: "8px", 
-              padding: "10px 12px", 
-              backgroundColor: "rgba(248, 113, 113, 0.1)", 
-              border: "1px solid rgba(248, 113, 113, 0.2)", 
-              borderRadius: "var(--radius-md)",
-              color: "var(--text-danger)",
-              fontSize: "13px",
-              lineHeight: "1.4"
-            }}
-          >
-            <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: "1px" }} />
+          <div className="job-card-error">
+            <AlertTriangle size={16} />
             <span>{job.error_reason}</span>
           </div>
         )}
 
-        {/* Meta Badges Grid */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
-          {/* Source Platform */}
-          <span 
-            style={{ 
-              fontSize: "12px", 
-              padding: "3px 8px", 
-              borderRadius: "var(--radius-sm)", 
-              backgroundColor: "rgba(255, 255, 255, 0.04)", 
-              color: "var(--text-muted)",
-              border: "1px solid var(--border-color)"
-            }}
-          >
-            Source: {formatSource(job.source_platform)}
-          </span>
-
-          {/* JD Status */}
-          <span 
-            style={{ 
-              fontSize: "12px", 
-              padding: "3px 8px", 
-              borderRadius: "var(--radius-sm)", 
-              backgroundColor: "rgba(255, 255, 255, 0.04)", 
-              color: job.jd_status === "full_jd" ? "var(--text-success)" : "var(--text-muted)",
-              border: "1px solid var(--border-color)"
-            }}
-          >
-            JD: {formatJdStatus(job.jd_status)}
-          </span>
-
-          {/* Current Status */}
-          <span 
-            style={{ 
-              fontSize: "12px", 
-              padding: "3px 8px", 
-              borderRadius: "var(--radius-sm)", 
-              backgroundColor: job.status === "pending_review" ? "rgba(34, 211, 238, 0.1)" : "rgba(255, 255, 255, 0.04)", 
-              color: job.status === "pending_review" ? "var(--accent)" : "var(--text-secondary)",
-              border: job.status === "pending_review" ? "1px solid rgba(34, 211, 238, 0.3)" : "1px solid var(--border-color)"
-            }}
-          >
+        <div className="job-card-badges">
+          {formatSource(job.source_platform) ? (
+            <span className="badge">Source: {formatSource(job.source_platform)}</span>
+          ) : null}
+          {formatJdStatus(job.jd_status) ? (
+            <span className={`badge${job.jd_status === "full_jd" ? " badge-success" : ""}`}>
+              JD: {formatJdStatus(job.jd_status)}
+            </span>
+          ) : null}
+          <span className={`badge${job.status === "pending_review" ? " badge-accent" : ""}`}>
             Status: {formatJobStatus(job.status)}
           </span>
         </div>
 
-        {/* Action Panel */}
-        <div 
-          style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            gap: "16px",
-            marginTop: "12px",
-            paddingTop: "12px",
-            borderTop: "1px solid var(--border-color)",
-            flexWrap: "wrap"
-          }}
-        >
-          {/* In-card Accordion Toggle for Score Breakdown */}
+        <div className="job-card-actions">
           <button
             onClick={() => setShowBreakdown(!showBreakdown)}
             className="btn-secondary"
-            style={{ 
-              fontSize: "13px", 
-              padding: "6px 12px", 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "4px" 
-            }}
           >
             <span>Breakdown</span>
             {showBreakdown ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
-          {/* Ingestion & Link Icon */}
           {job.source_url && (
-            <a 
-              href={job.source_url} 
-              target="_blank" 
+            <a
+              href={job.source_url}
+              target="_blank"
               rel="noopener noreferrer"
-              style={{ 
-                color: "var(--text-muted)", 
-                display: "inline-flex", 
-                alignItems: "center", 
-                gap: "4px",
-                textDecoration: "none",
-                fontSize: "13px"
-              }}
-              hover-color="var(--text-primary)"
+              className="source-link"
             >
               <span>View JD</span>
               <ExternalLink size={13} />
             </a>
           )}
 
-          {/* Workflow specific actions */}
-          <div style={{ display: "flex", gap: "8px", marginLeft: "auto", alignItems: "center", flexWrap: "wrap" }}>
-            
-            {/* Approve / Reject buttons for Review queue */}
+          <div className="job-card-action-buttons">
             {job.status === "pending_review" && onApprove && onReject && (
               <>
                 <button
                   onClick={() => onReject(job.id)}
                   disabled={isActionLoading}
-                  className="btn-secondary"
-                  style={{ 
-                    color: "var(--text-danger)", 
-                    borderColor: "rgba(248, 113, 113, 0.3)",
-                    padding: "6px 12px",
-                    fontSize: "13px"
-                  }}
+                  className="btn-secondary btn-danger"
                 >
                   <X size={14} />
                   <span>Reject</span>
                 </button>
-                
                 <button
                   onClick={() => onApprove(job.id)}
                   disabled={isActionLoading}
-                  className="btn-secondary"
-                  style={{ 
-                    color: "var(--text-success)", 
-                    borderColor: "rgba(74, 222, 128, 0.3)",
-                    padding: "6px 12px",
-                    fontSize: "13px"
-                  }}
+                  className="btn-secondary btn-success"
                 >
                   <Check size={14} />
                   <span>Approve</span>
                 </button>
               </>
             )}
-
-            {/* Manual Status Select for Dashboard page */}
             {statusControl || (job.status !== "pending_review" && job.status !== "ignored" && (
               <StatusSelect
                 jobId={job.id}
@@ -279,7 +148,6 @@ export default function JobCard({
         </div>
       </div>
 
-      {/* Accordion content - Score Breakdown */}
       {showBreakdown && <ScoreBreakdown job={job} />}
     </div>
   );
