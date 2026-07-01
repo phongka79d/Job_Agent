@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import ChatConversation, ChatMessage
+from app.db.models import ChatConversation, ChatMessage, utc_now
 
 
 VALID_MESSAGE_ROLES = frozenset({"user", "assistant", "system", "tool"})
@@ -68,6 +68,9 @@ class ChatService:
             metadata_json=json.dumps(metadata, separators=(",", ":")) if metadata is not None else None,
         )
         session.add(message)
+        conversation = await session.get(ChatConversation, conversation_id)
+        if conversation is not None:
+            conversation.updated_at = utc_now()
         await session.commit()
         await session.refresh(message)
         return message

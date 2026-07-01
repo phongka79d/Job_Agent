@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy import select
 
@@ -70,3 +72,91 @@ async def test_create_message_persists_empty_metadata_dict(db_session):
     )
 
     assert message.metadata_json == "{}"
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_filters_limits_and_orders_by_latest_activity(db_session):
+    profile = RoleProfile(target_role="AI Engineer", skills="[]")
+    other_profile = RoleProfile(target_role="Data Engineer", skills="[]")
+    db_session.add_all([profile, other_profile])
+    await db_session.commit()
+    await db_session.refresh(profile)
+    await db_session.refresh(other_profile)
+
+    stale = ChatConversation(role_profile_id=profile.id, title="Stale")
+    middle = ChatConversation(role_profile_id=profile.id, title="Middle")
+    recent = ChatConversation(role_profile_id=profile.id, title="Recent")
+    other = ChatConversation(role_profile_id=other_profile.id, title="Other")
+    db_session.add_all([stale, middle, recent, other])
+    await db_session.commit()
+
+    stale.updated_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    middle.updated_at = datetime(2024, 1, 2, tzinfo=timezone.utc)
+    recent.updated_at = datetime(2024, 1, 3, tzinfo=timezone.utc)
+    other.updated_at = datetime(2024, 1, 4, tzinfo=timezone.utc)
+    await db_session.commit()
+
+    await ChatService().append_message(
+        db_session,
+        conversation_id=stale.id,
+        role="user",
+        content="Bring this conversation back to the top",
+    )
+
+    conversations = await ChatService().list_conversations(
+        db_session,
+        role_profile_id=profile.id,
+        limit=2,
+    )
+
+    assert [conversation.id for conversation in conversations] == [stale.id, recent.id]
+
+
+@pytest.mark.asyncio
+async def test_list_messages_filters_limits_and_orders_chronologically(db_session):
+    profile = RoleProfile(target_role="AI Engineer", skills="[]")
+    db_session.add(profile)
+    await db_session.commit()
+    await db_session.refresh(profile)
+
+    conversation = ChatConversation(role_profile_id=profile.id, title="Session")
+    other_conversation = ChatConversation(role_profile_id=profile.id, title="Other")
+    db_session.add_all([conversation, other_conversation])
+    await db_session.commit()
+    await db_session.refresh(conversation)
+    await db_session.refresh(other_conversation)
+
+    third = ChatMessage(
+        conversation_id=conversation.id,
+        role="assistant",
+        content="Third",
+        created_at=datetime(2024, 1, 3, tzinfo=timezone.utc),
+    )
+    first = ChatMessage(
+        conversation_id=conversation.id,
+        role="user",
+        content="First",
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+    )
+    second = ChatMessage(
+        conversation_id=conversation.id,
+        role="assistant",
+        content="Second",
+        created_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+    )
+    other = ChatMessage(
+        conversation_id=other_conversation.id,
+        role="user",
+        content="Other conversation",
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+    )
+    db_session.add_all([third, first, second, other])
+    await db_session.commit()
+
+    messages = await ChatService().list_messages(
+        db_session,
+        conversation_id=conversation.id,
+        limit=2,
+    )
+
+    assert [message.id for message in messages] == [first.id, second.id]
