@@ -85,7 +85,7 @@
 - Modify: `frontend/job-agent-ui/src/styles/app.css`
 - Delete: `frontend/job-agent-ui/src/index.css`
 
-- [ ] **Step 1: Write failing shell tests**
+- [x] **Step 1: Write failing shell tests**
 
 Create `src/test/AppShell.test.tsx` with tests that render the shell inside
 `MemoryRouter`:
@@ -138,7 +138,7 @@ describe("AppShell", () => {
 });
 ```
 
-- [ ] **Step 2: Run the shell tests and verify RED**
+- [x] **Step 2: Run the shell tests and verify RED**
 
 Run:
 
@@ -150,7 +150,7 @@ npm test -- --run src/test/AppShell.test.tsx
 Expected: FAIL because `contextContent` is not an `AppShell` prop and the
 current shell always renders a batch fallback.
 
-- [ ] **Step 3: Implement the workspace shell**
+- [x] **Step 3: Implement the workspace shell**
 
 Change `AppShellProps` and the component skeleton to:
 
@@ -236,7 +236,7 @@ const contextPanel = (
 
 Pass `contextContent={contextPanel}` to `AppShell`.
 
-- [ ] **Step 4: Replace global tokens and base layout**
+- [x] **Step 4: Replace global tokens and base layout**
 
 Set `index.html` title to `Job Agent Workspace` and load Sora, Inter, and Space
 Grotesk. Replace the top token block in `app.css` with:
@@ -293,7 +293,7 @@ Grotesk. Replace the top token block in `app.css` with:
 
 Delete the unused `src/index.css`.
 
-- [ ] **Step 5: Run focused tests and typecheck**
+- [x] **Step 5: Run focused tests and typecheck**
 
 Run:
 
@@ -304,7 +304,7 @@ npm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit clean shell files**
+- [x] **Step 6: Commit clean shell files**
 
 ```powershell
 git add frontend/job-agent-ui/index.html frontend/job-agent-ui/src/App.tsx frontend/job-agent-ui/src/components/AppShell.tsx frontend/job-agent-ui/src/styles/app.css frontend/job-agent-ui/src/index.css frontend/job-agent-ui/src/test/AppShell.test.tsx
