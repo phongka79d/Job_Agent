@@ -163,6 +163,7 @@ async def test_ensure_profile_document_collection_requests_payload_indexes():
     assert set(PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS) == {
         "role_profile_id",
         "document_id",
+        "version_id",
         "source_type",
     }
     assert all(
@@ -178,12 +179,14 @@ async def test_upsert_profile_document_chunk_uses_sanitized_payload():
     point_id = str(uuid4())
     role_profile_id = str(uuid4())
     document_id = str(uuid4())
+    version_id = str(uuid4())
     chunk_id = str(uuid4())
 
     await service.upsert_profile_document_chunk(
         point_id=point_id,
         role_profile_id=role_profile_id,
         document_id=document_id,
+        version_id=version_id,
         chunk_id=chunk_id,
         chunk_index=0,
         vector=[1.0, 0.0, 0.0],
@@ -197,10 +200,45 @@ async def test_upsert_profile_document_chunk_uses_sanitized_payload():
     assert point.payload == build_profile_document_payload(
         role_profile_id=role_profile_id,
         document_id=document_id,
+        version_id=version_id,
         chunk_id=chunk_id,
         chunk_index=0,
     )
-    assert "Python" not in str(point.payload)
+    assert point.payload["source_type"] == "profile_cv"
+
+
+@pytest.mark.asyncio
+async def test_query_profile_document_chunks_filters_by_active_version():
+    client = FakeQdrantClient()
+    service = QdrantService(client=client, vector_size=3)
+    role_profile_id = str(uuid4())
+    document_id = str(uuid4())
+    version_id = str(uuid4())
+
+    await service.query_profile_document_chunks(
+        query_vector=[1.0, 0.0, 0.0],
+        role_profile_id=role_profile_id,
+        document_id=document_id,
+        version_id=version_id,
+        limit=4,
+    )
+
+    collection_name, query, kwargs = client.queries[0]
+    assert collection_name == PROFILE_DOCUMENT_COLLECTION_NAME
+    assert query == [1.0, 0.0, 0.0]
+    assert kwargs["limit"] == 4
+    payload_filter = kwargs["query_filter"]
+    filter_values = {
+        condition.key: condition.match.value
+        for condition in payload_filter.must
+        if hasattr(condition, "key")
+    }
+    assert filter_values == {
+        "role_profile_id": role_profile_id,
+        "document_id": document_id,
+        "version_id": version_id,
+        "source_type": "profile_cv",
+    }
 
 
 @pytest.mark.asyncio

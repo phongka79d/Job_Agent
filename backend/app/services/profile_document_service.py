@@ -43,6 +43,7 @@ class ProfileDocumentVectorStore(Protocol):
         point_id: str,
         role_profile_id: str,
         document_id: str,
+        version_id: str,
         chunk_id: str,
         chunk_index: int,
         vector: list[float],

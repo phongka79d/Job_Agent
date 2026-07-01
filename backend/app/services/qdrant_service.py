@@ -28,6 +28,7 @@ PAYLOAD_INDEX_FIELDS = (
 PROFILE_DOCUMENT_PAYLOAD_INDEX_FIELDS = (
     "role_profile_id",
     "document_id",
+    "version_id",
     "source_type",
 )
 SCORABLE_JD_STATUSES = ("full_jd", "partial_jd")
@@ -121,17 +122,47 @@ def build_profile_document_payload(
     *,
     role_profile_id: str,
     document_id: str,
+    version_id: str,
     chunk_id: str,
     chunk_index: int,
 ) -> dict[str, str | int]:
-    """Build the approved lightweight Qdrant payload for profile PDF chunks."""
+    """Build the approved lightweight Qdrant payload for profile CV chunks."""
     return {
         "role_profile_id": role_profile_id,
         "document_id": document_id,
+        "version_id": version_id,
         "chunk_id": chunk_id,
         "chunk_index": chunk_index,
-        "source_type": "profile_document",
+        "source_type": "profile_cv",
     }
+
+
+def build_profile_document_filter(
+    *,
+    role_profile_id: str,
+    document_id: str,
+    version_id: str,
+) -> qmodels.Filter:
+    return qmodels.Filter(
+        must=[
+            qmodels.FieldCondition(
+                key="role_profile_id",
+                match=qmodels.MatchValue(value=role_profile_id),
+            ),
+            qmodels.FieldCondition(
+                key="document_id",
+                match=qmodels.MatchValue(value=document_id),
+            ),
+            qmodels.FieldCondition(
+                key="version_id",
+                match=qmodels.MatchValue(value=version_id),
+            ),
+            qmodels.FieldCondition(
+                key="source_type",
+                match=qmodels.MatchValue(value="profile_cv"),
+            ),
+        ]
+    )
 
 
 def build_status_filter(role_profile_id: str, status: str) -> qmodels.Filter:
@@ -298,6 +329,7 @@ class QdrantService:
         point_id: str,
         role_profile_id: str,
         document_id: str,
+        version_id: str,
         chunk_id: str,
         chunk_index: int,
         vector: Sequence[float],
@@ -310,6 +342,7 @@ class QdrantService:
                 payload=build_profile_document_payload(
                     role_profile_id=role_profile_id,
                     document_id=document_id,
+                    version_id=version_id,
                     chunk_id=chunk_id,
                     chunk_index=chunk_index,
                 ),
@@ -406,6 +439,41 @@ class QdrantService:
         except Exception as exc:
             self._log_qdrant_error("delete_profile_document_points", exc)
             raise QdrantServiceError("Qdrant profile document delete failed") from exc
+
+    async def query_profile_document_chunks(
+        self,
+        *,
+        query_vector: Sequence[float],
+        role_profile_id: str,
+        document_id: str,
+        version_id: str,
+        limit: int = 5,
+    ) -> list[str]:
+        """Return matching profile CV chunk IDs for one active document version."""
+        try:
+            response = await self.client.query_points(
+                collection_name=PROFILE_DOCUMENT_COLLECTION_NAME,
+                query=self._validate_vector(query_vector),
+                query_filter=build_profile_document_filter(
+                    role_profile_id=role_profile_id,
+                    document_id=document_id,
+                    version_id=version_id,
+                ),
+                limit=limit,
+                with_payload=True,
+                with_vectors=False,
+            )
+        except Exception as exc:
+            self._log_qdrant_error("query_profile_document_chunks", exc)
+            raise QdrantServiceError("Qdrant profile document query failed") from exc
+
+        points = getattr(response, "points", response)
+        chunk_ids: list[str] = []
+        for point in points or []:
+            payload = getattr(point, "payload", {}) or {}
+            if isinstance(payload, dict) and payload.get("chunk_id"):
+                chunk_ids.append(str(payload["chunk_id"]))
+        return chunk_ids
 
     def _validate_vector(self, vector: Sequence[float]) -> list[float]:
         values = [float(value) for value in vector]
