@@ -1,4 +1,4 @@
-import { apiClient, normalizeError } from "./client";
+import { apiClient, normalizeError, resolveApiUrl } from "./client";
 import type { ProfileDocument, ProfileDocumentVersion } from "../types/profileDocuments";
 
 export async function listProfileDocuments(roleProfileId: string): Promise<ProfileDocument[]> {
@@ -31,11 +31,11 @@ export async function uploadProfileDocument(
 }
 
 export function getProfileDocumentFileUrl(roleProfileId: string, documentId: string): string {
-  return `/api/role-profiles/${roleProfileId}/documents/${documentId}/file`;
+  return resolveApiUrl(`/api/role-profiles/${roleProfileId}/documents/${documentId}/file`);
 }
 
 export function getProfileDocumentDownloadUrl(roleProfileId: string, documentId: string): string {
-  return `/api/role-profiles/${roleProfileId}/documents/${documentId}/download`;
+  return resolveApiUrl(`/api/role-profiles/${roleProfileId}/documents/${documentId}/download`);
 }
 
 export async function listProfileDocumentVersions(

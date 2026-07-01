@@ -80,6 +80,10 @@ export const apiClient = axios.create({
   }
 });
 
+export function resolveApiUrl(path: string): string {
+  return new URL(path, apiClient.defaults.baseURL).toString();
+}
+
 /**
  * Creates a new role profile.
  * POST /api/role-profiles

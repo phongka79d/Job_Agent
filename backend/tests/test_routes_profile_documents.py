@@ -76,6 +76,7 @@ async def test_upload_profile_document_returns_sanitized_document(client, role_p
     assert data["original_filename"] == "cv.pdf"
     assert data["status"] == "ready"
     assert data["chunk_count"] >= 1
+    assert data["is_active"] is True
     assert "stored_path" not in data
     assert "content_hash" not in data
 
@@ -93,6 +94,7 @@ async def test_list_profile_documents_filters_by_profile(client, role_profile):
     data = response.json()
     assert len(data["documents"]) == 1
     assert data["documents"][0]["role_profile_id"] == role_profile.id
+    assert data["documents"][0]["is_active"] is True
 
 
 @pytest.mark.asyncio

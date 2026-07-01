@@ -30,15 +30,28 @@ router = APIRouter(
 profile_document_service = ProfileDocumentService()
 
 
-async def _require_profile(session: SessionDep, role_profile_id: str) -> None:
+async def _require_profile(session: SessionDep, role_profile_id: str) -> RoleProfile:
     result = await session.execute(
-        select(RoleProfile.id).where(RoleProfile.id == role_profile_id).limit(1)
+        select(RoleProfile).where(RoleProfile.id == role_profile_id).limit(1)
     )
-    if result.scalar_one_or_none() is None:
+    profile = result.scalar_one_or_none()
+    if profile is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="role profile not found",
         )
+    return profile
+
+
+def _document_response(
+    document: object,
+    *,
+    active_document_id: str | None,
+) -> ProfileDocumentResponse:
+    response = ProfileDocumentResponse.model_validate(document)
+    return response.model_copy(
+        update={"is_active": str(response.id) == active_document_id}
+    )
 
 
 @router.post(
@@ -51,18 +64,23 @@ async def upload_profile_document(
     session: SessionDep,
     file: UploadFile = File(...),
 ) -> ProfileDocumentResponse:
-    await _require_profile(session, str(role_profile_id))
+    profile = await _require_profile(session, str(role_profile_id))
     suffix = Path(file.filename or "").suffix or ".pdf"
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(await file.read())
             tmp_path = Path(tmp.name)
-        return await profile_document_service.create_document_from_pdf(
+        document = await profile_document_service.create_document_from_pdf(
             session,
             role_profile_id=str(role_profile_id),
             source_path=tmp_path,
             original_filename=file.filename or "profile.pdf",
             mime_type=file.content_type or "",
+        )
+        await session.refresh(profile)
+        return _document_response(
+            document,
+            active_document_id=profile.active_cv_document_id,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -84,12 +102,17 @@ async def list_profile_documents(
     role_profile_id: UUID,
     session: SessionDep,
 ) -> ProfileDocumentListResponse:
-    await _require_profile(session, str(role_profile_id))
+    profile = await _require_profile(session, str(role_profile_id))
     documents = await profile_document_service.list_documents(
         session,
         role_profile_id=str(role_profile_id),
     )
-    return ProfileDocumentListResponse(documents=documents)
+    return ProfileDocumentListResponse(
+        documents=[
+            _document_response(document, active_document_id=profile.active_cv_document_id)
+            for document in documents
+        ]
+    )
 
 
 def _pdf_file_response(file_info: ProfileDocumentFileInfo, *, as_attachment: bool) -> FileResponse:
@@ -258,7 +281,14 @@ async def get_active_cv(
         session,
         role_profile_id=str(role_profile_id),
     )
-    return ActiveCvResponse(document=document, version=version)
+    return ActiveCvResponse(
+        document=(
+            _document_response(document, active_document_id=document.id)
+            if document is not None
+            else None
+        ),
+        version=version,
+    )
 
 
 @active_cv_router.get("/file")

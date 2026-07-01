@@ -1,4 +1,4 @@
-import { apiClient, normalizeError } from "./client";
+import { apiClient, normalizeError, resolveApiUrl } from "./client";
 import type {
   AgentToolCall,
   ChatConversation,
@@ -7,10 +7,6 @@ import type {
   SendChatMessageRequest,
   SendChatMessageResponse,
 } from "../types/chat";
-
-function resolveApiUrl(path: string): string {
-  return new URL(path, apiClient.defaults.baseURL).toString();
-}
 
 export async function createConversation(request: CreateConversationRequest): Promise<ChatConversation> {
   try {

@@ -82,7 +82,7 @@ Do not modify:
 - Test: `backend/tests/test_profile_document_service.py`
 - Test: `backend/tests/test_db_session.py`
 
-- [ ] **Step 1: Write failing model registration test**
+- [x] **Step 1: Write failing model registration test**
 
 Update `backend/tests/test_profile_document_service.py` model metadata test:
 
@@ -102,7 +102,7 @@ Add the import:
 from app.db.models import Base, ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion
 ```
 
-- [ ] **Step 2: Run model test and verify failure**
+- [x] **Step 2: Run model test and verify failure**
 
 Run:
 
@@ -113,7 +113,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because `ProfileDocumentVersion` does not exist.
 
-- [ ] **Step 3: Add schema fields and version model**
+- [x] **Step 3: Add schema fields and version model**
 
 In `backend/app/db/models.py`, extend `RoleProfile` with active CV pointers:
 
@@ -184,7 +184,7 @@ Extend `ProfileDocumentChunk`:
     source_type: Mapped[str] = mapped_column(Text, nullable=False, default="profile_cv")
 ```
 
-- [ ] **Step 4: Update DB table guard**
+- [x] **Step 4: Update DB table guard**
 
 In `backend/app/db/session.py`, add `"profile_document_versions"` to `expected_tables`:
 
@@ -192,7 +192,7 @@ In `backend/app/db/session.py`, add `"profile_document_versions"` to `expected_t
         "profile_document_versions",
 ```
 
-- [ ] **Step 5: Add API response schemas**
+- [x] **Step 5: Add API response schemas**
 
 In `backend/app/api/schemas.py`, add:
 
@@ -239,7 +239,7 @@ Extend `ProfileDocumentResponse`:
     is_active: bool = False
 ```
 
-- [ ] **Step 6: Run model and session tests**
+- [x] **Step 6: Run model and session tests**
 
 Run:
 
@@ -250,7 +250,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass after imports and expected tables are updated.
 
-- [ ] **Step 7: Commit Task 1**
+- [x] **Step 7: Commit Task 1**
 
 ```powershell
 git add backend/app/db/models.py backend/app/db/session.py backend/app/api/schemas.py backend/tests/test_profile_document_service.py backend/tests/test_db_session.py
@@ -266,7 +266,7 @@ git commit -m "feat: add profile cv version schema"
 - Modify: `backend/app/db/session.py`
 - Test: `backend/tests/test_sqlite_migrations.py`
 
-- [ ] **Step 1: Write failing migration tests**
+- [x] **Step 1: Write failing migration tests**
 
 Create `backend/tests/test_sqlite_migrations.py`:
 
@@ -322,7 +322,7 @@ async def test_sqlite_migration_is_idempotent():
     await engine.dispose()
 ```
 
-- [ ] **Step 2: Run migration tests and verify failure**
+- [x] **Step 2: Run migration tests and verify failure**
 
 Run:
 
@@ -333,7 +333,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because `app.db.sqlite_migrations` does not exist.
 
-- [ ] **Step 3: Implement migration helper**
+- [x] **Step 3: Implement migration helper**
 
 Create `backend/app/db/sqlite_migrations.py`:
 
@@ -405,7 +405,7 @@ async def apply_sqlite_migrations(conn: AsyncConnection) -> None:
     )
 ```
 
-- [ ] **Step 4: Wire migrations into database initialization**
+- [x] **Step 4: Wire migrations into database initialization**
 
 In `backend/app/db/session.py`, import:
 
@@ -421,7 +421,7 @@ Update `init_db()` after `create_all`:
         await apply_sqlite_migrations(conn)
 ```
 
-- [ ] **Step 5: Run migration and DB session tests**
+- [x] **Step 5: Run migration and DB session tests**
 
 Run:
 
@@ -432,7 +432,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: migration tests and DB session tests pass.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
 ```powershell
 git add backend/app/db/sqlite_migrations.py backend/app/db/session.py backend/tests/test_sqlite_migrations.py
@@ -447,7 +447,7 @@ git commit -m "feat: add profile cv sqlite migrations"
 - Create: `backend/app/services/profile_document_storage_service.py`
 - Test: `backend/tests/test_profile_document_storage_service.py`
 
-- [ ] **Step 1: Write failing storage service tests**
+- [x] **Step 1: Write failing storage service tests**
 
 Create `backend/tests/test_profile_document_storage_service.py`:
 
@@ -501,7 +501,7 @@ def test_storage_service_builds_safe_download_filename(tmp_path):
     )
 ```
 
-- [ ] **Step 2: Run storage tests and verify failure**
+- [x] **Step 2: Run storage tests and verify failure**
 
 Run:
 
@@ -512,7 +512,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because `profile_document_storage_service.py` does not exist.
 
-- [ ] **Step 3: Implement storage service**
+- [x] **Step 3: Implement storage service**
 
 Create `backend/app/services/profile_document_storage_service.py`:
 
@@ -579,7 +579,7 @@ class ProfileDocumentStorageService:
         return f"{safe[:140]}.pdf"
 ```
 
-- [ ] **Step 4: Run storage tests and verify pass**
+- [x] **Step 4: Run storage tests and verify pass**
 
 Run:
 
@@ -590,7 +590,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: `3 passed`.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```powershell
 git add backend/app/services/profile_document_storage_service.py backend/tests/test_profile_document_storage_service.py
@@ -606,7 +606,7 @@ git commit -m "feat: add profile cv pdf storage service"
 - Modify: `backend/app/db/models.py`
 - Test: `backend/tests/test_profile_document_service.py`
 
-- [ ] **Step 1: Write failing service test for original version and active CV**
+- [x] **Step 1: Write failing service test for original version and active CV**
 
 Append to `backend/tests/test_profile_document_service.py`:
 
@@ -652,7 +652,7 @@ async def test_create_document_from_pdf_creates_original_version_and_sets_first_
     assert profile.active_cv_version_id == versions[0].id
 ```
 
-- [ ] **Step 2: Run new service test and verify failure**
+- [x] **Step 2: Run new service test and verify failure**
 
 Run:
 
@@ -663,7 +663,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because upload does not create a `ProfileDocumentVersion`.
 
-- [ ] **Step 3: Update service imports and constructor**
+- [x] **Step 3: Update service imports and constructor**
 
 In `backend/app/services/profile_document_service.py`, update imports:
 
@@ -684,7 +684,7 @@ Set it:
         self.storage = storage or ProfileDocumentStorageService()
 ```
 
-- [ ] **Step 4: Replace copy logic with version-aware storage**
+- [x] **Step 4: Replace copy logic with version-aware storage**
 
 In `create_document_from_pdf(...)`, generate `version_id` next to `document_id`:
 
@@ -773,11 +773,11 @@ Body:
 
 Pass `version` from both exception handlers.
 
-- [ ] **Step 5: Remove obsolete `_copy_to_storage` helper**
+- [x] **Step 5: Remove obsolete `_copy_to_storage` helper**
 
 Delete `_copy_to_storage(...)` from `ProfileDocumentService` after the new storage service is used.
 
-- [ ] **Step 6: Run service tests**
+- [x] **Step 6: Run service tests**
 
 Run:
 
@@ -788,7 +788,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Commit Task 4**
+- [x] **Step 7: Commit Task 4**
 
 ```powershell
 git add backend/app/services/profile_document_service.py backend/app/db/models.py backend/tests/test_profile_document_service.py
@@ -805,7 +805,7 @@ git commit -m "feat: create original profile cv versions"
 - Test: `backend/tests/test_profile_document_service.py`
 - Test: `backend/tests/test_qdrant_service.py`
 
-- [ ] **Step 1: Add service tests for active selection and file lookup**
+- [x] **Step 1: Add service tests for active selection and file lookup**
 
 Append to `backend/tests/test_profile_document_service.py`:
 
@@ -886,7 +886,7 @@ async def test_set_active_version_requires_existing_profile_document_and_version
     assert profile.active_cv_version_id == version.id
 ```
 
-- [ ] **Step 2: Add service test for active delete guard**
+- [x] **Step 2: Add service test for active delete guard**
 
 Append:
 
@@ -923,7 +923,7 @@ async def test_delete_document_rejects_active_cv_without_clear_flag(
         )
 ```
 
-- [ ] **Step 3: Run new service tests and verify failure**
+- [x] **Step 3: Run new service tests and verify failure**
 
 Run:
 
@@ -934,7 +934,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because service methods do not exist.
 
-- [ ] **Step 4: Add file info dataclass and service methods**
+- [x] **Step 4: Add file info dataclass and service methods**
 
 In `backend/app/services/profile_document_service.py`, add:
 
@@ -1109,7 +1109,7 @@ Add delete method:
         self.storage.delete_document_files(role_profile_id=role_profile_id, document_id=document_id)
 ```
 
-- [ ] **Step 5: Add Qdrant document deletion method**
+- [x] **Step 5: Add Qdrant document deletion method**
 
 In `backend/app/services/qdrant_service.py`, add a method:
 
@@ -1157,7 +1157,7 @@ Call it in `delete_document(...)` before deleting the DB row:
         await self.vector_store.delete_profile_document_points(document_id=document.id)
 ```
 
-- [ ] **Step 6: Run service and qdrant tests**
+- [x] **Step 6: Run service and qdrant tests**
 
 Run:
 
@@ -1168,7 +1168,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 7: Commit Task 5**
+- [x] **Step 7: Commit Task 5**
 
 ```powershell
 git add backend/app/services/profile_document_service.py backend/app/services/qdrant_service.py backend/tests/test_profile_document_service.py backend/tests/test_qdrant_service.py
@@ -1183,7 +1183,7 @@ git commit -m "feat: manage active profile cv files"
 - Modify: `backend/app/api/routes_profile_documents.py`
 - Test: `backend/tests/test_routes_profile_documents.py`
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Append to `backend/tests/test_routes_profile_documents.py`:
 
@@ -1261,7 +1261,7 @@ async def test_activate_profile_cv_version_requires_confirmation(client, role_pr
     assert "requires confirmation" in response.json()["detail"]
 ```
 
-- [ ] **Step 2: Run route tests and verify failure**
+- [x] **Step 2: Run route tests and verify failure**
 
 Run:
 
@@ -1272,7 +1272,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because routes do not exist.
 
-- [ ] **Step 3: Add route imports**
+- [x] **Step 3: Add route imports**
 
 In `backend/app/api/routes_profile_documents.py`, update imports:
 
@@ -1294,7 +1294,7 @@ from app.api.schemas import (
 )
 ```
 
-- [ ] **Step 4: Add helper for FileResponse**
+- [x] **Step 4: Add helper for FileResponse**
 
 Add:
 
@@ -1310,7 +1310,7 @@ def _pdf_file_response(file_info, *, as_attachment: bool) -> FileResponse:
     )
 ```
 
-- [ ] **Step 5: Add file and download endpoints**
+- [x] **Step 5: Add file and download endpoints**
 
 Add:
 
@@ -1395,7 +1395,7 @@ async def download_profile_document_version(
     return _pdf_file_response(file_info, as_attachment=True)
 ```
 
-- [ ] **Step 6: Add active CV, versions, activate, and delete routes**
+- [x] **Step 6: Add active CV, versions, activate, and delete routes**
 
 Add a second router for active CV routes near the existing `router`:
 
@@ -1555,7 +1555,7 @@ async def delete_profile_document(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 ```
 
-- [ ] **Step 7: Run route tests**
+- [x] **Step 7: Run route tests**
 
 Run:
 
@@ -1566,7 +1566,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: all profile document route tests pass.
 
-- [ ] **Step 8: Commit Task 6**
+- [x] **Step 8: Commit Task 6**
 
 ```powershell
 git add backend/app/api/routes_profile_documents.py backend/app/main.py backend/tests/test_routes_profile_documents.py
@@ -1582,7 +1582,7 @@ git commit -m "feat: serve profile cv pdf files"
 - Modify: `frontend/job-agent-ui/src/api/profileDocumentsClient.ts`
 - Test: `frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts`
 
-- [ ] **Step 1: Write failing client tests**
+- [x] **Step 1: Write failing client tests**
 
 Append to `frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts`:
 
@@ -1648,7 +1648,7 @@ Ensure `deleteSpy` exists in the test setup:
 const deleteSpy = vi.spyOn(apiClient, "delete");
 ```
 
-- [ ] **Step 2: Run client tests and verify failure**
+- [x] **Step 2: Run client tests and verify failure**
 
 Run:
 
@@ -1659,7 +1659,7 @@ npm test -- --run src/test/profileDocumentsClient.test.ts
 
 Expected: fail because client functions/types do not exist.
 
-- [ ] **Step 3: Update frontend types**
+- [x] **Step 3: Update frontend types**
 
 Update `frontend/job-agent-ui/src/types/profileDocuments.ts`:
 
@@ -1703,7 +1703,7 @@ export interface ProfileDocument {
 }
 ```
 
-- [ ] **Step 4: Add API client functions**
+- [x] **Step 4: Add API client functions**
 
 In `frontend/job-agent-ui/src/api/profileDocumentsClient.ts`, add:
 
@@ -1779,7 +1779,7 @@ export async function deleteProfileDocument(
 }
 ```
 
-- [ ] **Step 5: Run frontend client tests**
+- [x] **Step 5: Run frontend client tests**
 
 Run:
 
@@ -1790,7 +1790,7 @@ npm test -- --run src/test/profileDocumentsClient.test.ts
 
 Expected: profile document client tests pass.
 
-- [ ] **Step 6: Commit Task 7**
+- [x] **Step 6: Commit Task 7**
 
 ```powershell
 git add frontend/job-agent-ui/src/types/profileDocuments.ts frontend/job-agent-ui/src/api/profileDocumentsClient.ts frontend/job-agent-ui/src/test/profileDocumentsClient.test.ts
@@ -1806,7 +1806,7 @@ git commit -m "feat(ui): add profile cv document client actions"
 - Modify: `frontend/job-agent-ui/src/styles/app.css`
 - Test: `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`
 
-- [ ] **Step 1: Write failing UI tests**
+- [x] **Step 1: Write failing UI tests**
 
 Update the mock in `frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx`:
 
@@ -1874,7 +1874,7 @@ it("activates a non-active ready cv", async () => {
 });
 ```
 
-- [ ] **Step 2: Run UI tests and verify failure**
+- [x] **Step 2: Run UI tests and verify failure**
 
 Run:
 
@@ -1885,7 +1885,7 @@ npm test -- --run src/test/ProfileDocumentPanel.test.tsx
 
 Expected: fail because controls are not rendered.
 
-- [ ] **Step 3: Update panel imports**
+- [x] **Step 3: Update panel imports**
 
 In `frontend/job-agent-ui/src/components/profile/ProfileDocumentPanel.tsx`, import:
 
@@ -1901,7 +1901,7 @@ import {
 } from "../../api/profileDocumentsClient";
 ```
 
-- [ ] **Step 4: Add refresh helper and handlers**
+- [x] **Step 4: Add refresh helper and handlers**
 
 Inside `ProfileDocumentPanel`, add:
 
@@ -1952,7 +1952,7 @@ Add handlers:
   };
 ```
 
-- [ ] **Step 5: Render controls**
+- [x] **Step 5: Render controls**
 
 Inside each document row, below metadata, render:
 
@@ -2041,7 +2041,7 @@ Add these compact right-rail styles to `frontend/job-agent-ui/src/styles/app.css
 }
 ```
 
-- [ ] **Step 6: Run panel tests**
+- [x] **Step 6: Run panel tests**
 
 Run:
 
@@ -2052,7 +2052,7 @@ npm test -- --run src/test/ProfileDocumentPanel.test.tsx
 
 Expected: panel tests pass.
 
-- [ ] **Step 7: Commit Task 8**
+- [x] **Step 7: Commit Task 8**
 
 ```powershell
 git add frontend/job-agent-ui/src/components/profile/ProfileDocumentPanel.tsx frontend/job-agent-ui/src/styles/app.css frontend/job-agent-ui/src/test/ProfileDocumentPanel.test.tsx
@@ -2066,7 +2066,7 @@ git commit -m "feat(ui): manage active profile cv pdfs"
 **Files:**
 - Modify only if verification finds breakage.
 
-- [ ] **Step 1: Run backend verification**
+- [x] **Step 1: Run backend verification**
 
 Run:
 
@@ -2083,7 +2083,7 @@ Expected:
 - pytest reports all tests passed
 - pip check reports `No broken requirements found.`
 
-- [ ] **Step 2: Run frontend verification**
+- [x] **Step 2: Run frontend verification**
 
 Run:
 
@@ -2102,7 +2102,7 @@ Expected:
 - tests pass
 - build exits `0`
 
-- [ ] **Step 3: Run source-of-truth safety scan**
+- [x] **Step 3: Run source-of-truth safety scan**
 
 Run:
 
@@ -2119,7 +2119,7 @@ Expected:
 - frontend does not receive storage paths.
 - no API keys appear in frontend code or tool safe payloads.
 
-- [ ] **Step 4: Review final diff**
+- [x] **Step 4: Review final diff**
 
 Run:
 
@@ -2136,7 +2136,7 @@ Expected:
 - no CV editing/export/OCR code added
 - no runtime demo/mock data introduced
 
-- [ ] **Step 5: Commit verification cleanup if needed**
+- [x] **Step 5: Commit verification cleanup if needed**
 
 Only if Step 1-4 required cleanup edits:
 

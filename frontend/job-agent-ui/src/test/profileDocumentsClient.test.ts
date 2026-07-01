@@ -44,10 +44,10 @@ describe("profileDocumentsClient", () => {
 
   it("builds view and download URLs for real PDF files", () => {
     expect(getProfileDocumentFileUrl("profile-1", "doc-1")).toBe(
-      "/api/role-profiles/profile-1/documents/doc-1/file"
+      "http://localhost:8000/api/role-profiles/profile-1/documents/doc-1/file"
     );
     expect(getProfileDocumentDownloadUrl("profile-1", "doc-1")).toBe(
-      "/api/role-profiles/profile-1/documents/doc-1/download"
+      "http://localhost:8000/api/role-profiles/profile-1/documents/doc-1/download"
     );
   });
 
