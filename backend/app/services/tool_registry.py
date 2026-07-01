@@ -41,7 +41,7 @@ async def _not_wired(request: ToolRequest) -> ToolResult:
 
 
 class ToolRegistry:
-    def __init__(self) -> None:
+    def __init__(self, overrides: dict[str, ToolHandler] | None = None) -> None:
         self._tools: dict[str, ToolDefinition] = {
             "search_jobs": ToolDefinition(
                 name="search_jobs",
@@ -74,6 +74,16 @@ class ToolRegistry:
                 handler=_not_wired,
             ),
         }
+        for name, handler in (overrides or {}).items():
+            if name not in self._tools:
+                raise ValueError(f"Cannot override unknown tool: {name}")
+            definition = self._tools[name]
+            self._tools[name] = ToolDefinition(
+                name=definition.name,
+                description=definition.description,
+                requires_confirmation=definition.requires_confirmation,
+                handler=handler,
+            )
 
     def list_tools(self) -> dict[str, ToolDefinition]:
         return dict(self._tools)
@@ -85,7 +95,10 @@ class ToolRegistry:
         return await tool.handler(request)
 
 
-def build_retrieve_profile_documents_handler(retrieval_service: object, session: object) -> ToolHandler:
+def build_retrieve_profile_documents_handler(
+    retrieval_service: object,
+    session: object,
+) -> ToolHandler:
     async def handler(request: ToolRequest) -> ToolResult:
         chunks = await retrieval_service.retrieve(
             session,
