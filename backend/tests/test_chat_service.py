@@ -49,3 +49,24 @@ async def test_create_message_persists_full_content(db_session):
     assert rows == [message]
     assert rows[0].content == "Find AI Engineer Intern jobs in Hanoi"
     assert rows[0].metadata_json == '{"source":"chat"}'
+
+
+@pytest.mark.asyncio
+async def test_create_message_persists_empty_metadata_dict(db_session):
+    profile = RoleProfile(target_role="AI Engineer", skills="[]")
+    db_session.add(profile)
+    await db_session.commit()
+    conversation = ChatConversation(role_profile_id=profile.id, title="Session")
+    db_session.add(conversation)
+    await db_session.commit()
+    await db_session.refresh(conversation)
+
+    message = await ChatService().append_message(
+        db_session,
+        conversation_id=conversation.id,
+        role="assistant",
+        content="No metadata fields yet",
+        metadata={},
+    )
+
+    assert message.metadata_json == "{}"

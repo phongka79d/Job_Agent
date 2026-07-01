@@ -65,7 +65,7 @@ class ChatService:
             role=role,
             content=content,
             token_count=token_count,
-            metadata_json=json.dumps(metadata, separators=(",", ":")) if metadata else None,
+            metadata_json=json.dumps(metadata, separators=(",", ":")) if metadata is not None else None,
         )
         session.add(message)
         await session.commit()
