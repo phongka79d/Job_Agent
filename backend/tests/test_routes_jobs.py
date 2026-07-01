@@ -142,8 +142,8 @@ async def test_parse_text_returns_standard_ingestion_response_with_loaded_job(
             job_ids=[job.id],
         )
 
-    monkeypatch.setattr(routes_jobs, "extract_from_raw_text", fake_extract_from_raw_text)
-    monkeypatch.setattr(routes_jobs, "process_job_state", fake_process_job_state)
+    monkeypatch.setattr("app.services.job_text_ingestion_workflow.extract_from_raw_text", fake_extract_from_raw_text)
+    monkeypatch.setattr("app.services.job_text_ingestion_workflow.process_job_state", fake_process_job_state)
 
     async def override_session():
         yield db_session

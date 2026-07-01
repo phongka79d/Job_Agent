@@ -25,6 +25,7 @@ from app.agents.schemas import JobAgentState
 from app.core import constants
 from app.db.models import JobPost
 from app.services.extraction_service import extract_from_raw_text, extract_from_url
+from app.services.job_text_ingestion_workflow import ingest_raw_job_text
 from app.services.job_search_workflow import ingest_search_jobs
 from app.services.job_processing_service import (
     InvalidStatusTransition,
@@ -141,17 +142,26 @@ async def parse_job_text(
     request: ParseJobTextRequest,
     session: SessionDep,
 ) -> IngestionResponse:
-    batch_id = uuid4()
     source_url = str(request.source_url) if request.source_url is not None else None
-
-    extraction_state = await extract_from_raw_text(
-        batch_id=str(batch_id),
+    result = await ingest_raw_job_text(
+        session,
         role_profile_id=str(request.role_profile_id),
         raw_text=request.raw_text,
         source_url=source_url,
     )
 
-    return await _process_single_ingested_state(session, batch_id, extraction_state)
+    return await _build_ingestion_response(
+        session,
+        result.batch_id,
+        result.job_ids,
+        inserted_jobs=result.inserted_jobs,
+        skipped_exact_duplicates=result.skipped_exact_duplicates,
+        skipped_dedup_key_duplicates=result.skipped_dedup_key_duplicates,
+        inserted_duplicate_metadata=result.inserted_duplicate_metadata,
+        qdrant_upserted=result.qdrant_upserted,
+        qdrant_synced=result.qdrant_synced,
+        warnings=result.warnings,
+    )
 
 
 @router.post("/parse-url", response_model=IngestionResponse)
