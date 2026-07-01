@@ -2,26 +2,38 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   activateProfileDocumentVersion,
+  exportCvDraftToPdf,
   listCvDrafts,
   listCvSuggestions,
+  listProfileDocumentVersions,
   listProfileDocuments,
   previewCvDraft,
   uploadProfileDocument,
 } from "../api/profileDocumentsClient";
 import ProfileDocumentPanel from "../components/profile/ProfileDocumentPanel";
-import type { ProfileDocument } from "../types/profileDocuments";
+import type { CvDraft, ProfileDocument, ProfileDocumentVersion } from "../types/profileDocuments";
 
 vi.mock("../api/profileDocumentsClient", () => ({
   activateProfileDocumentVersion: vi.fn(),
   deleteProfileDocument: vi.fn(),
+  exportCvDraftToPdf: vi.fn(),
   getProfileDocumentDownloadUrl: vi.fn(
     (profileId, documentId) => `/api/role-profiles/${profileId}/documents/${documentId}/download`
   ),
   getProfileDocumentFileUrl: vi.fn(
     (profileId, documentId) => `/api/role-profiles/${profileId}/documents/${documentId}/file`
   ),
+  getProfileDocumentVersionDownloadUrl: vi.fn(
+    (profileId, documentId, versionId) =>
+      `/api/role-profiles/${profileId}/documents/${documentId}/versions/${versionId}/download`
+  ),
+  getProfileDocumentVersionFileUrl: vi.fn(
+    (profileId, documentId, versionId) =>
+      `/api/role-profiles/${profileId}/documents/${documentId}/versions/${versionId}/file`
+  ),
   listCvDrafts: vi.fn(),
   listCvSuggestions: vi.fn(),
+  listProfileDocumentVersions: vi.fn(),
   listProfileDocuments: vi.fn(),
   previewCvDraft: vi.fn(),
   uploadProfileDocument: vi.fn(),
@@ -42,6 +54,50 @@ const readyDocument: ProfileDocument = {
   error_reason: null,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
+};
+
+const originalVersion: ProfileDocumentVersion = {
+  id: "version-1",
+  document_id: "doc-1",
+  role_profile_id: "profile-1",
+  version_number: 1,
+  source_type: "original_upload",
+  display_name: "Original upload",
+  filename: "cv.pdf",
+  mime_type: "application/pdf",
+  file_size_bytes: 1000,
+  extracted_text_chars: 500,
+  chunk_count: 2,
+  extraction_status: "ready",
+  structure_status: "reliable",
+  structure_confidence: 0.9,
+  error_reason: null,
+  created_by: "user",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
+const exportedVersion: ProfileDocumentVersion = {
+  ...originalVersion,
+  id: "version-2",
+  version_number: 2,
+  source_type: "exported_draft",
+  display_name: "Exported draft v2",
+  filename: "cv-draft-v2.pdf",
+  created_by: "ai",
+};
+
+const draft: CvDraft = {
+  id: "draft-1",
+  role_profile_id: "profile-1",
+  document_id: "doc-1",
+  base_version_id: "version-1",
+  status: "draft",
+  title: "Draft",
+  structure_status_at_creation: "reliable",
+  created_by: "ai",
+  created_at: "2026-07-01T00:00:00Z",
+  updated_at: "2026-07-01T00:00:00Z",
 };
 
 describe("ProfileDocumentPanel", () => {
@@ -204,5 +260,35 @@ describe("ProfileDocumentPanel", () => {
     });
     expect(screen.getByText("wording_only - low")).toBeInTheDocument();
     expect(screen.getByText("Draft")).toBeInTheDocument();
+  });
+
+  it("renders version history with exported version controls", async () => {
+    vi.mocked(listProfileDocuments).mockResolvedValue([readyDocument]);
+    vi.mocked(listProfileDocumentVersions).mockResolvedValue([originalVersion, exportedVersion]);
+    vi.mocked(listCvSuggestions).mockResolvedValue([]);
+    vi.mocked(listCvDrafts).mockResolvedValue([]);
+
+    render(<ProfileDocumentPanel activeProfileId="profile-1" />);
+
+    expect(await screen.findByText("Version history")).toBeInTheDocument();
+    expect(screen.getByText("Exported draft v2")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view exported draft v2/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/versions/version-2/file")
+    );
+  });
+
+  it("exports a draft and refreshes version history", async () => {
+    window.confirm = vi.fn(() => true);
+    vi.mocked(listProfileDocuments).mockResolvedValue([readyDocument]);
+    vi.mocked(listProfileDocumentVersions).mockResolvedValue([originalVersion]);
+    vi.mocked(listCvSuggestions).mockResolvedValue([]);
+    vi.mocked(listCvDrafts).mockResolvedValue([draft]);
+    vi.mocked(exportCvDraftToPdf).mockResolvedValue(exportedVersion);
+
+    render(<ProfileDocumentPanel activeProfileId="profile-1" />);
+    fireEvent.click(await screen.findByRole("button", { name: /export .* PDF/i }));
+
+    expect(exportCvDraftToPdf).toHaveBeenCalledWith("profile-1", readyDocument.id, draft.id, { confirmed: true });
   });
 });

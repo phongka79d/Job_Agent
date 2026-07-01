@@ -99,3 +99,7 @@ export interface CreateCvDraftPayload {
   suggestion_ids: string[];
   confirmed: boolean;
 }
+
+export interface ExportCvDraftPayload {
+  confirmed: boolean;
+}

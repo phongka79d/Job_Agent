@@ -5,8 +5,11 @@ import {
   createCvDraft,
   createCvSuggestion,
   deleteProfileDocument,
+  exportCvDraftToPdf,
   getProfileDocumentDownloadUrl,
   getProfileDocumentFileUrl,
+  getProfileDocumentVersionDownloadUrl,
+  getProfileDocumentVersionFileUrl,
   listCvDrafts,
   listCvSuggestions,
   listProfileDocumentVersions,
@@ -163,5 +166,46 @@ describe("profileDocumentsClient", () => {
     await expect(previewCvDraft("profile-1", "doc-1", "draft-1")).resolves.toMatchObject({
       draft_id: "draft-1",
     });
+  });
+
+  it("builds version file and download URLs", () => {
+    expect(getProfileDocumentVersionFileUrl("profile-1", "doc-1", "version-2")).toBe(
+      "http://localhost:8000/api/role-profiles/profile-1/documents/doc-1/versions/version-2/file"
+    );
+    expect(getProfileDocumentVersionDownloadUrl("profile-1", "doc-1", "version-2")).toBe(
+      "http://localhost:8000/api/role-profiles/profile-1/documents/doc-1/versions/version-2/download"
+    );
+  });
+
+  it("exports a CV draft as PDF with confirmation", async () => {
+    postSpy.mockResolvedValueOnce({ data: {
+      id: "version-2",
+      document_id: "doc-1",
+      role_profile_id: "profile-1",
+      version_number: 2,
+      source_type: "exported_draft",
+      display_name: "Exported draft v2",
+      filename: "cv-draft-v2.pdf",
+      mime_type: "application/pdf",
+      file_size_bytes: 1000,
+      extracted_text_chars: 80,
+      chunk_count: 1,
+      extraction_status: "ready",
+      structure_status: "reliable",
+      structure_confidence: 0.9,
+      error_reason: null,
+      created_by: "ai",
+      created_at: "2026-07-01T00:00:00Z",
+      updated_at: "2026-07-01T00:00:00Z",
+    } });
+
+    const version = await exportCvDraftToPdf("profile-1", "doc-1", "draft-1", { confirmed: true });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      "/api/role-profiles/profile-1/documents/doc-1/drafts/draft-1/export-pdf",
+      { confirmed: true }
+    );
+    expect(version.id).toBe("version-2");
+    expect(version.source_type).toBe("exported_draft");
   });
 });

@@ -5,6 +5,7 @@ import type {
   CvDraft,
   CvDraftPreview,
   CvImprovementSuggestion,
+  ExportCvDraftPayload,
   ProfileDocument,
   ProfileDocumentVersion,
 } from "../types/profileDocuments";
@@ -157,6 +158,31 @@ export async function previewCvDraft(
   try {
     const response = await apiClient.get<CvDraftPreview>(
       `/api/role-profiles/${roleProfileId}/documents/${documentId}/drafts/${draftId}/preview`
+    );
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export function getProfileDocumentVersionFileUrl(roleProfileId: string, documentId: string, versionId: string): string {
+  return resolveApiUrl(`/api/role-profiles/${roleProfileId}/documents/${documentId}/versions/${versionId}/file`);
+}
+
+export function getProfileDocumentVersionDownloadUrl(roleProfileId: string, documentId: string, versionId: string): string {
+  return resolveApiUrl(`/api/role-profiles/${roleProfileId}/documents/${documentId}/versions/${versionId}/download`);
+}
+
+export async function exportCvDraftToPdf(
+  roleProfileId: string,
+  documentId: string,
+  draftId: string,
+  payload: ExportCvDraftPayload
+): Promise<ProfileDocumentVersion> {
+  try {
+    const response = await apiClient.post<ProfileDocumentVersion>(
+      `/api/role-profiles/${roleProfileId}/documents/${documentId}/drafts/${draftId}/export-pdf`,
+      payload
     );
     return response.data;
   } catch (error) {

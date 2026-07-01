@@ -1,17 +1,21 @@
-import { AlertCircle, Download, Eye, FileText, Loader2, Star, Trash2 } from "lucide-react";
+import { AlertCircle, Download, Eye, FileText, Loader2, Star, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   activateProfileDocumentVersion,
   deleteProfileDocument,
+  exportCvDraftToPdf,
   getProfileDocumentDownloadUrl,
   getProfileDocumentFileUrl,
+  getProfileDocumentVersionDownloadUrl,
+  getProfileDocumentVersionFileUrl,
   listCvDrafts,
   listCvSuggestions,
+  listProfileDocumentVersions,
   listProfileDocuments,
   previewCvDraft,
   uploadProfileDocument,
 } from "../../api/profileDocumentsClient";
-import type { CvDraft, CvDraftPreview, CvImprovementSuggestion, ProfileDocument } from "../../types/profileDocuments";
+import type { CvDraft, CvDraftPreview, CvImprovementSuggestion, ProfileDocument, ProfileDocumentVersion } from "../../types/profileDocuments";
 import ProfileDocumentUpload from "./ProfileDocumentUpload";
 
 interface ProfileDocumentPanelProps {
@@ -32,6 +36,7 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
   const [suggestionsByDocument, setSuggestionsByDocument] = useState<Record<string, CvImprovementSuggestion[]>>({});
   const [draftsByDocument, setDraftsByDocument] = useState<Record<string, CvDraft[]>>({});
   const [draftPreview, setDraftPreview] = useState<CvDraftPreview | null>(null);
+  const [versionsByDocument, setVersionsByDocument] = useState<Record<string, ProfileDocumentVersion[]>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -54,8 +59,12 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
           const draftEntries = await Promise.all(
             nextDocuments.map(async (document) => [document.id, await listCvDrafts(activeProfileId, document.id)] as const)
           );
+          const versionEntries = await Promise.all(
+            nextDocuments.map(async (document) => [document.id, await listProfileDocumentVersions(activeProfileId, document.id)] as const)
+          );
           setSuggestionsByDocument(Object.fromEntries(suggestionEntries));
           setDraftsByDocument(Object.fromEntries(draftEntries));
+          setVersionsByDocument(Object.fromEntries(versionEntries));
         }
       } catch (err) {
         if (!cancelled) {
@@ -84,8 +93,12 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
     const draftEntries = await Promise.all(
       nextDocuments.map(async (document) => [document.id, await listCvDrafts(activeProfileId, document.id)] as const)
     );
+    const versionEntries = await Promise.all(
+      nextDocuments.map(async (document) => [document.id, await listProfileDocumentVersions(activeProfileId, document.id)] as const)
+    );
     setSuggestionsByDocument(Object.fromEntries(suggestionEntries));
     setDraftsByDocument(Object.fromEntries(draftEntries));
+    setVersionsByDocument(Object.fromEntries(versionEntries));
   };
 
   const handleUpload = async (file: File) => {
@@ -128,6 +141,19 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
       await refreshDocuments();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete CV");
+    }
+  };
+
+  const handleExportDraft = async (document: ProfileDocument, draft: CvDraft) => {
+    if (!activeProfileId) return;
+    const confirmed = window.confirm("Export this CV draft as a new PDF version? The active CV will not change.");
+    if (!confirmed) return;
+    setError(null);
+    try {
+      await exportCvDraftToPdf(activeProfileId, document.id, draft.id, { confirmed: true });
+      await refreshDocuments();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to export CV draft");
     }
   };
 
@@ -263,15 +289,25 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                     <div className="profile-document-subpanel">
                       <div className="profile-document-subpanel-title">Draft preview</div>
                       {(draftsByDocument[document.id] ?? []).map((draft) => (
-                        <button
-                          key={draft.id}
-                          type="button"
-                          onClick={() => {
-                            void previewCvDraft(activeProfileId!, document.id, draft.id).then(setDraftPreview);
-                          }}
-                        >
-                          {draft.title}
-                        </button>
+                        <div key={draft.id} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void previewCvDraft(activeProfileId!, document.id, draft.id).then(setDraftPreview);
+                            }}
+                          >
+                            {draft.title}
+                          </button>
+                          {draft.status === "draft" ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleExportDraft(document, draft)}
+                              aria-label={`Export ${draft.title} PDF`}
+                            >
+                              <Upload size={14} /> Export PDF
+                            </button>
+                          ) : null}
+                        </div>
                       ))}
                       {draftPreview?.draft_id && (
                         <div className="profile-document-preview">
@@ -284,6 +320,48 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                       )}
                     </div>
                   ) : null}
+                  <div className="profile-document-subpanel">
+                    <div className="profile-document-subpanel-title">Version history</div>
+                    {(versionsByDocument[document.id] ?? []).length === 0 ? (
+                      <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>No versions yet.</div>
+                    ) : (
+                      (versionsByDocument[document.id] ?? []).map((version) => (
+                        <div key={version.id} className="profile-document-version-row">
+                          <div>
+                            <strong>{version.display_name}</strong>
+                            <small>v{version.version_number} - {version.source_type} - {version.extraction_status}</small>
+                          </div>
+                          <div className="profile-document-actions">
+                            <a
+                              href={getProfileDocumentVersionFileUrl(activeProfileId!, document.id, version.id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`View ${version.display_name}`}
+                            >
+                              <Eye size={14} /> View
+                            </a>
+                            <a
+                              href={getProfileDocumentVersionDownloadUrl(activeProfileId!, document.id, version.id)}
+                              aria-label={`Download ${version.display_name}`}
+                            >
+                              <Download size={14} /> Download
+                            </a>
+                            {document.active_version_id !== version.id ? (
+                              <button
+                                type="button"
+                                onClick={() => void activateProfileDocumentVersion(activeProfileId!, document.id, version.id).then(refreshDocuments)}
+                                aria-label={`Set ${version.display_name} active`}
+                              >
+                                <Star size={14} /> Set active
+                              </button>
+                            ) : (
+                              <span className="document-active-badge">Active version</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             );
