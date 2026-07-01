@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useOutletContext } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -320,6 +320,87 @@ describe("ChatWorkspacePage", () => {
       expect(screen.getByText("Added 1 job to Review Queue.")).toBeInTheDocument();
       expect(navigate).toHaveBeenCalledWith("/review");
     });
+  });
+
+  it("renders streamed tool call status before the stream finishes", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
+    vi.mocked(createConversation).mockResolvedValue({
+      id: "conv-1",
+      role_profile_id: "profile-1",
+      title: "Job paste session",
+      status: "active",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    vi.mocked(sendChatMessage).mockResolvedValue({
+      message: {
+        id: "msg-1",
+        conversation_id: "conv-1",
+        role: "user",
+        content: "Parse this job:\nTitle: AI Engineer Intern\nCompany: Compact Labs",
+        token_count: null,
+        metadata_json: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      stream_url: "/stream",
+    });
+    vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
+    vi.mocked(listAgentToolCalls).mockResolvedValue([textExtractionToolCall]);
+
+    let streamCallback: Parameters<typeof streamChatResponse>[1] | undefined;
+    let finishStream: (() => void) | undefined;
+    vi.mocked(streamChatResponse).mockImplementation((_streamUrl, onEvent) => {
+      streamCallback = onEvent;
+      return new Promise<void>((resolve) => {
+        finishStream = resolve;
+      });
+    });
+
+    render(<ChatWorkspacePage contextOverride={defaultContextOverride} />);
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Parse this job:\nTitle: AI Engineer Intern\nCompany: Compact Labs" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => {
+      expect(streamCallback).toBeDefined();
+    });
+
+    await act(async () => {
+      streamCallback?.({
+        event: "tool_call_started",
+        data: {
+          tool_call_id: "tool-live-1",
+          tool_name: "extract_job_from_text",
+          status: "running",
+          input_summary: "Pasted job text, 65 characters",
+        },
+      });
+    });
+
+    expect(screen.getByText("extract_job_from_text")).toBeInTheDocument();
+    expect(screen.getByText("running")).toBeInTheDocument();
+    expect(screen.getByText("Pasted job text, 65 characters")).toBeInTheDocument();
+    expect(listAgentToolCalls).not.toHaveBeenCalledWith("conv-1");
+
+    await act(async () => {
+      streamCallback?.({
+        event: "tool_call_completed",
+        data: {
+          tool_call_id: "tool-live-1",
+          tool_name: "extract_job_from_text",
+          status: "success",
+          result_summary: "Added 1 job to Review Queue.",
+          safe_payload: { inserted_jobs: 1, review_queue_path: "/review" },
+        },
+      });
+    });
+
+    expect(screen.getByText("success")).toBeInTheDocument();
+    expect(screen.getByText("Added 1 job to Review Queue.")).toBeInTheDocument();
+
+    finishStream?.();
   });
 
   it("ignores old-profile async completions after the active profile changes", async () => {

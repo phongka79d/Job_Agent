@@ -10,6 +10,7 @@ import {
 import ChatComposer from "../components/chat/ChatComposer";
 import ChatTranscript from "../components/chat/ChatTranscript";
 import type { AgentToolCall, ChatConversation, ChatMessage } from "../types/chat";
+import { applyToolCallStreamEvent } from "../utils/toolCallStream";
 
 interface OutletContext {
   activeProfileId: string | null;
@@ -218,12 +219,36 @@ export default function ChatWorkspacePage({ contextOverride }: ChatWorkspacePage
             updateStreamStatus("LLM: Starting response...");
             break;
           case "tool_call_started":
+            setToolCalls((currentToolCalls) =>
+              applyToolCallStreamEvent(
+                currentToolCalls,
+                event.event,
+                event.data,
+                currentConversationId
+              )
+            );
             updateStreamStatus(`Tool: Running ${toolName}...`);
             break;
           case "tool_call_completed":
+            setToolCalls((currentToolCalls) =>
+              applyToolCallStreamEvent(
+                currentToolCalls,
+                event.event,
+                event.data,
+                currentConversationId
+              )
+            );
             updateStreamStatus(`Tool: ${toolName} completed.`);
             break;
           case "tool_call_failed":
+            setToolCalls((currentToolCalls) =>
+              applyToolCallStreamEvent(
+                currentToolCalls,
+                event.event,
+                event.data,
+                currentConversationId
+              )
+            );
             updateStreamStatus(`Tool: ${toolName} failed.`);
             break;
           case "tool_call_progress":

@@ -429,6 +429,56 @@ async def test_stream_pasted_job_text_calls_extract_text_tool_and_persists_visib
 
 
 @pytest.mark.asyncio
+async def test_stream_explicit_short_parse_request_calls_extract_text_tool(
+    client,
+    role_profile,
+    monkeypatch,
+):
+    from app.api import routes_chat
+
+    short_job = (
+        "Parse this job:\n"
+        "Title: AI Engineer Intern\n"
+        "Company: Compact Labs\n"
+        "Requirements: Python and retrieval basics"
+    )
+    calls = []
+
+    async def text_handler(request: ToolRequest) -> ToolResult:
+        calls.append(request)
+        return ToolResult(
+            content="Added 1 job to Review Queue.",
+            result_summary="Added 1 job to Review Queue.",
+            safe_payload={"inserted_jobs": 1, "review_queue_path": "/review"},
+        )
+
+    def build_registry(session):
+        return ToolRegistry(overrides={"extract_job_from_text": text_handler})
+
+    monkeypatch.setattr(routes_chat, "build_tool_registry", build_registry)
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={"role_profile_id": role_profile.id, "title": "Session"},
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": short_job},
+    )
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": message_response.json()["message"]["id"]},
+    )
+
+    assert response.status_code == 200
+    assert "event: tool_call_started" in response.text
+    assert "Called 1 tool: Extract job from text." in response.text
+    assert len(calls) == 1
+    assert calls[0].arguments["raw_text"] == short_job
+
+
+@pytest.mark.asyncio
 async def test_stream_short_non_job_message_does_not_call_extract_text_tool(
     client,
     role_profile,

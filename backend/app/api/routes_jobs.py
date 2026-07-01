@@ -24,7 +24,7 @@ from app.api.schemas import (
 from app.agents.schemas import JobAgentState
 from app.core import constants
 from app.db.models import JobPost
-from app.services.extraction_service import extract_from_raw_text, extract_from_url
+from app.services.extraction_service import extract_from_url
 from app.services.job_text_ingestion_workflow import ingest_raw_job_text
 from app.services.job_search_workflow import ingest_search_jobs
 from app.services.job_processing_service import (

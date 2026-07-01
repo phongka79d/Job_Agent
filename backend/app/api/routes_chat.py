@@ -76,10 +76,52 @@ PASTED_JOB_SIGNALS = (
     "about the role",
     "what you will do",
 )
+EXPLICIT_JOB_PARSE_TERMS = (
+    "parse this job",
+    "parse job",
+    "analyze this job",
+    "analyze job",
+    "analyse this job",
+    "analyse job",
+    "extract this job",
+    "extract job",
+    "import this job",
+    "add this job",
+)
+EXPLICIT_JOB_STRUCTURE_SIGNALS = (
+    "title",
+    "company",
+    "requirements",
+    "responsibilities",
+    "qualifications",
+    "location",
+    "salary",
+    "skills",
+    "benefits",
+    "job description",
+    "about the role",
+)
+
+
+def _is_explicit_pasted_job_request(content: str, normalized: str) -> bool:
+    has_parse_intent = any(term in normalized for term in EXPLICIT_JOB_PARSE_TERMS)
+    if not has_parse_intent:
+        return False
+
+    has_pasted_shape = "\n" in content or ":" in content
+    if not has_pasted_shape:
+        return False
+
+    signal_count = sum(
+        1 for signal in EXPLICIT_JOB_STRUCTURE_SIGNALS if signal in normalized
+    )
+    return signal_count >= 2
 
 
 def _is_pasted_job_text_intent(content: str) -> bool:
     normalized = content.casefold()
+    if _is_explicit_pasted_job_request(content, normalized):
+        return True
     if len(normalized) < PASTED_JOB_MIN_LENGTH:
         return False
     signal_count = sum(1 for signal in PASTED_JOB_SIGNALS if signal in normalized)
@@ -484,8 +526,7 @@ async def stream_conversation_events(
                 logger.exception("Chat LLM is unavailable")
                 agent_metadata_source = "chat_agent_error"
                 assistant_content = (
-                    "Chat LLM is unavailable. Check OPENAI_API_KEY and provider settings, "
-                    "then try again."
+                    "Chat LLM is unavailable. Check provider settings, then try again."
                 )
         assistant = await chat_service.append_message(
             session,
