@@ -318,6 +318,76 @@ async def test_retrieval_uses_active_cv_version_only(db_session, test_role_profi
 
 
 @pytest.mark.asyncio
+async def test_retrieval_discards_vector_chunk_ids_outside_active_cv(db_session, test_role_profile):
+    active_document, active_version, active_chunk = await create_ready_cv(
+        db_session,
+        test_role_profile,
+        text="Active CV Python evidence",
+    )
+    stale_document = ProfileDocument(
+        role_profile_id=test_role_profile.id,
+        original_filename="stale.pdf",
+        stored_path="stale.pdf",
+        content_hash="stale",
+        mime_type="application/pdf",
+        file_size_bytes=1000,
+        extracted_text_chars=40,
+        chunk_count=1,
+        document_kind="cv",
+        status="ready",
+    )
+    db_session.add(stale_document)
+    await db_session.flush()
+    stale_version = ProfileDocumentVersion(
+        document_id=stale_document.id,
+        role_profile_id=test_role_profile.id,
+        version_number=1,
+        source_type="original_upload",
+        display_name="Original upload",
+        filename="stale.pdf",
+        stored_path="stale.pdf",
+        content_hash="stale",
+        mime_type="application/pdf",
+        file_size_bytes=1000,
+        extracted_text_chars=40,
+        chunk_count=1,
+        extraction_status="ready",
+        structure_status="not_extracted",
+        created_by="user",
+    )
+    db_session.add(stale_version)
+    await db_session.flush()
+    stale_chunk = ProfileDocumentChunk(
+        document_id=stale_document.id,
+        role_profile_id=test_role_profile.id,
+        version_id=stale_version.id,
+        source_type="profile_cv",
+        chunk_index=0,
+        text="Stale CV content must not be returned",
+        token_count=4,
+        qdrant_point_id="88888888-8888-8888-8888-888888888888",
+    )
+    db_session.add(stale_chunk)
+    await db_session.commit()
+
+    service = ProfileDocumentRetrievalService(
+        embedder=FakeEmbedder(),
+        vector_store=FakeProfileVectorStore(chunk_ids=[stale_chunk.id, active_chunk.id]),
+    )
+
+    result = await service.retrieve_active_cv_chunks(
+        db_session,
+        role_profile_id=test_role_profile.id,
+        query="Python",
+        limit=5,
+    )
+
+    assert result.document.id == active_document.id
+    assert result.version.id == active_version.id
+    assert [item.chunk.id for item in result.chunks] == [active_chunk.id]
+
+
+@pytest.mark.asyncio
 async def test_retrieval_falls_back_to_sqlite_keyword_when_qdrant_fails(db_session, test_role_profile):
     await create_ready_cv(
         db_session,

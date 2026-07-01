@@ -86,7 +86,7 @@ No new database tables in this phase.
 - Test: `backend/tests/test_qdrant_service.py`
 - Test: `backend/tests/test_profile_document_service.py`
 
-- [ ] **Step 1: Write failing Qdrant payload/index tests**
+- [x] **Step 1: Write failing Qdrant payload/index tests**
 
 Update `backend/tests/test_qdrant_service.py`.
 
@@ -179,7 +179,7 @@ Keep the existing `FakeQdrantClient.query_points` behavior that records calls an
         return SimpleNamespace(points=[])
 ```
 
-- [ ] **Step 2: Run Qdrant tests and verify failure**
+- [x] **Step 2: Run Qdrant tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -188,7 +188,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because `version_id` is not indexed or accepted.
 
-- [ ] **Step 3: Update Qdrant payload/index implementation**
+- [x] **Step 3: Update Qdrant payload/index implementation**
 
 In `backend/app/services/qdrant_service.py`, update:
 
@@ -323,7 +323,7 @@ Add this method to `QdrantService`:
         return chunk_ids
 ```
 
-- [ ] **Step 4: Pass version IDs from profile document indexing**
+- [x] **Step 4: Pass version IDs from profile document indexing**
 
 In `backend/app/services/profile_document_service.py`, update `ProfileDocumentVectorStore`:
 
@@ -358,7 +358,7 @@ In `create_document_from_pdf`, update the vector upsert call:
 
 Update every test fake `upsert_profile_document_chunk` with `**kwargs`; no additional fake change is needed when the fake already accepts `**kwargs`.
 
-- [ ] **Step 5: Run Qdrant and profile document service tests**
+- [x] **Step 5: Run Qdrant and profile document service tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -367,7 +367,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```powershell
 git add backend/app/services/qdrant_service.py backend/app/services/profile_document_service.py backend/tests/test_qdrant_service.py backend/tests/test_profile_document_service.py
@@ -382,7 +382,7 @@ git commit -m "feat: index profile cv chunks by version"
 - Modify: `backend/app/services/profile_document_retrieval_service.py`
 - Test: `backend/tests/test_profile_document_retrieval_service.py`
 
-- [ ] **Step 1: Write failing active-CV retrieval tests**
+- [x] **Step 1: Write failing active-CV retrieval tests**
 
 Update imports in `backend/tests/test_profile_document_retrieval_service.py`:
 
@@ -583,7 +583,7 @@ async def test_retrieval_returns_empty_result_when_no_active_cv(db_session, test
     assert result.chunks == []
 ```
 
-- [ ] **Step 2: Run retrieval tests and verify failure**
+- [x] **Step 2: Run retrieval tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -592,7 +592,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because active-CV result types and methods do not exist.
 
-- [ ] **Step 3: Implement active-CV retrieval dataclasses and service**
+- [x] **Step 3: Implement active-CV retrieval dataclasses and service**
 
 Replace `backend/app/services/profile_document_retrieval_service.py` with this structure while preserving the existing `retrieve(...)` method as a compatibility wrapper:
 
@@ -791,7 +791,7 @@ class ProfileDocumentRetrievalService:
         return [chunk for chunk in ranked if score(chunk) > 0][:limit]
 ```
 
-- [ ] **Step 4: Run retrieval tests**
+- [x] **Step 4: Run retrieval tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -800,7 +800,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```powershell
 git add backend/app/services/profile_document_retrieval_service.py backend/tests/test_profile_document_retrieval_service.py
@@ -816,7 +816,7 @@ git commit -m "feat: retrieve active profile cv chunks"
 - Test: `backend/tests/test_tool_registry.py`
 - Test: `backend/tests/test_profile_document_retrieval_service.py`
 
-- [ ] **Step 1: Write failing tool registry tests**
+- [x] **Step 1: Write failing tool registry tests**
 
 In `backend/tests/test_tool_registry.py`, extend `test_registry_exposes_safe_tool_metadata`:
 
@@ -916,7 +916,7 @@ async def test_profile_cv_tool_handlers_return_sanitized_payloads():
     assert structure_result.safe_payload["structure_status"] == "not_extracted"
 ```
 
-- [ ] **Step 2: Run tool tests and verify failure**
+- [x] **Step 2: Run tool tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -925,7 +925,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because CV tool names and builders do not exist.
 
-- [ ] **Step 3: Register CV tools**
+- [x] **Step 3: Register CV tools**
 
 In `backend/app/services/tool_registry.py`, import:
 
@@ -968,7 +968,7 @@ Add these `ToolDefinition` entries to `ToolRegistry.__init__` before the legacy 
             ),
 ```
 
-- [ ] **Step 4: Add CV tool handlers**
+- [x] **Step 4: Add CV tool handlers**
 
 Append these helpers below `build_retrieve_profile_documents_handler`:
 
@@ -1136,7 +1136,7 @@ def build_retrieve_profile_documents_handler(
     return build_retrieve_profile_cv_chunks_handler(retrieval_service, session)
 ```
 
-- [ ] **Step 5: Run tool tests**
+- [x] **Step 5: Run tool tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1145,7 +1145,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```powershell
 git add backend/app/services/tool_registry.py backend/tests/test_tool_registry.py backend/tests/test_profile_document_retrieval_service.py
@@ -1160,7 +1160,7 @@ git commit -m "feat: add profile cv read tools"
 - Modify: `backend/app/api/routes_chat.py`
 - Test: `backend/tests/test_routes_chat.py`
 
-- [ ] **Step 1: Write failing chat route test**
+- [x] **Step 1: Write failing chat route test**
 
 Add to `backend/tests/test_routes_chat.py`:
 
@@ -1231,7 +1231,7 @@ async def test_stream_cv_question_calls_profile_cv_retrieval_tool(
     }
 ```
 
-- [ ] **Step 2: Run chat route test and verify failure**
+- [x] **Step 2: Run chat route test and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1240,7 +1240,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because CV questions do not trigger CV tools.
 
-- [ ] **Step 3: Wire CV handlers into chat registry**
+- [x] **Step 3: Wire CV handlers into chat registry**
 
 In `backend/app/api/routes_chat.py`, extend imports from `tool_registry`:
 
@@ -1276,7 +1276,7 @@ Update `build_tool_registry` overrides:
             "retrieve_profile_documents": build_retrieve_profile_cv_chunks_handler(profile_cv_retrieval_service, session),
 ```
 
-- [ ] **Step 4: Add CV intent helper and visible branch**
+- [x] **Step 4: Add CV intent helper and visible branch**
 
 Add near intent helpers:
 
@@ -1378,7 +1378,7 @@ Before the final `else:` LLM branch in `event_generator`, add a branch modeled a
                 )
 ```
 
-- [ ] **Step 5: Run chat route tests**
+- [x] **Step 5: Run chat route tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1387,7 +1387,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit Task 4**
+- [x] **Step 6: Commit Task 4**
 
 ```powershell
 git add backend/app/api/routes_chat.py backend/tests/test_routes_chat.py
@@ -1406,7 +1406,7 @@ git commit -m "feat: show active cv retrieval tool calls"
 - Test: `backend/tests/test_scoring_service.py`
 - Test: `backend/tests/test_job_processing_service.py`
 
-- [ ] **Step 1: Write failing scoring helper test**
+- [x] **Step 1: Write failing scoring helper test**
 
 In `backend/tests/test_scoring_service.py`, import:
 
@@ -1438,7 +1438,7 @@ def test_build_role_query_text_with_cv_evidence_prefers_active_cv_text():
     assert "Skills: Python" in text
 ```
 
-- [ ] **Step 2: Write failing memory test**
+- [x] **Step 2: Write failing memory test**
 
 In `backend/tests/test_chat_memory_service.py`, add a ready active CV document/version/chunk using the helper shape from Task 2, then assert memory contains active CV evidence:
 
@@ -1522,7 +1522,7 @@ from app.db.models import (
 )
 ```
 
-- [ ] **Step 3: Run memory/scoring tests and verify failure**
+- [x] **Step 3: Run memory/scoring tests and verify failure**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1531,7 +1531,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: fail because helper and memory behavior do not exist.
 
-- [ ] **Step 4: Add scoring helper**
+- [x] **Step 4: Add scoring helper**
 
 In `backend/app/services/scoring_service.py`, add this ORM-safe helper after `build_role_query_text`:
 
@@ -1562,7 +1562,7 @@ def build_role_query_text_with_cv_evidence(role_profile: Any, active_cv_text: st
     return "\n".join(parts)
 ```
 
-- [ ] **Step 5: Add memory active CV context**
+- [x] **Step 5: Add memory active CV context**
 
 In `backend/app/services/chat_memory_service.py`, update model imports:
 
@@ -1657,7 +1657,7 @@ Add helper methods:
         return (matches or chunks)[:5]
 ```
 
-- [ ] **Step 6: Use active CV in job scoring**
+- [x] **Step 6: Use active CV in job scoring**
 
 In `backend/app/services/job_processing_service.py`, import:
 
@@ -1709,7 +1709,7 @@ with:
     role_query_text = build_role_query_text_with_cv_evidence(role_profile, active_cv_text)
 ```
 
-- [ ] **Step 7: Run memory/scoring/job processing tests**
+- [x] **Step 7: Run memory/scoring/job processing tests**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1718,7 +1718,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: tests pass.
 
-- [ ] **Step 8: Commit Task 5**
+- [x] **Step 8: Commit Task 5**
 
 ```powershell
 git add backend/app/services/chat_memory_service.py backend/app/services/scoring_service.py backend/app/services/job_processing_service.py backend/tests/test_chat_memory_service.py backend/tests/test_scoring_service.py backend/tests/test_job_processing_service.py
@@ -1732,7 +1732,7 @@ git commit -m "feat: prefer active cv evidence in memory and scoring"
 **Files:**
 - Modify only if verification finds breakage.
 
-- [ ] **Step 1: Run backend verification**
+- [x] **Step 1: Run backend verification**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\backend
@@ -1747,7 +1747,7 @@ Expected:
 - pytest reports all tests passed
 - pip check reports `No broken requirements found.`
 
-- [ ] **Step 2: Run frontend verification**
+- [x] **Step 2: Run frontend verification**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent\frontend\job-agent-ui
@@ -1764,7 +1764,7 @@ Expected:
 - tests pass
 - build exits `0`
 
-- [ ] **Step 3: Run CV tool safety scan**
+- [x] **Step 3: Run CV tool safety scan**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent
@@ -1778,7 +1778,7 @@ Expected:
 - `stored_path` and `content_hash` remain backend-only.
 - no API keys appear in frontend code or tool safe payloads.
 
-- [ ] **Step 4: Review final diff**
+- [x] **Step 4: Review final diff**
 
 ```powershell
 cd C:\Users\ACER\OtherProjects\Job_Agent
@@ -1794,7 +1794,7 @@ Expected:
 - no draft/export/OCR code added
 - no runtime demo/mock data introduced
 
-- [ ] **Step 5: Commit verification cleanup if needed**
+- [x] **Step 5: Commit verification cleanup if needed**
 
 Only if Step 1-4 required cleanup edits:
 

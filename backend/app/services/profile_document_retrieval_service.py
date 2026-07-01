@@ -93,7 +93,13 @@ class ProfileDocumentRetrievalService:
                 version_id=version.id,
                 limit=limit,
             )
-            chunks = await self._chunks_by_ids(session, chunk_ids)
+            chunks = await self._chunks_by_ids(
+                session,
+                chunk_ids,
+                role_profile_id=role_profile_id,
+                document_id=document.id,
+                version_id=version.id,
+            )
             if chunks:
                 return ActiveProfileCvRetrievalResult(
                     document=document,
@@ -152,11 +158,19 @@ class ProfileDocumentRetrievalService:
         self,
         session: AsyncSession,
         chunk_ids: list[str],
+        *,
+        role_profile_id: str,
+        document_id: str,
+        version_id: str,
     ) -> list[ProfileDocumentChunk]:
         if not chunk_ids:
             return []
         result = await session.execute(
-            select(ProfileDocumentChunk).where(ProfileDocumentChunk.id.in_(chunk_ids))
+            select(ProfileDocumentChunk)
+            .where(ProfileDocumentChunk.id.in_(chunk_ids))
+            .where(ProfileDocumentChunk.role_profile_id == role_profile_id)
+            .where(ProfileDocumentChunk.document_id == document_id)
+            .where(ProfileDocumentChunk.version_id == version_id)
         )
         by_id = {chunk.id: chunk for chunk in result.scalars()}
         return [by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id]
