@@ -30,6 +30,7 @@ from app.services.chat_service import ChatService
 from app.services.tool_registry import (
     ToolRegistry,
     ToolRequest,
+    build_extract_job_from_text_handler,
     build_search_jobs_handler,
 )
 
@@ -46,6 +47,7 @@ def build_tool_registry(session: SessionDep) -> ToolRegistry:
     return ToolRegistry(
         overrides={
             "search_jobs": build_search_jobs_handler(session),
+            "extract_job_from_text": build_extract_job_from_text_handler(session),
         }
     )
 
@@ -57,6 +59,31 @@ def _is_search_jobs_intent(content: str) -> bool:
     return any(term in normalized for term in search_terms) and any(
         term in normalized for term in job_terms
     )
+
+
+PASTED_JOB_MIN_LENGTH = 240
+PASTED_JOB_SIGNALS = (
+    "responsibilities",
+    "requirements",
+    "qualifications",
+    "skills",
+    "company",
+    "location",
+    "salary",
+    "benefits",
+    "apply",
+    "job description",
+    "about the role",
+    "what you will do",
+)
+
+
+def _is_pasted_job_text_intent(content: str) -> bool:
+    normalized = content.casefold()
+    if len(normalized) < PASTED_JOB_MIN_LENGTH:
+        return False
+    signal_count = sum(1 for signal in PASTED_JOB_SIGNALS if signal in normalized)
+    return signal_count >= 3
 
 
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
@@ -211,6 +238,53 @@ async def stream_conversation_events(
         str(after_message_id),
     )
 
+    async def _run_tool_with_progress(
+        *,
+        session: SessionDep,
+        tool_call,
+        request: ToolRequest,
+    ):
+        queue = asyncio.Queue()
+
+        async def progress_callback(message: str):
+            await queue.put(
+                _sse_event(
+                    "tool_call_progress",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "message": message,
+                    },
+                )
+            )
+
+        request.context["on_progress"] = progress_callback
+
+        async def run_tool():
+            try:
+                result = await build_tool_registry(session).execute(request)
+                await queue.put(result)
+            except Exception as exc:
+                await queue.put(exc)
+
+        task = asyncio.create_task(run_tool())
+        tool_result = None
+        while not task.done() or not queue.empty():
+            try:
+                item = await asyncio.wait_for(queue.get(), timeout=0.1)
+                if isinstance(item, str):
+                    yield item
+                elif isinstance(item, Exception):
+                    raise item
+                else:
+                    tool_result = item
+            except asyncio.TimeoutError:
+                continue
+
+        if tool_result is None:
+            raise RuntimeError(f"{request.name} failed without returning result")
+        yield tool_result
+
     async def event_generator():
         yield _sse_event(
             "message_started",
@@ -243,59 +317,29 @@ async def stream_conversation_events(
                 },
             )
             try:
-                queue = asyncio.Queue()
-
-                async def progress_callback(msg: str):
-                    await queue.put(
-                        _sse_event(
-                            "tool_call_progress",
-                            {
-                                "tool_call_id": tool_call.id,
-                                "tool_name": tool_call.tool_name,
-                                "message": msg,
-                            },
-                        )
-                    )
-
-                async def run_tool():
-                    try:
-                        res = await build_tool_registry(session).execute(
-                            ToolRequest(
-                                name="search_jobs",
-                                arguments={
-                                    "query": user_message.content,
-                                    "max_urls": None,
-                                },
-                                context={
-                                    "role_profile_id": conversation.role_profile_id,
-                                    "conversation_id": str(conversation_id),
-                                    "on_progress": progress_callback,
-                                },
-                            )
-                        )
-                        await queue.put(res)
-                    except Exception as exc:
-                        await queue.put(exc)
-
-                task = asyncio.create_task(run_tool())
-                tool_result_raw = None
-
-                while not task.done() or not queue.empty():
-                    try:
-                        item = await asyncio.wait_for(queue.get(), timeout=0.1)
-                        if isinstance(item, str):
-                            yield item
-                        elif isinstance(item, Exception):
-                            raise item
-                        else:
-                            tool_result_raw = item
-                    except asyncio.TimeoutError:
-                        continue
-
-                if tool_result_raw is None:
+                result_stream = _run_tool_with_progress(
+                    session=session,
+                    tool_call=tool_call,
+                    request=ToolRequest(
+                        name="search_jobs",
+                        arguments={
+                            "query": user_message.content,
+                            "max_urls": None,
+                        },
+                        context={
+                            "role_profile_id": conversation.role_profile_id,
+                            "conversation_id": str(conversation_id),
+                        },
+                    ),
+                )
+                tool_result = None
+                async for item in result_stream:
+                    if isinstance(item, str):
+                        yield item
+                    else:
+                        tool_result = item
+                if tool_result is None:
                     raise RuntimeError("Search tool failed without returning result")
-
-                tool_result = tool_result_raw
             except Exception:
                 logger.exception("search_jobs tool failed")
                 tool_call = await agent_event_service.mark_failed(
@@ -327,6 +371,88 @@ async def stream_conversation_events(
                 assistant_content = (
                     "Called 1 tool: Job search. "
                     f"{tool_result.result_summary} Open Review Queue to review jobs."
+                )
+                agent_metadata_source = "chat_agent_tool"
+                yield _sse_event(
+                    "tool_call_completed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "result_summary": tool_call.result_summary,
+                        "safe_payload": tool_result.safe_payload,
+                    },
+                )
+        elif _is_pasted_job_text_intent(user_message.content):
+            tool_call = await agent_event_service.create_tool_call(
+                session,
+                conversation_id=str(conversation_id),
+                tool_name="extract_job_from_text",
+                input_summary=f"Pasted job text, {len(user_message.content)} characters",
+                safe_payload={"character_count": len(user_message.content)},
+            )
+            tool_call = await agent_event_service.mark_running(session, tool_call.id)
+            yield _sse_event(
+                "tool_call_started",
+                {
+                    "tool_call_id": tool_call.id,
+                    "tool_name": tool_call.tool_name,
+                    "status": tool_call.status,
+                    "input_summary": tool_call.input_summary,
+                },
+            )
+            try:
+                result_stream = _run_tool_with_progress(
+                    session=session,
+                    tool_call=tool_call,
+                    request=ToolRequest(
+                        name="extract_job_from_text",
+                        arguments={"raw_text": user_message.content},
+                        context={
+                            "role_profile_id": conversation.role_profile_id,
+                            "conversation_id": str(conversation_id),
+                        },
+                    ),
+                )
+                tool_result = None
+                async for item in result_stream:
+                    if isinstance(item, str):
+                        yield item
+                    else:
+                        tool_result = item
+                if tool_result is None:
+                    raise RuntimeError("extract_job_from_text failed without returning result")
+            except Exception:
+                logger.exception("extract_job_from_text tool failed")
+                tool_call = await agent_event_service.mark_failed(
+                    session,
+                    tool_call.id,
+                    error_message="Job text extraction failed. Check the pasted text and provider settings.",
+                )
+                assistant_content = (
+                    "Called 1 tool: Extract job from text, but extraction failed. "
+                    "Check that the pasted text contains a real job description and try again."
+                )
+                agent_metadata_source = "chat_agent_tool_error"
+                yield _sse_event(
+                    "tool_call_failed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "error_message": tool_call.error_message,
+                    },
+                )
+            else:
+                tool_call = await agent_event_service.mark_success(
+                    session,
+                    tool_call.id,
+                    result_summary=tool_result.result_summary,
+                    safe_payload=tool_result.safe_payload,
+                )
+                assistant_content = (
+                    "Called 1 tool: Extract job from text. "
+                    f"{tool_result.result_summary} Open Review Queue to inspect and approve it."
                 )
                 agent_metadata_source = "chat_agent_tool"
                 yield _sse_event(

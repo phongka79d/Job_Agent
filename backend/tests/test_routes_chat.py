@@ -336,6 +336,130 @@ async def test_stream_conversation_events_returns_404_for_missing_conversation(c
 
 
 @pytest.mark.asyncio
+async def test_stream_pasted_job_text_calls_extract_text_tool_and_persists_visible_event(
+    client,
+    db_session,
+    role_profile,
+    monkeypatch,
+):
+    from app.api import routes_chat
+
+    pasted_job = (
+        "Senior AI Engineer\n"
+        "Company: Example Labs\n"
+        "Location: Hanoi\n"
+        "Responsibilities: build LLM evaluation workflows and retrieval systems.\n"
+        "Requirements: Python, FastAPI, LangGraph, vector databases, and applied ML experience.\n"
+        "Benefits: hybrid work and training budget.\n"
+        "Apply by sending your CV."
+    )
+    progress_messages = []
+
+    async def text_handler(request: ToolRequest) -> ToolResult:
+        assert request.name == "extract_job_from_text"
+        assert request.context["role_profile_id"] == role_profile.id
+        assert request.arguments["raw_text"] == pasted_job
+        assert "on_progress" in request.context
+        await request.context["on_progress"]("Extracting structured job data...")
+        progress_messages.append("called")
+        return ToolResult(
+            content="Added 1 job to Review Queue.",
+            result_summary="Added 1 job to Review Queue.",
+            safe_payload={
+                "inserted_jobs": 1,
+                "review_queue_path": "/review",
+                "job_ids": ["job-1"],
+            },
+        )
+
+    def build_registry(session):
+        assert session is db_session
+        return ToolRegistry(overrides={"extract_job_from_text": text_handler})
+
+    monkeypatch.setattr(routes_chat, "build_tool_registry", build_registry)
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={"role_profile_id": role_profile.id, "title": "Session"},
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": pasted_job},
+    )
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": message_response.json()["message"]["id"]},
+    )
+
+    assert response.status_code == 200
+    assert "event: tool_call_started" in response.text
+    assert "event: tool_call_progress" in response.text
+    assert "event: tool_call_completed" in response.text
+    assert "Called 1 tool: Extract job from text." in response.text
+    assert "Senior AI Engineer" not in response.text
+    assert progress_messages == ["called"]
+
+    calls = (
+        await db_session.execute(
+            select(AgentToolCall).where(
+                AgentToolCall.conversation_id == conversation["id"]
+            )
+        )
+    ).scalars().all()
+    assert len(calls) == 1
+    assert calls[0].tool_name == "extract_job_from_text"
+    assert calls[0].status == "success"
+    assert calls[0].input_summary == f"Pasted job text, {len(pasted_job)} characters"
+    assert calls[0].result_summary == "Added 1 job to Review Queue."
+    assert json.loads(calls[0].safe_payload_json) == {
+        "inserted_jobs": 1,
+        "review_queue_path": "/review",
+        "job_ids": ["job-1"],
+    }
+
+    messages_response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/messages"
+    )
+    messages = messages_response.json()["messages"]
+    assert messages[1]["content"] == (
+        "Called 1 tool: Extract job from text. "
+        "Added 1 job to Review Queue. Open Review Queue to inspect and approve it."
+    )
+
+
+@pytest.mark.asyncio
+async def test_stream_short_non_job_message_does_not_call_extract_text_tool(
+    client,
+    role_profile,
+    monkeypatch,
+):
+    from app.api import routes_chat
+
+    llm_client = ChatLLMDouble(answer="I can help with that.")
+    monkeypatch.setattr(routes_chat, "chat_llm_client", llm_client, raising=False)
+    conversation_response = await client.post(
+        "/api/chat/conversations",
+        json={"role_profile_id": role_profile.id, "title": "Session"},
+    )
+    conversation = conversation_response.json()
+    message_response = await client.post(
+        f"/api/chat/conversations/{conversation['id']}/messages",
+        json={"content": "Can you compare my pipeline?"},
+    )
+
+    response = await client.get(
+        f"/api/chat/conversations/{conversation['id']}/stream",
+        params={"after_message_id": message_response.json()["message"]["id"]},
+    )
+
+    assert response.status_code == 200
+    assert "extract_job_from_text" not in response.text
+    assert "I can help with that." in response.text
+    assert llm_client.calls
+
+
+@pytest.mark.asyncio
 async def test_list_tool_calls_returns_serialized_calls_in_order(
     client,
     db_session,
