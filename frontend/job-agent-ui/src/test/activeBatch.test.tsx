@@ -102,6 +102,16 @@ const mockBatchSummary = (batchId: string): BatchSummary => ({
   average_extraction_time_ms: 1200,
 });
 
+function expectNoActiveBatchBadge() {
+  expect(screen.queryByText("Active batch")).not.toBeInTheDocument();
+  expect(screen.queryByText("None")).not.toBeInTheDocument();
+}
+
+function expectActiveBatchBadge(batchId: string) {
+  const badge = screen.getByText("Active batch").closest(".active-batch-badge");
+  expect(badge).toHaveTextContent(batchId);
+}
+
 describe("Active Batch State and Role Isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -132,7 +142,7 @@ describe("Active Batch State and Role Isolation", () => {
     expect(profileSelect.value).toBe("prof-1");
 
     // Initially, there should be no active batch ID
-    expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: None");
+    expectNoActiveBatchBadge();
 
     fireEvent.click(screen.getByTestId("tab-text"));
     fireEvent.change(screen.getByTestId("input-text"), {
@@ -149,7 +159,7 @@ describe("Active Batch State and Role Isolation", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-abc");
+      expectActiveBatchBadge("batch-abc");
     });
 
     // 4. Verify localStorage has batch-abc only for prof-1
@@ -157,12 +167,12 @@ describe("Active Batch State and Role Isolation", () => {
     expect(localStorage.getItem("job-agent.activeBatchId.prof-2")).toBeNull();
     const summaryCallsAfterProfileOneIngestion = vi.mocked(getBatchSummary).mock.calls.length;
 
-    // 5. Switch to prof-2 and verify active batch ID is cleared (becomes None)
+    // 5. Switch to prof-2 and verify the active batch badge is absent
     fireEvent.change(profileSelect, { target: { value: "prof-2" } });
     expect(profileSelect.value).toBe("prof-2");
 
     await waitFor(() => {
-      expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: None");
+      expectNoActiveBatchBadge();
     });
     expect(getBatchSummary).toHaveBeenCalledTimes(summaryCallsAfterProfileOneIngestion);
 
@@ -177,7 +187,7 @@ describe("Active Batch State and Role Isolation", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-xyz");
+      expectActiveBatchBadge("batch-xyz");
     });
     await waitFor(() => {
       expect(getBatchSummary).toHaveBeenLastCalledWith("batch-xyz");
@@ -190,7 +200,7 @@ describe("Active Batch State and Role Isolation", () => {
     // 8. Switch back to prof-1 and verify active batch ID reloads to batch-abc
     fireEvent.change(profileSelect, { target: { value: "prof-1" } });
     await waitFor(() => {
-      expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-abc");
+      expectActiveBatchBadge("batch-abc");
     });
     await waitFor(() => {
       expect(getBatchSummary).toHaveBeenLastCalledWith("batch-abc");
@@ -199,7 +209,7 @@ describe("Active Batch State and Role Isolation", () => {
     // 9. Switch back to prof-2 and verify active batch ID reloads to batch-xyz
     fireEvent.change(profileSelect, { target: { value: "prof-2" } });
     await waitFor(() => {
-      expect(screen.getByText(/Active Batch ID:/)).toHaveTextContent("Active Batch ID: batch-xyz");
+      expectActiveBatchBadge("batch-xyz");
     });
     await waitFor(() => {
       expect(getBatchSummary).toHaveBeenLastCalledWith("batch-xyz");
