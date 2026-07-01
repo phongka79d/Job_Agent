@@ -1,4 +1,3 @@
-import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import {
@@ -12,6 +11,7 @@ import {
 } from "../api/chatClient";
 import ChatComposer from "../components/chat/ChatComposer";
 import ChatMessageList from "../components/chat/ChatMessageList";
+import ConversationToolbar from "../components/chat/ConversationToolbar";
 import ToolCallTimeline from "../components/chat/ToolCallTimeline";
 import type { AgentToolCall, ChatConversation, ChatMessage } from "../types/chat";
 
@@ -24,10 +24,6 @@ interface ConversationState {
   profileId: string;
   generation: number;
   conversation: ChatConversation;
-}
-
-function conversationLabel(conversation: ChatConversation): string {
-  return conversation.title || new Date(conversation.created_at).toLocaleString();
 }
 
 function shouldOpenReviewQueue(toolCalls: AgentToolCall[]): boolean {
@@ -127,7 +123,6 @@ export default function ChatWorkspacePage() {
     }
     const request = createConversation({
       role_profile_id: profileId,
-      title: "Job agent session",
     })
       .then((created) => {
         if (isCurrentRequest(profileId, generation)) {
@@ -243,53 +238,19 @@ export default function ChatWorkspacePage() {
 
   return (
     <section className="chat-workspace">
-      <div className="chat-history" aria-label="Chat history">
-        <button
-          type="button"
-          className="btn-secondary chat-history-new"
-          onClick={handleNewConversation}
-          disabled={!activeProfileId || isSending}
-        >
-          <Plus size={14} /> New chat
-        </button>
-        <div className="chat-history-list">
-          {conversations.map((historyConversation) => {
-            const active = conversation?.conversation.id === historyConversation.id;
-            const label = conversationLabel(historyConversation);
-            return (
-              <div
-                key={historyConversation.id}
-                className={`chat-history-item${active ? " chat-history-item-active" : ""}`}
-              >
-                <button
-                  type="button"
-                  className="chat-history-select"
-                  onClick={() => void handleSelectConversation(historyConversation)}
-                  disabled={isSending}
-                >
-                  {label}
-                </button>
-                <button
-                  type="button"
-                  className="chat-history-delete"
-                  aria-label={`Delete ${label}`}
-                  onClick={() => void handleDeleteConversation(historyConversation)}
-                  disabled={isSending}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+      <ConversationToolbar
+        conversations={conversations}
+        activeConversationId={conversation?.conversation.id ?? null}
+        disabled={!activeProfileId || isSending}
+        onSelect={(selected) => void handleSelectConversation(selected)}
+        onCreate={handleNewConversation}
+        onDelete={(target) => void handleDeleteConversation(target)}
+      />
+      <div className="chat-transcript">
+        <ChatMessageList messages={messages} />
+        <ToolCallTimeline toolCalls={toolCalls} />
       </div>
-      <ToolCallTimeline toolCalls={toolCalls} />
-      <ChatMessageList messages={messages} />
-      {error ? (
-        <div className="chat-error" role="alert">
-          {error}
-        </div>
-      ) : null}
+      {error ? <div className="chat-error" role="alert">{error}</div> : null}
       <ChatComposer disabled={!activeProfileId || isSending} onSend={handleSend} />
     </section>
   );

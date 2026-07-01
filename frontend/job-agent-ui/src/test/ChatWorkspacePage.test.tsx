@@ -55,8 +55,8 @@ const searchToolCall: AgentToolCall = {
   assistant_message_id: null,
   tool_name: "search_jobs",
   status: "success",
-  input_summary: "Tìm kiếm việc làm: AI Engineer Intern",
-  result_summary: "Đã đưa 2 job vào Review Queue.",
+  input_summary: "T\u00ecm ki\u1ebfm vi\u1ec7c l\u00e0m: AI Engineer Intern",
+  result_summary: "\u0110\u00e3 \u0111\u01b0a 2 job v\u00e0o Review Queue.",
   safe_payload_json: "{\"inserted_jobs\":2,\"review_queue_path\":\"/review\"}",
   error_message: null,
   started_at: "2026-01-01T00:00:00Z",
@@ -115,7 +115,6 @@ describe("ChatWorkspacePage", () => {
     await waitFor(() => {
       expect(createConversation).toHaveBeenCalledWith({
         role_profile_id: "profile-1",
-        title: "Job agent session",
       });
       expect(sendChatMessage).toHaveBeenCalledWith("conv-1", { content: "Find jobs" });
       expect(streamChatResponse).toHaveBeenCalledWith("/stream");
@@ -212,7 +211,7 @@ describe("ChatWorkspacePage", () => {
         id: "msg-1",
         conversation_id: "conv-1",
         role: "user",
-        content: "Bắt đầu tìm việc AI Engineer Intern",
+        content: "B\u1eaft \u0111\u1ea7u t\u00ecm vi\u1ec7c AI Engineer Intern",
         token_count: null,
         metadata_json: null,
         created_at: "2026-01-01T00:00:00Z",
@@ -225,14 +224,14 @@ describe("ChatWorkspacePage", () => {
     render(<ChatWorkspacePage />);
 
     fireEvent.change(screen.getByLabelText("Message"), {
-      target: { value: "Bắt đầu tìm việc AI Engineer Intern" },
+      target: { value: "B\u1eaft \u0111\u1ea7u t\u00ecm vi\u1ec7c AI Engineer Intern" },
     });
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
       expect(listAgentToolCalls).toHaveBeenCalledWith("conv-1");
       expect(screen.getByText("search_jobs")).toBeInTheDocument();
-      expect(screen.getByText("Đã đưa 2 job vào Review Queue.")).toBeInTheDocument();
+      expect(screen.getByText("\u0110\u00e3 \u0111\u01b0a 2 job v\u00e0o Review Queue.")).toBeInTheDocument();
       expect(navigate).toHaveBeenCalledWith("/review");
     });
   });
@@ -275,7 +274,6 @@ describe("ChatWorkspacePage", () => {
     await waitFor(() => {
       expect(createConversation).toHaveBeenCalledWith({
         role_profile_id: "profile-1",
-        title: "Job agent session",
       });
     });
 
@@ -324,10 +322,10 @@ describe("ChatWorkspacePage", () => {
 
     await waitFor(() => {
       expect(listConversations).toHaveBeenCalledWith("profile-1");
-      expect(screen.getByRole("button", { name: "Existing chat" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "Existing chat" })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Existing chat" }));
+    fireEvent.change(screen.getByLabelText("Chat history"), { target: { value: "conv-existing" } });
 
     await waitFor(() => {
       expect(listConversationMessages).toHaveBeenCalledWith("conv-existing");
@@ -345,14 +343,14 @@ describe("ChatWorkspacePage", () => {
     render(<ChatWorkspacePage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Existing chat" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "Existing chat" })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: "Existing chat" }));
+    fireEvent.change(screen.getByLabelText("Chat history"), { target: { value: "conv-existing" } });
     await waitFor(() => {
       expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /delete existing chat/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete current chat" }));
 
     await waitFor(() => {
       expect(deleteConversation).toHaveBeenCalledWith("conv-existing");
