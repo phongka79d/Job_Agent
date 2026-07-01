@@ -38,19 +38,21 @@ function App() {
 
 
   const sidebar = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1 }}>
-      <RoleProfilePanel
-        activeProfile={activeProfile}
-        onProfileChange={handleProfileChange}
-      />
+    <RoleProfilePanel
+      activeProfile={activeProfile}
+      onProfileChange={handleProfileChange}
+    />
+  );
 
+  const context = (
+    <div className="workspace-context-content">
       <ProfileDocumentPanel activeProfileId={activeProfile?.id || null} />
-      
+
       <IngestionPanel
         activeProfileId={activeProfile?.id || null}
         onIngestionSuccess={handleIngestionSuccess}
       />
-      
+
       <BatchMetrics
         activeProfileId={activeProfile?.id || null}
         activeBatchId={activeBatchId}
@@ -62,7 +64,18 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppShell sidebarContent={sidebar} activeBatchId={activeBatchId} activeProfileId={activeProfile?.id || null} triggerMetricsRefresh={triggerMetricsRefresh} />}>
+        <Route
+          path="/"
+          element={(
+            <AppShell
+              sidebarContent={sidebar}
+              contextContent={context}
+              activeBatchId={activeBatchId}
+              activeProfileId={activeProfile?.id || null}
+              triggerMetricsRefresh={triggerMetricsRefresh}
+            />
+          )}
+        >
           <Route index element={<ChatWorkspacePage />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="dashboard" element={<DashboardPage />} />

@@ -3,25 +3,31 @@ import { Briefcase, ClipboardList, Layers, MessageSquare } from 'lucide-react';
 
 interface AppShellProps {
   sidebarContent: React.ReactNode;
+  contextContent: React.ReactNode;
   activeBatchId?: string | null;
   activeProfileId?: string | null;
   triggerMetricsRefresh?: () => void;
 }
 
-export default function AppShell({ sidebarContent, activeBatchId, activeProfileId, triggerMetricsRefresh }: AppShellProps) {
+export default function AppShell({
+  sidebarContent,
+  contextContent,
+  activeBatchId,
+  activeProfileId,
+  triggerMetricsRefresh,
+}: AppShellProps) {
   return (
     <div className="app-container">
-      <aside className="sidebar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color)' }}>
-          <Briefcase size={20} color="var(--accent)" />
-          <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0, letterSpacing: '-0.025em' }}>Job Agent MVP</h1>
-        </div>
-        
+      <aside className="workspace-sidebar">
         {sidebarContent}
       </aside>
 
-      <main className="main-content">
-        <header className="top-nav">
+      <main className="workspace-main">
+        <header className="workspace-topbar">
+          <div className="workspace-brand">
+            <Briefcase size={20} color="var(--accent)" />
+            <span>Agent Workspace</span>
+          </div>
           <nav className="top-nav-tabs">
             <NavLink
               to="/"
@@ -43,19 +49,26 @@ export default function AppShell({ sidebarContent, activeBatchId, activeProfileI
               className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}
             >
               <Layers size={16} />
-              Tracked Jobs Dashboard
+              Tracked Jobs
             </NavLink>
           </nav>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
-            Active Batch ID: <span className="tabular-metrics" style={{ color: activeBatchId ? 'var(--accent)' : 'var(--text-secondary)' }}>{activeBatchId || 'None'}</span>
-          </div>
+
+          {activeBatchId && (
+            <div className="active-batch-badge">
+              <span>Active batch</span>
+              <strong className="tabular-metrics">{activeBatchId}</strong>
+            </div>
+          )}
         </header>
-        
-        <section className="content-viewport">
+
+        <section className="workspace-route">
           <Outlet context={{ activeProfileId, activeBatchId, triggerMetricsRefresh }} />
         </section>
       </main>
+
+      <aside className="workspace-context">
+        {contextContent}
+      </aside>
     </div>
   );
 }
