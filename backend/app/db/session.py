@@ -12,6 +12,7 @@ from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.core.config import settings
 from app.db.models import Base
+from app.db.sqlite_migrations import apply_sqlite_migrations
 
 if settings.DATABASE_URL.startswith("sqlite"):
     db_path = Path(settings.SQLITE_DB_PATH)
@@ -70,3 +71,4 @@ async def init_db() -> None:
         
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await apply_sqlite_migrations(conn)
