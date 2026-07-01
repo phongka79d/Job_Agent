@@ -263,3 +263,34 @@ class ChatMessage(Base):
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[created_timestamp]
+
+
+class AgentToolCall(Base):
+    """Sanitized visible tool call event persisted for chat UI."""
+    __tablename__ = "agent_tool_calls"
+
+    __table_args__ = (
+        Index("idx_agent_tool_calls_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[uuid_pk]
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("chat_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    assistant_message_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("chat_messages.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    tool_name: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    input_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    safe_payload_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]

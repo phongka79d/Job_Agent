@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.api.routes_role_profiles import SessionDep
 from app.api.schemas import (
+    AgentToolCallListResponse,
     ChatConversationCreateRequest,
     ChatConversationListResponse,
     ChatConversationResponse,
@@ -17,11 +18,13 @@ from app.api.schemas import (
     ChatMessageListResponse,
 )
 from app.db.models import ChatConversation, RoleProfile
+from app.services.agent_event_service import AgentEventService
 from app.services.chat_service import ChatService
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 chat_service = ChatService()
+agent_event_service = AgentEventService()
 
 
 async def _require_profile(session: SessionDep, role_profile_id: str) -> None:
@@ -99,6 +102,22 @@ async def list_messages(
         limit=limit,
     )
     return ChatMessageListResponse(messages=messages)
+
+
+@router.get(
+    "/conversations/{conversation_id}/tool-calls",
+    response_model=AgentToolCallListResponse,
+)
+async def list_tool_calls(
+    conversation_id: UUID,
+    session: SessionDep,
+) -> AgentToolCallListResponse:
+    await _require_conversation(session, str(conversation_id))
+    tool_calls = await agent_event_service.list_tool_calls(
+        session,
+        conversation_id=str(conversation_id),
+    )
+    return AgentToolCallListResponse(tool_calls=tool_calls)
 
 
 @router.post(

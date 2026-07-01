@@ -259,6 +259,26 @@ class ChatMessageCreateResponse(ApiSchema):
     stream_url: str
 
 
+class AgentToolCallResponse(ApiSchema):
+    id: UUID
+    conversation_id: UUID
+    assistant_message_id: UUID | None
+    tool_name: str
+    status: str
+    input_summary: str
+    result_summary: str | None
+    safe_payload_json: str | None
+    error_message: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentToolCallListResponse(ApiSchema):
+    tool_calls: list[AgentToolCallResponse] = Field(default_factory=list)
+
+
 def _parse_string_list(value: Any) -> list[str]:
     if value is None:
         return []
