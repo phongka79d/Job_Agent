@@ -23,7 +23,7 @@ class BudgetSelection:
 
 class SimpleTokenCounter:
     def count(self, text: str) -> int:
-        return len([part for part in text.split() if part])
+        return len(text.split())
 
 
 class TokenBudgetService:
@@ -31,23 +31,27 @@ class TokenBudgetService:
         self.max_tokens = max_tokens
 
     def select(self, items: list[BudgetItem]) -> BudgetSelection:
-        required = [item for item in items if item.required]
+        indexed_items = list(enumerate(items))
+        required = [(index, item) for index, item in indexed_items if item.required]
         optional = sorted(
-            [item for item in items if not item.required],
-            key=lambda item: item.priority,
+            [(index, item) for index, item in indexed_items if not item.required],
+            key=lambda indexed_item: indexed_item[1].priority,
             reverse=True,
         )
-        selected: list[BudgetItem] = []
+        selected: list[tuple[int, BudgetItem]] = []
         dropped: list[str] = []
         total = 0
 
-        for item in required + optional:
+        for index, item in required + optional:
             if total + item.tokens <= self.max_tokens:
-                selected.append(item)
+                selected.append((index, item))
                 total += item.tokens
             else:
                 dropped.append(item.key)
 
-        original_order = {item.key: index for index, item in enumerate(items)}
-        selected.sort(key=lambda item: original_order[item.key])
-        return BudgetSelection(items=selected, total_tokens=total, dropped_keys=dropped)
+        selected.sort(key=lambda indexed_item: indexed_item[0])
+        return BudgetSelection(
+            items=[item for _, item in selected],
+            total_tokens=total,
+            dropped_keys=dropped,
+        )
