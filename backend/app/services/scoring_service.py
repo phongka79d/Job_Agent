@@ -414,3 +414,29 @@ def build_role_query_text(role_profile: Any) -> str:
         parts.append(f"Resume/Profile: {str(resume_text).strip()}")
         
     return "\n".join(parts)
+
+
+def build_role_query_text_with_cv_evidence(role_profile: Any, active_cv_text: str | None) -> str:
+    """Build profile embedding text with active CV evidence as the primary source."""
+    if not active_cv_text or not str(active_cv_text).strip():
+        return build_role_query_text(role_profile)
+
+    target_role = _get_field(role_profile, "target_role")
+    level = _get_field(role_profile, "level")
+    location = _get_field(role_profile, "location")
+    accept_remote = _get_field(role_profile, "accept_remote")
+    skills_list = _parse_list_field(_get_field(role_profile, "skills"))
+
+    parts: list[str] = []
+    if target_role and str(target_role).strip():
+        parts.append(f"Target role: {str(target_role).strip()}")
+    if level and str(level).strip():
+        parts.append(f"Level: {str(level).strip()}")
+    if location and str(location).strip():
+        parts.append(f"Location: {str(location).strip()}")
+    if accept_remote:
+        parts.append("Remote acceptable")
+    if skills_list:
+        parts.append(f"Skills: {', '.join(skills_list)}")
+    parts.append(f"Active CV evidence:\n{str(active_cv_text).strip()}")
+    return "\n".join(parts)

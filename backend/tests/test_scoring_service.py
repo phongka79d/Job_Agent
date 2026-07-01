@@ -256,3 +256,26 @@ def test_build_role_query_text():
         "Skills: Python, FastAPI"
     )
     assert build_role_query_text(profile_obj) == expected_obj_text
+
+
+def test_build_role_query_text_with_cv_evidence_prefers_active_cv_text():
+    from app.services.scoring_service import build_role_query_text_with_cv_evidence
+
+    profile = {
+        "target_role": "AI Engineer",
+        "level": "Intern",
+        "location": "Hanoi",
+        "accept_remote": True,
+        "skills": ["Python"],
+        "resume_text": "Legacy resume text",
+    }
+
+    text = build_role_query_text_with_cv_evidence(
+        profile,
+        active_cv_text="Active CV evidence with FastAPI and RAG projects",
+    )
+
+    assert "Active CV evidence with FastAPI and RAG projects" in text
+    assert "Legacy resume text" not in text
+    assert "Target role: AI Engineer" in text
+    assert "Skills: Python" in text

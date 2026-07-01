@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import ChatConversation, ChatMessage, MemorySummary, RoleProfile
+from app.db.models import ChatConversation, ChatMessage, MemorySummary, ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion, RoleProfile
 from app.services.token_budget_service import BudgetItem, SimpleTokenCounter, TokenBudgetService
 
 
@@ -77,6 +77,20 @@ class ChatMemoryService:
                 priority=75,
             )
         )
+        active_cv_text = await self._get_active_cv_context(
+            session,
+            role_profile_id=conversation.role_profile_id,
+            current_user_message=current_user_message,
+        )
+        if active_cv_text:
+            items.append(
+                BudgetItem(
+                    key="active_cv",
+                    text=active_cv_text,
+                    tokens=self.token_counter.count(active_cv_text),
+                    priority=78,
+                )
+            )
         for message in messages:
             text = f"{message.role}: {message.content}"
             items.append(
@@ -121,3 +135,59 @@ class ChatMemoryService:
             .limit(40)
         )
         return list(reversed(result.scalars().all()))
+
+    async def _get_active_cv_context(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        current_user_message: str,
+    ) -> str | None:
+        profile = await session.get(RoleProfile, role_profile_id)
+        if profile is None or profile.active_cv_document_id is None or profile.active_cv_version_id is None:
+            return None
+        document = await session.get(ProfileDocument, profile.active_cv_document_id)
+        version = await session.get(ProfileDocumentVersion, profile.active_cv_version_id)
+        if document is None or version is None:
+            return None
+        chunks = await self._get_active_cv_chunks(
+            session,
+            role_profile_id=role_profile_id,
+            document_id=document.id,
+            version_id=version.id,
+            query=current_user_message,
+        )
+        if not chunks:
+            return f"Active CV: {document.original_filename}\nNo extracted active CV chunks available."
+        body = "\n\n".join(chunk.text for chunk in chunks)
+        return f"Active CV: {document.original_filename}\nVersion: {version.version_number}\n{body}"
+
+    async def _get_active_cv_chunks(
+        self,
+        session: AsyncSession,
+        *,
+        role_profile_id: str,
+        document_id: str,
+        version_id: str,
+        query: str,
+    ) -> list[ProfileDocumentChunk]:
+        result = await session.execute(
+            select(ProfileDocumentChunk)
+            .where(ProfileDocumentChunk.role_profile_id == role_profile_id)
+            .where(ProfileDocumentChunk.document_id == document_id)
+            .where(ProfileDocumentChunk.version_id == version_id)
+            .order_by(ProfileDocumentChunk.chunk_index.asc(), ProfileDocumentChunk.id.asc())
+            .limit(12)
+        )
+        chunks = list(result.scalars())
+        terms = [term.lower() for term in query.split() if len(term) >= 3]
+        if not terms:
+            return chunks[:5]
+
+        def score(chunk: ProfileDocumentChunk) -> int:
+            text = chunk.text.lower()
+            return sum(1 for term in terms if term in text)
+
+        ranked = sorted(chunks, key=score, reverse=True)
+        matches = [chunk for chunk in ranked if score(chunk) > 0]
+        return (matches or chunks)[:5]

@@ -17,13 +17,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import constants
-from app.db.models import Application, JobPost, RoleProfile
+from app.db.models import Application, JobPost, ProfileDocumentChunk, RoleProfile
 from app.services.dedup_service import build_dedup_key, decide_duplicate_action
 from app.services.embedding_service import EmbeddingService
 from app.services.qdrant_service import QdrantService
 from app.services.scoring_service import (
     build_embedding_text,
     build_role_query_text,
+    build_role_query_text_with_cv_evidence,
     calculate_base_score,
     calculate_final_scores,
     calculate_level_score,
@@ -137,6 +138,28 @@ def _parse_json_list(value: Any) -> list[str]:
     return []
 
 
+async def _load_active_cv_text_for_scoring(
+    session: AsyncSession,
+    role_profile: RoleProfile,
+    *,
+    max_chunks: int = 12,
+) -> str | None:
+    if role_profile.active_cv_document_id is None or role_profile.active_cv_version_id is None:
+        return None
+    result = await session.execute(
+        select(ProfileDocumentChunk)
+        .where(ProfileDocumentChunk.role_profile_id == role_profile.id)
+        .where(ProfileDocumentChunk.document_id == role_profile.active_cv_document_id)
+        .where(ProfileDocumentChunk.version_id == role_profile.active_cv_version_id)
+        .order_by(ProfileDocumentChunk.chunk_index.asc(), ProfileDocumentChunk.id.asc())
+        .limit(max_chunks)
+    )
+    chunks = list(result.scalars())
+    if not chunks:
+        return None
+    return "\n\n".join(chunk.text for chunk in chunks)
+
+
 async def _score_committed_job(
     session: AsyncSession,
     job_post: JobPost,
@@ -144,7 +167,8 @@ async def _score_committed_job(
     embedding_service: Any,
     qdrant_service: Any,
 ) -> tuple[int, bool]:
-    role_query_text = build_role_query_text(role_profile)
+    active_cv_text = await _load_active_cv_text_for_scoring(session, role_profile)
+    role_query_text = build_role_query_text_with_cv_evidence(role_profile, active_cv_text)
     job_embedding_text = job_post.embedding_text or build_embedding_text(job_post)
     job_post.embedding_text = job_embedding_text
 
