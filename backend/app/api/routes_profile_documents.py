@@ -15,6 +15,7 @@ from app.api.schemas import (
     ActivateCvVersionRequest,
     ActiveCvResponse,
     CvDraftCreateRequest,
+    CvDraftExportRequest,
     CvDraftListResponse,
     CvDraftPreviewResponse,
     CvDraftResponse,
@@ -32,6 +33,7 @@ from app.services.profile_cv_draft_service import (
     CreateCvSuggestionRequest,
     ProfileCvDraftService,
 )
+from app.services.profile_cv_export_service import ExportCvDraftRequest, ProfileCvExportService
 from app.services.profile_document_service import ProfileDocumentFileInfo, ProfileDocumentService
 
 
@@ -41,6 +43,7 @@ router = APIRouter(
 )
 profile_document_service = ProfileDocumentService()
 profile_cv_draft_service = ProfileCvDraftService()
+profile_cv_export_service = ProfileCvExportService()
 
 
 async def _require_profile(session: SessionDep, role_profile_id: str) -> RoleProfile:
@@ -394,6 +397,37 @@ async def preview_cv_draft(
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return CvDraftPreviewResponse(**preview)
+
+
+@router.post("/{document_id}/drafts/{draft_id}/export-pdf", response_model=ProfileDocumentVersionResponse)
+async def export_cv_draft_pdf(
+    role_profile_id: UUID,
+    document_id: UUID,
+    draft_id: UUID,
+    request: CvDraftExportRequest,
+    session: SessionDep,
+) -> ProfileDocumentVersionResponse:
+    await _require_profile(session, str(role_profile_id))
+    if not request.confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Exporting a CV draft to PDF requires confirmation.",
+        )
+    try:
+        return await profile_cv_export_service.export_draft_to_pdf(
+            session,
+            ExportCvDraftRequest(
+                role_profile_id=str(role_profile_id),
+                document_id=str(document_id),
+                draft_id=str(draft_id),
+                confirmed=request.confirmed,
+                created_by="ai",
+            ),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 active_cv_router = APIRouter(

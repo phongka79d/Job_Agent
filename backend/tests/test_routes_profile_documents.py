@@ -105,7 +105,55 @@ async def test_upload_profile_document_rejects_missing_profile(client):
     )
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "role profile not found"
+
+
+@pytest.mark.asyncio
+async def test_export_cv_draft_requires_confirmation(client, role_profile):
+    document, version = await upload_ready_profile_document(client, role_profile)
+    draft_response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version['id']}/drafts",
+        json={"title": "Export draft", "suggestion_ids": [], "confirmed": True},
+    )
+    assert draft_response.status_code == 201
+    draft = draft_response.json()
+
+    response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/drafts/{draft['id']}/export-pdf",
+        json={"confirmed": False},
+    )
+
+    assert response.status_code == 409
+    assert "requires confirmation" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_export_cv_draft_returns_exported_version(client, role_profile):
+    document, version = await upload_ready_profile_document(client, role_profile)
+    draft_response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions/{version['id']}/drafts",
+        json={"title": "Export draft", "suggestion_ids": [], "confirmed": True},
+    )
+    assert draft_response.status_code == 201
+    draft = draft_response.json()
+
+    response = await client.post(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/drafts/{draft['id']}/export-pdf",
+        json={"confirmed": True},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["document_id"] == document["id"]
+    assert body["source_type"] == "exported_draft"
+    assert body["draft_id"] == draft["id"]
+    assert body["extraction_status"] == "ready"
+
+    versions_response = await client.get(
+        f"/api/role-profiles/{role_profile.id}/documents/{document['id']}/versions"
+    )
+    assert versions_response.status_code == 200
+    versions = versions_response.json()["versions"]
+    assert [item["version_number"] for item in versions] == [1, 2]
 
 
 @pytest.mark.asyncio

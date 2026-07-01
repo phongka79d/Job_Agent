@@ -306,6 +306,8 @@ class ProfileDocumentVersionResponse(ApiSchema):
     role_profile_id: UUID
     version_number: int
     source_type: str
+    parent_version_id: UUID | None = None
+    draft_id: UUID | None = None
     display_name: str
     filename: str
     mime_type: str
@@ -403,6 +405,10 @@ class CvDraftResponse(ApiSchema):
 
 class CvDraftListResponse(ApiSchema):
     drafts: list[CvDraftResponse] = Field(default_factory=list)
+
+
+class CvDraftExportRequest(ApiSchema):
+    confirmed: bool = False
 
 
 class CvDraftPreviewResponse(ApiSchema):
