@@ -17,18 +17,18 @@ export default function AppShell({
   triggerMetricsRefresh,
 }: AppShellProps) {
   return (
-    <div className="app-container">
-      <aside className="workspace-sidebar">
+    <div className="workspace-shell">
+      <aside className="workspace-sidebar" aria-label="Profile and navigation">
         {sidebarContent}
       </aside>
 
       <main className="workspace-main">
         <header className="workspace-topbar">
-          <div className="workspace-brand">
+          <NavLink to="/" className="workspace-brand">
             <Briefcase size={20} color="var(--accent)" />
             <span>Agent Workspace</span>
-          </div>
-          <nav className="top-nav-tabs">
+          </NavLink>
+          <nav className="workspace-tabs" aria-label="Workspace">
             <NavLink
               to="/"
               end
@@ -66,7 +66,7 @@ export default function AppShell({
         </section>
       </main>
 
-      <aside className="workspace-context">
+      <aside className="workspace-context" aria-label="Workspace context">
         {contextContent}
       </aside>
     </div>

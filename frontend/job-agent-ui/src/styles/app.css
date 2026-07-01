@@ -18,9 +18,10 @@
   --text-danger: #ffb4ab;
   --text-success: #27d8ff;
 
-  --font-display: 'Sora', sans-serif;
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Space Grotesk', sans-serif;
+  --font-heading: "Sora", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-label: "Space Grotesk", sans-serif;
+  --font-mono: "Space Grotesk", monospace;
 
   --radius-lg: 8px;
   --radius-md: 6px;
@@ -57,7 +58,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   margin: 0;
   font-weight: 600;
 }
@@ -94,7 +95,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Layout Utilities */
-.app-container {
+.workspace-shell {
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(280px, 320px);
   min-height: 100vh;
@@ -135,7 +136,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
-  .app-container {
+  .workspace-shell {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(480px, 1fr) auto;
     height: auto;
@@ -175,13 +176,14 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 8px;
   color: var(--text-primary);
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 15px;
   font-weight: 600;
+  text-decoration: none;
   white-space: nowrap;
 }
 
-.top-nav-tabs {
+.workspace-tabs {
   display: flex;
   gap: 8px;
   height: 100%;
@@ -196,6 +198,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 6px 16px;
   color: var(--text-muted);
   text-decoration: none;
+  font-family: var(--font-label);
   font-size: 14px;
   font-weight: 500;
   border-radius: var(--radius-md);
@@ -223,6 +226,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   background: var(--surface-container);
+  font-family: var(--font-label);
   font-size: 12px;
   white-space: nowrap;
 }

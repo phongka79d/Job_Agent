@@ -46,12 +46,24 @@ describe('AppShell', () => {
   it('renders the three workspace regions, routes, links, and real shell values', () => {
     const { container } = renderShell('batch-from-api');
 
-    expect(container.querySelector('aside.workspace-sidebar')).toHaveTextContent('Sidebar content');
-    expect(container.querySelector('main.workspace-main')).toHaveTextContent(
+    expect(container.firstElementChild).toHaveClass('workspace-shell');
+
+    const sidebar = screen.getByRole('complementary', { name: 'Profile and navigation' });
+    const main = screen.getByRole('main');
+    const context = screen.getByRole('complementary', { name: 'Workspace context' });
+    const navigation = screen.getByRole('navigation', { name: 'Workspace' });
+
+    expect(sidebar).toHaveClass('workspace-sidebar');
+    expect(sidebar).toHaveTextContent('Sidebar content');
+    expect(main).toHaveClass('workspace-main');
+    expect(main).toHaveTextContent(
       'Route content for profile-from-api and batch-from-api',
     );
-    expect(container.querySelector('aside.workspace-context')).toHaveTextContent('Context content');
+    expect(context).toHaveClass('workspace-context');
+    expect(context).toHaveTextContent('Context content');
+    expect(navigation).toHaveClass('workspace-tabs');
 
+    expect(screen.getByRole('link', { name: 'Agent Workspace' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Agent Chat' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Review Queue' })).toHaveAttribute('href', '/review');
     expect(screen.getByRole('link', { name: 'Tracked Jobs' })).toHaveAttribute('href', '/dashboard');
