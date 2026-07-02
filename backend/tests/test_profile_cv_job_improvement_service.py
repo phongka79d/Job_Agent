@@ -163,6 +163,78 @@ async def test_generate_suggestions_requires_job_in_profile(db_session):
 
 
 @pytest.mark.asyncio
+async def test_scored_job_to_draft_keeps_active_cv_unchanged(
+    db_session,
+):
+    import json
+    from uuid import uuid4
+
+    from app.db.models import JobPost, ProfileDocumentChunk
+    from app.services.profile_cv_draft_service import CreateCvDraftRequest, ProfileCvDraftService
+
+    profile, document, version = await create_active_cv(db_session)
+    db_session.add(
+        ProfileDocumentChunk(
+            role_profile_id=profile.id,
+            document_id=document.id,
+            version_id=version.id,
+            source_type="profile_cv",
+            chunk_index=0,
+            text="Built FastAPI APIs and LangGraph workflows.",
+            token_count=8,
+            qdrant_point_id="point-e2e-1",
+        )
+    )
+    job = JobPost(
+        batch_id=str(uuid4()),
+        role_profile_id=profile.id,
+        title="AI Engineer Intern",
+        company="Example",
+        requirements="FastAPI",
+        skills=json.dumps(["FastAPI"]),
+        source_platform="manual_text",
+        parse_status="success",
+        jd_status="full_jd",
+        extraction_status="success",
+        should_score_similarity=True,
+        skill_overlap_score=0.5,
+        final_score=0.7,
+        final_score_percent=70,
+        status="pending_review",
+    )
+    db_session.add(job)
+    await db_session.commit()
+    await db_session.refresh(job)
+
+    generation = await ProfileCvJobImprovementService().generate_suggestions(
+        db_session,
+        GenerateCvImprovementsRequest(role_profile_id=profile.id, job_id=job.id),
+    )
+    wording_only_ids = [
+        suggestion.id for suggestion in generation.suggestions if suggestion.edit_kind == "wording_only"
+    ]
+    assert wording_only_ids
+
+    draft = await ProfileCvDraftService().create_draft(
+        db_session,
+        CreateCvDraftRequest(
+            role_profile_id=profile.id,
+            document_id=document.id,
+            base_version_id=version.id,
+            title="Draft from scored job",
+            suggestion_ids=wording_only_ids,
+            confirmed=True,
+        ),
+    )
+
+    assert draft.status == "draft"
+    await db_session.refresh(profile)
+    await db_session.refresh(document)
+    assert profile.active_cv_version_id == version.id
+    assert document.active_version_id == version.id
+
+
+@pytest.mark.asyncio
 async def test_generate_suggestions_requires_active_cv(db_session):
     profile, _, _ = await create_active_cv(db_session, with_active=False)
     job = JobPost(
