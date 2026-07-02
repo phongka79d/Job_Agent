@@ -4,10 +4,10 @@ from unittest.mock import patch
 import pytest
 from pydantic import SecretStr
 
+from app.prompts.chat import build_chat_prompt
 from app.services.chat_llm_client import (
     ChatLLMProviderError,
     OpenAIChatLLMClient,
-    build_chat_prompt,
 )
 
 

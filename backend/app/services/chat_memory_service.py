@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import ChatConversation, ChatMessage, MemorySummary, ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion, RoleProfile
+from app.prompts.chat import CHAT_MEMORY_SYSTEM_CONTEXT
 from app.services.token_budget_service import BudgetItem, SimpleTokenCounter, TokenBudgetService
 
 
@@ -43,7 +44,7 @@ class ChatMemoryService:
         items = [
             BudgetItem(
                 key="system",
-                text="System: You are an AI job agent. Use tools for factual job data.",
+                text=CHAT_MEMORY_SYSTEM_CONTEXT,
                 tokens=12,
                 priority=100,
                 required=True,

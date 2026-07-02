@@ -1,4 +1,26 @@
+from app.prompts.chat import (
+    CHAT_MEMORY_SYSTEM_CONTEXT,
+    CHAT_SYSTEM_PROMPT,
+    build_chat_prompt,
+)
 from app.prompts.job_extraction import build_extraction_prompt, build_repair_prompt
+
+
+def test_chat_prompt_uses_canonical_system_prompt() -> None:
+    prompt = build_chat_prompt(
+        user_message="Compare this job",
+        working_memory="Profile skills: Python",
+    )
+
+    assert prompt.startswith(CHAT_SYSTEM_PROMPT)
+    assert "Profile skills: Python" in prompt
+    assert "Compare this job" in prompt
+
+
+def test_chat_memory_system_context_preserves_tool_grounding_rule() -> None:
+    assert CHAT_MEMORY_SYSTEM_CONTEXT == (
+        "System: You are an AI job agent. Use tools for factual job data."
+    )
 
 
 def test_extraction_prompt_preserves_grounding_and_source_context() -> None:

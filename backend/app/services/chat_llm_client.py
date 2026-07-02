@@ -8,6 +8,7 @@ from pydantic import SecretStr
 from langchain_openai import ChatOpenAI
 
 from app.core.config import settings
+from app.prompts.chat import build_chat_prompt
 
 
 class ChatLLMProviderError(Exception):
@@ -62,21 +63,6 @@ class OpenAIChatLLMClient(ChatLLMClientProtocol):
         if not content.strip():
             raise ChatLLMProviderError("Chat LLM returned an empty response.")
         return content.strip()
-
-
-def build_chat_prompt(*, user_message: str, working_memory: str) -> str:
-    return (
-        "You are an AI Job Agent inside a user's job-search workspace.\n"
-        "Use the provided working memory as your only source for saved profile, "
-        "conversation, job, and application facts.\n"
-        "Do not invent job listings, scores, profile facts, URLs, or application statuses.\n"
-        "If the user asks for an action that requires a tool that has not run yet, "
-        "say exactly what action/tool is needed next.\n"
-        "Keep answers direct and useful.\n\n"
-        f"Working memory:\n{working_memory}\n\n"
-        f"User message:\n{user_message}"
-    )
-
 
 def _message_content(response: Any) -> str:
     content = getattr(response, "content", response)
