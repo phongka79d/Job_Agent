@@ -419,3 +419,17 @@ class CvDraftPreviewResponse(ApiSchema):
     recommendation: str | None = None
     sections: list[dict[str, Any]] = Field(default_factory=list)
     edits: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class GenerateJobCvImprovementsRequest(ApiSchema):
+    role_profile_id: UUID
+    max_suggestions: int = Field(default=6, ge=1, le=12)
+
+
+class GenerateJobCvImprovementsResponse(ApiSchema):
+    job_id: UUID
+    role_profile_id: UUID
+    document_id: UUID
+    version_id: UUID
+    suggestion_count: int
+    suggestions: list[CvImprovementSuggestionResponse] = Field(default_factory=list)

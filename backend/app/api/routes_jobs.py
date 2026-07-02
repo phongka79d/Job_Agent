@@ -12,6 +12,8 @@ from sqlalchemy import select
 
 from app.api.routes_role_profiles import SessionDep
 from app.api.schemas import (
+    GenerateJobCvImprovementsRequest,
+    GenerateJobCvImprovementsResponse,
     IngestionResponse,
     JobListResponse,
     JobResponse,
@@ -27,6 +29,7 @@ from app.db.models import JobPost
 from app.services.extraction_service import extract_from_url
 from app.services.job_text_ingestion_workflow import ingest_raw_job_text
 from app.services.job_search_workflow import ingest_search_jobs
+from app.services.profile_cv_job_improvement_service import GenerateCvImprovementsRequest, ProfileCvJobImprovementService
 from app.services.job_processing_service import (
     InvalidStatusTransition,
     JobProcessingResult,
@@ -47,6 +50,7 @@ LimitQuery = Annotated[
 ]
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+profile_cv_job_improvement_service = ProfileCvJobImprovementService()
 
 
 async def _mutate_job_status(
@@ -269,6 +273,39 @@ async def list_dashboard_jobs(
         .limit(limit)
     )
     return JobListResponse(jobs=list(result.scalars()))
+
+
+@router.post(
+    "/{id}/cv-improvements",
+    response_model=GenerateJobCvImprovementsResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_job_cv_improvements(
+    id: UUID,
+    request: GenerateJobCvImprovementsRequest,
+    session: SessionDep,
+) -> GenerateJobCvImprovementsResponse:
+    try:
+        result = await profile_cv_job_improvement_service.generate_suggestions(
+            session,
+            GenerateCvImprovementsRequest(
+                role_profile_id=str(request.role_profile_id),
+                job_id=str(id),
+                max_suggestions=request.max_suggestions,
+            ),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return GenerateJobCvImprovementsResponse(
+        job_id=result.job_id,
+        role_profile_id=result.role_profile_id,
+        document_id=result.document_id,
+        version_id=result.version_id,
+        suggestion_count=len(result.suggestions),
+        suggestions=result.suggestions,
+    )
 
 
 @router.get("/{id}", response_model=JobResponse)

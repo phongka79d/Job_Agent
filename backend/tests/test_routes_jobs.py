@@ -2,15 +2,30 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from app.api import routes_jobs
 from app.api.routes_role_profiles import get_session
-from app.db.models import Base, JobPost, RoleProfile
+from app.db.models import Base, JobPost, ProfileDocument, ProfileDocumentChunk, ProfileDocumentVersion, RoleProfile
 from app.main import app
 from app.services import job_search_workflow
 from app.services.job_processing_service import InvalidStatusTransition, JobProcessingResult
 from app.services.search_service import SearchServiceError, TavilySearchService
+
+
+@pytest_asyncio.fixture
+async def client(db_session):
+    async def override_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = override_session
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
 
 
 async def create_profile(db_session) -> RoleProfile:
@@ -614,3 +629,84 @@ async def test_manual_status_update_rejects_ignored_before_service_call(monkeypa
 
     assert response.status_code == 422
     assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_generate_job_cv_improvements_returns_grounded_suggestions(client, db_session):
+    import json
+
+    profile = await create_profile(db_session)
+    document = ProfileDocument(
+        role_profile_id=profile.id,
+        original_filename="cv.pdf",
+        stored_path="cv.pdf",
+        content_hash=str(uuid4()),
+        mime_type="application/pdf",
+        file_size_bytes=1000,
+        extracted_text_chars=120,
+        chunk_count=1,
+        document_kind="cv",
+        status="ready",
+    )
+    db_session.add(document)
+    await db_session.flush()
+    version = ProfileDocumentVersion(
+        document_id=document.id,
+        role_profile_id=profile.id,
+        version_number=1,
+        source_type="original_upload",
+        display_name="Original upload",
+        filename="cv.pdf",
+        stored_path="cv.pdf",
+        content_hash=document.content_hash,
+        mime_type="application/pdf",
+        file_size_bytes=1000,
+        extracted_text_chars=120,
+        chunk_count=1,
+        extraction_status="ready",
+        structure_status="reliable",
+        structure_confidence=0.8,
+        created_by="user",
+    )
+    db_session.add(version)
+    await db_session.flush()
+    document.active_version_id = version.id
+    profile.active_cv_document_id = document.id
+    profile.active_cv_version_id = version.id
+    db_session.add(
+        ProfileDocumentChunk(
+            role_profile_id=profile.id,
+            document_id=document.id,
+            version_id=version.id,
+            source_type="profile_cv",
+            chunk_index=0,
+            text="Built FastAPI APIs and LangGraph workflows.",
+            token_count=8,
+            qdrant_point_id="point-route-1",
+        )
+    )
+    job = await create_job(
+        db_session,
+        profile,
+        final_score=0.7,
+    )
+    job.requirements = "FastAPI\nAWS"
+    job.skills = json.dumps(["FastAPI", "AWS"])
+    job.skill_overlap_score = 0.5
+    db_session.add(job)
+    await db_session.commit()
+    await db_session.refresh(job)
+
+    response = await client.post(
+        f"/api/jobs/{job.id}/cv-improvements",
+        json={"role_profile_id": profile.id, "max_suggestions": 4},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["job_id"] == job.id
+    assert body["document_id"] == document.id
+    assert body["version_id"] == version.id
+    assert body["suggestion_count"] >= 1
+    assert any(item["edit_kind"] == "wording_only" for item in body["suggestions"])
+    assert any(item["edit_kind"] == "requires_user_fact" for item in body["suggestions"])

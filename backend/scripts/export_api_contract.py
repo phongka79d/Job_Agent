@@ -25,6 +25,8 @@ from app.api.schemas import (
     ChatMessageCreateResponse,
     ChatMessageListResponse,
     ChatMessageResponse,
+    GenerateJobCvImprovementsRequest,
+    GenerateJobCvImprovementsResponse,
     IngestionResponse,
     JobListResponse,
     JobResponse,
@@ -108,6 +110,12 @@ ENDPOINTS = {
         "path": "/api/jobs/{id}",
         "response_schema": "JobResponse",
     },
+    "generateJobCvImprovements": {
+        "method": "POST",
+        "path": "/api/jobs/{id}/cv-improvements",
+        "request_schema": "GenerateJobCvImprovementsRequest",
+        "response_schema": "GenerateJobCvImprovementsResponse",
+    },
     "getBatchSummary": {
         "method": "GET",
         "path": "/api/batches/{batch_id}/summary",
@@ -180,6 +188,8 @@ SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
     AgentToolCallListResponse,
     ProfileDocumentResponse,
     ProfileDocumentListResponse,
+    GenerateJobCvImprovementsRequest,
+    GenerateJobCvImprovementsResponse,
 )
 
 

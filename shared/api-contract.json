@@ -48,6 +48,12 @@
       "method": "DELETE",
       "path": "/api/chat/conversations/{conversation_id}"
     },
+    "generateJobCvImprovements": {
+      "method": "POST",
+      "path": "/api/jobs/{id}/cv-improvements",
+      "request_schema": "GenerateJobCvImprovementsRequest",
+      "response_schema": "GenerateJobCvImprovementsResponse"
+    },
     "getBatchSummary": {
       "method": "GET",
       "path": "/api/batches/{batch_id}/summary",
@@ -853,6 +859,170 @@
         "created_at"
       ],
       "title": "ChatMessageResponse",
+      "type": "object"
+    },
+    "GenerateJobCvImprovementsRequest": {
+      "properties": {
+        "max_suggestions": {
+          "default": 6,
+          "maximum": 12,
+          "minimum": 1,
+          "title": "Max Suggestions",
+          "type": "integer"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role_profile_id"
+      ],
+      "title": "GenerateJobCvImprovementsRequest",
+      "type": "object"
+    },
+    "GenerateJobCvImprovementsResponse": {
+      "$defs": {
+        "CvImprovementSuggestionResponse": {
+          "properties": {
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "current_cv_evidence": {
+              "title": "Current Cv Evidence",
+              "type": "string"
+            },
+            "document_id": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            },
+            "edit_kind": {
+              "title": "Edit Kind",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "job_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            },
+            "missing_or_weak_evidence": {
+              "title": "Missing Or Weak Evidence",
+              "type": "string"
+            },
+            "proposed_edit": {
+              "title": "Proposed Edit",
+              "type": "string"
+            },
+            "requirement": {
+              "title": "Requirement",
+              "type": "string"
+            },
+            "requires_confirmation": {
+              "title": "Requires Confirmation",
+              "type": "boolean"
+            },
+            "risk_level": {
+              "title": "Risk Level",
+              "type": "string"
+            },
+            "role_profile_id": {
+              "format": "uuid",
+              "title": "Role Profile Id",
+              "type": "string"
+            },
+            "status": {
+              "title": "Status",
+              "type": "string"
+            },
+            "updated_at": {
+              "format": "date-time",
+              "title": "Updated At",
+              "type": "string"
+            },
+            "version_id": {
+              "format": "uuid",
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "role_profile_id",
+            "document_id",
+            "version_id",
+            "job_id",
+            "requirement",
+            "current_cv_evidence",
+            "missing_or_weak_evidence",
+            "proposed_edit",
+            "edit_kind",
+            "risk_level",
+            "requires_confirmation",
+            "status",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "CvImprovementSuggestionResponse",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "job_id": {
+          "format": "uuid",
+          "title": "Job Id",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "suggestion_count": {
+          "title": "Suggestion Count",
+          "type": "integer"
+        },
+        "suggestions": {
+          "items": {
+            "$ref": "#/$defs/CvImprovementSuggestionResponse"
+          },
+          "title": "Suggestions",
+          "type": "array"
+        },
+        "version_id": {
+          "format": "uuid",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "role_profile_id",
+        "document_id",
+        "version_id",
+        "suggestion_count"
+      ],
+      "title": "GenerateJobCvImprovementsResponse",
       "type": "object"
     },
     "IngestionResponse": {
