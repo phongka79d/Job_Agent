@@ -10,6 +10,11 @@ vi.mock("../api/client", () => ({
   getReviewJobs: vi.fn(),
   approveJob: vi.fn(),
   rejectJob: vi.fn(),
+  generateJobCvImprovements: vi.fn(),
+}));
+
+vi.mock("../api/profileDocumentsClient", () => ({
+  createCvDraft: vi.fn(),
 }));
 
 // Mock useOutletContext

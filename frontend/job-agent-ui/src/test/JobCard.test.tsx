@@ -177,6 +177,69 @@ describe("JobCard and ScoreBreakdown components", () => {
     expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
   });
 
+  it("renders CV improvement suggestions and draft action", async () => {
+    const onGenerateCvImprovements = vi.fn();
+    const onCreateCvDraft = vi.fn();
+
+    render(
+      <JobCard
+        job={mockScorableJob}
+        onGenerateCvImprovements={onGenerateCvImprovements}
+        onCreateCvDraft={onCreateCvDraft}
+        cvImprovementResult={{
+          job_id: mockScorableJob.id,
+          role_profile_id: mockScorableJob.role_profile_id,
+          document_id: "doc-1",
+          version_id: "version-1",
+          suggestion_count: 2,
+          suggestions: [
+            {
+              id: "suggestion-1",
+              role_profile_id: mockScorableJob.role_profile_id,
+              document_id: "doc-1",
+              version_id: "version-1",
+              job_id: mockScorableJob.id,
+              requirement: "FastAPI",
+              current_cv_evidence: "Built FastAPI APIs.",
+              missing_or_weak_evidence: "Could be emphasized more clearly.",
+              proposed_edit: "Rewrite the relevant bullet to emphasize FastAPI.",
+              edit_kind: "wording_only",
+              risk_level: "low",
+              requires_confirmation: true,
+              status: "suggested",
+              created_at: "2026-07-02T00:00:00Z",
+              updated_at: "2026-07-02T00:00:00Z",
+            },
+            {
+              id: "suggestion-2",
+              role_profile_id: mockScorableJob.role_profile_id,
+              document_id: "doc-1",
+              version_id: "version-1",
+              job_id: mockScorableJob.id,
+              requirement: "AWS",
+              current_cv_evidence: "No matching evidence was found in the active CV extracted text.",
+              missing_or_weak_evidence: "Requires user-provided facts.",
+              proposed_edit: "Ask the user for real experience or proof before adding anything about AWS.",
+              edit_kind: "requires_user_fact",
+              risk_level: "high",
+              requires_confirmation: true,
+              status: "suggested",
+              created_at: "2026-07-02T00:00:00Z",
+              updated_at: "2026-07-02T00:00:00Z",
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(screen.getByText("CV improvement suggestions")).toBeInTheDocument();
+    expect(screen.getByText("FastAPI")).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes("Requires user facts"))).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /create cv draft/i }));
+    expect(onCreateCvDraft).toHaveBeenCalledWith(mockScorableJob.id);
+  });
+
   it("should disable action buttons when isActionLoading is true", () => {
     const onApprove = vi.fn();
     const onReject = vi.fn();

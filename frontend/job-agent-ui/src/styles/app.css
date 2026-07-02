@@ -1155,6 +1155,40 @@ h1, h2, h3, h4, h5, h6 {
   .job-card-actions { flex-direction: column; align-items: stretch; }
 }
 
+.job-cv-suggestions {
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 12px;
+  padding-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.job-cv-suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.job-cv-suggestion {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.job-cv-suggestion strong,
+.job-cv-suggestion span,
+.job-cv-suggestion small {
+  display: block;
+}
+
+.job-cv-suggestion small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

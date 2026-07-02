@@ -78,6 +78,7 @@ describe("API Contract Drift Tests", () => {
     const EXPECTED_ENDPOINTS = {
       approveJob: { method: "POST", path: "/api/jobs/{id}/approve" },
       createRoleProfile: { method: "POST", path: "/api/role-profiles" },
+      generateJobCvImprovements: { method: "POST", path: "/api/jobs/{id}/cv-improvements" },
       getBatchSummary: { method: "GET", path: "/api/batches/{batch_id}/summary" },
       getJobDetail: { method: "GET", path: "/api/jobs/{id}" },
       getJobs: { method: "GET", path: "/api/jobs" },
@@ -118,7 +119,9 @@ describe("API Contract Drift Tests", () => {
       "ParseJobTextRequest",
       "ParseJobUrlRequest",
       "StatusUpdateRequest",
-      "StatusMutationResponse"
+      "StatusMutationResponse",
+      "GenerateJobCvImprovementsRequest",
+      "GenerateJobCvImprovementsResponse"
     ];
 
     for (const schemaName of expectedSchemas) {

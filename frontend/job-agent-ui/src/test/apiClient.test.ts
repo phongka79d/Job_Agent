@@ -224,6 +224,49 @@ describe("API Client Functions", () => {
       expect(result).toEqual(mockResponse);
     });
   });
+
+  describe("generateJobCvImprovements", () => {
+    it("generates CV improvements for a scored job", async () => {
+      const { generateJobCvImprovements } = await import("../api/client");
+
+      spyPost.mockResolvedValueOnce({
+        data: {
+          job_id: "job-1",
+          role_profile_id: "profile-1",
+          document_id: "doc-1",
+          version_id: "version-1",
+          suggestion_count: 1,
+          suggestions: [
+            {
+              id: "suggestion-1",
+              role_profile_id: "profile-1",
+              document_id: "doc-1",
+              version_id: "version-1",
+              job_id: "job-1",
+              requirement: "FastAPI",
+              current_cv_evidence: "Built FastAPI APIs.",
+              missing_or_weak_evidence: "Could be emphasized more clearly.",
+              proposed_edit: "Rewrite the relevant bullet to emphasize FastAPI.",
+              edit_kind: "wording_only",
+              risk_level: "low",
+              requires_confirmation: true,
+              status: "suggested",
+              created_at: "2026-07-02T00:00:00Z",
+              updated_at: "2026-07-02T00:00:00Z",
+            },
+          ],
+        },
+      });
+
+      const result = await generateJobCvImprovements("job-1", { role_profile_id: "profile-1", max_suggestions: 4 });
+
+      expect(spyPost).toHaveBeenCalledWith("/api/jobs/job-1/cv-improvements", {
+        role_profile_id: "profile-1",
+        max_suggestions: 4,
+      });
+      expect(result.suggestion_count).toBe(1);
+    });
+  });
 });
 
 describe("Error Normalization and Surfacing", () => {

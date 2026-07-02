@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp, Check, X, MapPin, Building, ExternalLink, Briefcase } from "lucide-react";
-import type { Job } from "../types/api";
+import type { GenerateJobCvImprovementsResponse, Job } from "../types/api";
 import ScoreBreakdown, { formatPercentScore } from "./ScoreBreakdown";
 import StatusSelect from "./StatusSelect";
 
@@ -11,6 +11,10 @@ interface JobCardProps {
   statusControl?: React.ReactNode;
   onStatusChange?: () => void;
   isActionLoading?: boolean;
+  cvImprovementResult?: GenerateJobCvImprovementsResponse;
+  onGenerateCvImprovements?: (id: string) => void | Promise<void>;
+  onCreateCvDraft?: (id: string) => void | Promise<void>;
+  isCvImprovementLoading?: boolean;
 }
 
 function formatSource(src: string | null): string | null {
@@ -34,6 +38,10 @@ export default function JobCard({
   statusControl,
   onStatusChange,
   isActionLoading = false,
+  cvImprovementResult,
+  onGenerateCvImprovements,
+  onCreateCvDraft,
+  isCvImprovementLoading = false,
 }: JobCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
@@ -104,6 +112,17 @@ export default function JobCard({
             {showBreakdown ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
+          {onGenerateCvImprovements ? (
+            <button
+              type="button"
+              onClick={() => onGenerateCvImprovements(job.id)}
+              disabled={isCvImprovementLoading}
+              className="btn-secondary"
+            >
+              <span>{isCvImprovementLoading ? "Generating..." : "Improve CV"}</span>
+            </button>
+          ) : null}
+
           {job.source_url && (
             <a
               href={job.source_url}
@@ -149,6 +168,31 @@ export default function JobCard({
       </div>
 
       {showBreakdown && <ScoreBreakdown job={job} />}
+
+      {cvImprovementResult ? (
+        <div className="job-cv-suggestions">
+          <div className="job-cv-suggestions-header">
+            <strong>CV improvement suggestions</strong>
+            {cvImprovementResult.suggestions.some((suggestion) => suggestion.edit_kind === "wording_only") &&
+            onCreateCvDraft ? (
+              <button type="button" className="btn-secondary" onClick={() => onCreateCvDraft(job.id)}>
+                Create CV draft
+              </button>
+            ) : null}
+          </div>
+          {cvImprovementResult.suggestions.map((suggestion) => (
+            <article key={suggestion.id} className="job-cv-suggestion">
+              <div>
+                <strong>{suggestion.requirement}</strong>
+                <span>{suggestion.proposed_edit}</span>
+              </div>
+              <small>
+                {suggestion.edit_kind === "requires_user_fact" ? "Requires user facts" : "Wording only"} - {suggestion.risk_level}
+              </small>
+            </article>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

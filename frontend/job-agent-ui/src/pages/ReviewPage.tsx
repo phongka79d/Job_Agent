@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
-import { getReviewJobs, approveJob, rejectJob } from "../api/client";
-import type { Job } from "../types/api";
+import { createCvDraft } from "../api/profileDocumentsClient";
+import { generateJobCvImprovements, getReviewJobs, approveJob, rejectJob } from "../api/client";
+import type { GenerateJobCvImprovementsResponse, Job } from "../types/api";
 import JobCard from "../components/JobCard";
 import PageState from "../components/PageState";
 
@@ -16,6 +17,7 @@ export default function ReviewPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [cvImprovementByJob, setCvImprovementByJob] = useState<Record<string, GenerateJobCvImprovementsResponse>>({});
 
   const fetchJobs = useCallback(async () => {
     if (!activeProfileId) {
@@ -52,6 +54,50 @@ export default function ReviewPage() {
       setError(err.message || "Failed to approve job.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const handleGenerateCvImprovements = async (jobId: string) => {
+    if (!activeProfileId) return;
+    setActionLoading((prev) => ({ ...prev, [`cv-${jobId}`]: true }));
+    setError(null);
+    try {
+      const result = await generateJobCvImprovements(jobId, {
+        role_profile_id: activeProfileId,
+        max_suggestions: 6,
+      });
+      setCvImprovementByJob((prev) => ({ ...prev, [jobId]: result }));
+    } catch (err: any) {
+      setError(err.message || "Failed to generate CV improvements.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [`cv-${jobId}`]: false }));
+    }
+  };
+
+  const handleCreateCvDraft = async (jobId: string) => {
+    const improvement = cvImprovementByJob[jobId];
+    if (!improvement) return;
+    const wordingOnlySuggestionIds = improvement.suggestions
+      .filter((suggestion) => suggestion.edit_kind === "wording_only")
+      .map((suggestion) => suggestion.id);
+    if (wordingOnlySuggestionIds.length === 0) {
+      setError("No wording-only CV suggestions are available for drafting.");
+      return;
+    }
+    const confirmed = window.confirm("Create a CV draft from wording-only suggestions? The original PDF will not change.");
+    if (!confirmed) return;
+    setActionLoading((prev) => ({ ...prev, [`draft-${jobId}`]: true }));
+    setError(null);
+    try {
+      await createCvDraft(improvement.role_profile_id, improvement.document_id, improvement.version_id, {
+        title: `CV draft for ${jobs.find((job) => job.id === jobId)?.title || "job"}`,
+        suggestion_ids: wordingOnlySuggestionIds,
+        confirmed: true,
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to create CV draft.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [`draft-${jobId}`]: false }));
     }
   };
 
@@ -93,6 +139,10 @@ export default function ReviewPage() {
               onApprove={handleApprove}
               onReject={handleReject}
               isActionLoading={actionLoading[job.id]}
+              cvImprovementResult={cvImprovementByJob[job.id]}
+              onGenerateCvImprovements={handleGenerateCvImprovements}
+              onCreateCvDraft={handleCreateCvDraft}
+              isCvImprovementLoading={Boolean(actionLoading[`cv-${job.id}`])}
             />
           ))}
         </div>

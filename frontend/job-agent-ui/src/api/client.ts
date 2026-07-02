@@ -1,5 +1,7 @@
 import axios from "axios";
 import type {
+  GenerateJobCvImprovementsRequest,
+  GenerateJobCvImprovementsResponse,
   RoleProfile,
   RoleProfileCreateRequest,
   RoleProfileListResponse,
@@ -249,6 +251,21 @@ export async function getJobDetail(id: string): Promise<Job> {
 export async function getBatchSummary(batchId: string): Promise<BatchSummary> {
   try {
     const response = await apiClient.get<BatchSummary>(`/api/batches/${batchId}/summary`);
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function generateJobCvImprovements(
+  id: string,
+  request: GenerateJobCvImprovementsRequest
+): Promise<GenerateJobCvImprovementsResponse> {
+  try {
+    const response = await apiClient.post<GenerateJobCvImprovementsResponse>(
+      `/api/jobs/${id}/cv-improvements`,
+      request
+    );
     return response.data;
   } catch (error) {
     throw normalizeError(error);

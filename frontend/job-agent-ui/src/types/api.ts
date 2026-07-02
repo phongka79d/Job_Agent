@@ -181,3 +181,38 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   rejected: [],
   saved: ["applied", "rejected"]
 };
+
+export type CvSuggestionEditKind = "wording_only" | "requires_user_fact";
+export type CvSuggestionRiskLevel = "low" | "medium" | "high";
+
+export interface JobCvImprovementSuggestion {
+  id: string;
+  role_profile_id: string;
+  document_id: string;
+  version_id: string;
+  job_id: string | null;
+  requirement: string;
+  current_cv_evidence: string;
+  missing_or_weak_evidence: string;
+  proposed_edit: string;
+  edit_kind: CvSuggestionEditKind;
+  risk_level: CvSuggestionRiskLevel;
+  requires_confirmation: boolean;
+  status: "suggested" | "accepted" | "rejected" | "drafted";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GenerateJobCvImprovementsRequest {
+  role_profile_id: string;
+  max_suggestions?: number;
+}
+
+export interface GenerateJobCvImprovementsResponse {
+  job_id: string;
+  role_profile_id: string;
+  document_id: string;
+  version_id: string;
+  suggestion_count: number;
+  suggestions: JobCvImprovementSuggestion[];
+}
