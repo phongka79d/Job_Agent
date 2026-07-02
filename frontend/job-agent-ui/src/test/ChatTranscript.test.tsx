@@ -50,6 +50,7 @@ describe("ChatTranscript", () => {
 
     // Verify all items are rendered
     expect(screen.getByText("Find some job")).toBeInTheDocument();
+    expect(screen.getByText("Job search completed")).toBeInTheDocument();
     expect(screen.getByText("search_jobs")).toBeInTheDocument();
     expect(screen.getByText("Here are the jobs.")).toBeInTheDocument();
 

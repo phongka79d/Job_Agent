@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useOutletContext } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -66,6 +66,22 @@ const textExtractionToolCall: AgentToolCall = {
   completed_at: "2026-01-01T00:00:01Z",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:01Z",
+};
+
+const cvComparisonToolCall: AgentToolCall = {
+  id: "tool-score-1",
+  conversation_id: "conv-existing",
+  assistant_message_id: "msg-2",
+  tool_name: "score_cv_against_job",
+  status: "success",
+  input_summary: "Active CV and selected job",
+  result_summary: "CV match score: 82%",
+  safe_payload_json: null,
+  error_message: null,
+  started_at: "2026-01-01T00:00:00Z",
+  completed_at: "2026-01-01T00:00:02Z",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:02Z",
 };
 
 describe("ChatWorkspacePage", () => {
@@ -274,7 +290,7 @@ describe("ChatWorkspacePage", () => {
 
     await waitFor(() => {
       expect(listAgentToolCalls).toHaveBeenCalledWith("conv-1");
-      expect(screen.getByText("search_jobs")).toBeInTheDocument();
+      expect(screen.getByText("Job search completed")).toBeInTheDocument();
       expect(screen.getByText("Added 2 jobs to Review Queue.")).toBeInTheDocument();
       expect(navigate).toHaveBeenCalledWith("/review");
     });
@@ -316,7 +332,7 @@ describe("ChatWorkspacePage", () => {
     fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("extract_job_from_text")).toBeInTheDocument();
+      expect(screen.getByText("Job description imported")).toBeInTheDocument();
       expect(screen.getByText("Added 1 job to Review Queue.")).toBeInTheDocument();
       expect(navigate).toHaveBeenCalledWith("/review");
     });
@@ -379,8 +395,11 @@ describe("ChatWorkspacePage", () => {
       });
     });
 
-    expect(screen.getByText("extract_job_from_text")).toBeInTheDocument();
-    expect(screen.getByText("running")).toBeInTheDocument();
+    const liveSummary = screen.getByLabelText(
+      "Importing job description. In progress. Show details",
+    );
+    expect(within(liveSummary).getByText("Importing job description")).toBeInTheDocument();
+    expect(within(liveSummary).getByText("In progress")).toBeInTheDocument();
     expect(screen.getByText("Pasted job text, 65 characters")).toBeInTheDocument();
     expect(listAgentToolCalls).not.toHaveBeenCalledWith("conv-1");
 
@@ -397,7 +416,11 @@ describe("ChatWorkspacePage", () => {
       });
     });
 
-    expect(screen.getByText("success")).toBeInTheDocument();
+    expect(screen.getByLabelText(
+      "Job description imported. Completed. Show details",
+    )).toBe(liveSummary);
+    expect(within(liveSummary).getByText("Job description imported")).toBeInTheDocument();
+    expect(within(liveSummary).getByText("Completed")).toBeInTheDocument();
     expect(screen.getByText("Added 1 job to Review Queue.")).toBeInTheDocument();
 
     finishStream?.();
@@ -509,6 +532,33 @@ describe("ChatWorkspacePage", () => {
       expect(listConversationMessages).toHaveBeenCalledWith("conv-existing");
       expect(screen.getByText("I found several roles to review.")).toBeInTheDocument();
     });
+  });
+
+  it("loads readable tool call history for an existing conversation", async () => {
+    vi.mocked(useOutletContext).mockReturnValue({ activeProfileId: "profile-1" });
+    vi.mocked(listConversationMessages).mockResolvedValue([assistantMessage]);
+    vi.mocked(listAgentToolCalls).mockResolvedValue([cvComparisonToolCall]);
+
+    const { container } = render(
+      <ChatWorkspacePage
+        contextOverride={{
+          ...defaultContextOverride,
+          activeConversationId: "conv-existing",
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(listConversationMessages).toHaveBeenCalledWith("conv-existing");
+      expect(listAgentToolCalls).toHaveBeenCalledWith("conv-existing");
+      expect(screen.getByText("CV comparison completed")).toBeInTheDocument();
+    });
+
+    const summary = container.querySelector(".tool-call-summary") as HTMLElement;
+    expect(within(summary).queryByText("score_cv_against_job")).not.toBeInTheDocument();
+    expect(container.querySelector(".tool-call-details-body")).toHaveTextContent(
+      "score_cv_against_job",
+    );
   });
 
   it("clears messages when activeConversationId becomes null", async () => {
