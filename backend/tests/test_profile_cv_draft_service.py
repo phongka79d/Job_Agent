@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from sqlalchemy import select
 
 from app.db.models import (
     ProfileCvDraft,
@@ -76,26 +77,28 @@ async def create_cv(db_session, *, structure_status: str = "reliable"):
 
 
 @pytest.mark.asyncio
-async def test_create_suggestion_rejects_fabricated_fact_edit(db_session):
+async def test_create_suggestion_stores_fact_required_safely(db_session):
     profile, document, version = await create_cv(db_session)
     service = ProfileCvDraftService()
 
-    with pytest.raises(ValueError, match="requires user-provided facts"):
-        await service.create_suggestion(
-            db_session,
-            CreateCvSuggestionRequest(
-                role_profile_id=profile.id,
-                document_id=document.id,
-                version_id=version.id,
-                requirement="AWS production experience",
-                current_cv_evidence="No AWS evidence in active CV.",
-                missing_or_weak_evidence="AWS is missing.",
-                proposed_edit="Add AWS production deployment experience.",
-                edit_kind="requires_user_fact",
-                risk_level="high",
-                requires_confirmation=True,
-            ),
-        )
+    suggestion = await service.create_suggestion(
+        db_session,
+        CreateCvSuggestionRequest(
+            role_profile_id=profile.id,
+            document_id=document.id,
+            version_id=version.id,
+            requirement="AWS production experience",
+            current_cv_evidence="No AWS evidence in active CV.",
+            missing_or_weak_evidence="AWS is missing.",
+            proposed_edit="Add AWS production deployment experience.",
+            edit_kind="requires_user_fact",
+            risk_level="high",
+            requires_confirmation=True,
+        ),
+    )
+
+    assert suggestion.edit_kind == "requires_user_fact"
+    assert suggestion.status == "suggested"
 
 
 @pytest.mark.asyncio
@@ -186,3 +189,69 @@ async def test_create_draft_for_unreliable_structure_returns_template_recommenda
     preview = await service.preview_draft(db_session, role_profile_id=profile.id, draft_id=draft.id)
     assert preview["recommendation"] == POOR_STRUCTURE_RECOMMENDATION
     assert preview["structure_status"] == "unreliable"
+
+
+@pytest.mark.asyncio
+async def test_create_suggestion_stores_requires_user_fact_without_drafting(db_session):
+    profile, document, version = await create_cv(db_session)
+    service = ProfileCvDraftService()
+
+    suggestion = await service.create_suggestion(
+        db_session,
+        CreateCvSuggestionRequest(
+            role_profile_id=profile.id,
+            document_id=document.id,
+            version_id=version.id,
+            job_id=None,
+            requirement="AWS production deployment",
+            current_cv_evidence="No AWS deployment evidence found in the active CV.",
+            missing_or_weak_evidence="The job asks for AWS, but the CV does not contain that fact.",
+            proposed_edit="Ask the user for real AWS deployment evidence before adding this.",
+            edit_kind="requires_user_fact",
+            risk_level="high",
+            requires_confirmation=True,
+        ),
+    )
+
+    assert suggestion.edit_kind == "requires_user_fact"
+    assert suggestion.risk_level == "high"
+    assert suggestion.status == "suggested"
+
+
+@pytest.mark.asyncio
+async def test_create_draft_rejects_fact_required_suggestions(db_session):
+    profile, document, version = await create_cv(db_session)
+    service = ProfileCvDraftService()
+    suggestion = await service.create_suggestion(
+        db_session,
+        CreateCvSuggestionRequest(
+            role_profile_id=profile.id,
+            document_id=document.id,
+            version_id=version.id,
+            job_id=None,
+            requirement="AWS production deployment",
+            current_cv_evidence="No AWS deployment evidence found in the active CV.",
+            missing_or_weak_evidence="Requires new user-provided facts.",
+            proposed_edit="Ask the user for real AWS deployment evidence before adding this.",
+            edit_kind="requires_user_fact",
+            risk_level="high",
+            requires_confirmation=True,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="requires user-provided facts"):
+        await service.create_draft(
+            db_session,
+            CreateCvDraftRequest(
+                role_profile_id=profile.id,
+                document_id=document.id,
+                base_version_id=version.id,
+                title="Fact required draft",
+                suggestion_ids=[suggestion.id],
+                confirmed=True,
+            ),
+        )
+
+    result = await db_session.execute(select(ProfileCvImprovementSuggestion).where(ProfileCvImprovementSuggestion.id == suggestion.id))
+    stored = result.scalar_one()
+    assert stored.status == "suggested"

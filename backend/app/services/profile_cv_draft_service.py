@@ -61,11 +61,9 @@ class ProfileCvDraftService:
             document_id=request.document_id,
             version_id=request.version_id,
         )
-        if request.edit_kind == "requires_user_fact":
-            raise ValueError("Suggestion requires user-provided facts before drafting.")
         if request.risk_level not in {"low", "medium", "high"}:
             raise ValueError("risk_level must be low, medium, or high")
-        if request.edit_kind != "wording_only":
+        if request.edit_kind not in {"wording_only", "requires_user_fact"}:
             raise ValueError("edit_kind must be wording_only or requires_user_fact")
 
         suggestion = ProfileCvImprovementSuggestion(
@@ -249,7 +247,14 @@ class ProfileCvDraftService:
         missing = [suggestion_id for suggestion_id in suggestion_ids if suggestion_id not in by_id]
         if missing:
             raise LookupError("CV suggestion not found")
-        return [by_id[suggestion_id] for suggestion_id in suggestion_ids]
+        suggestions = [by_id[suggestion_id] for suggestion_id in suggestion_ids]
+        fact_required = [suggestion for suggestion in suggestions if suggestion.edit_kind == "requires_user_fact"]
+        if fact_required:
+            raise ValueError("Suggestion requires user-provided facts before drafting.")
+        high_risk = [suggestion for suggestion in suggestions if suggestion.risk_level == "high"]
+        if high_risk:
+            raise ValueError("High-risk CV suggestions require manual user-provided facts before drafting.")
+        return suggestions
 
     async def _load_chunks(
         self,
