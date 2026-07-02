@@ -133,7 +133,7 @@ No database migration is required in this phase.
 - Modify: `backend/app/services/profile_cv_draft_service.py`
 - Test: `backend/tests/test_profile_cv_draft_service.py`
 
-- [ ] **Step 1: Write failing tests for fact-required suggestion storage and draft blocking**
+- [x] **Step 1: Write failing tests for fact-required suggestion storage and draft blocking**
 
 Append these tests to `backend/tests/test_profile_cv_draft_service.py`. Reuse the existing `create_cv(...)` helper already defined in that file:
 
@@ -211,7 +211,7 @@ async def test_create_draft_rejects_fact_required_suggestions(db_session):
     assert stored.status == "suggested"
 ```
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 Run:
 
@@ -222,7 +222,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because `create_suggestion(...)` currently rejects `requires_user_fact` suggestions before they can be stored, or because fixture names need to be aligned before the safety rule exists.
 
-- [ ] **Step 3: Update suggestion creation and draft loading**
+- [x] **Step 3: Update suggestion creation and draft loading**
 
 Modify `ProfileCvDraftService.create_suggestion(...)` in `backend/app/services/profile_cv_draft_service.py` so it validates both supported edit kinds instead of rejecting `requires_user_fact` immediately:
 
@@ -252,7 +252,7 @@ Remove the old return line:
         return [by_id[suggestion_id] for suggestion_id in suggestion_ids]
 ```
 
-- [ ] **Step 4: Run the focused draft-service tests**
+- [x] **Step 4: Run the focused draft-service tests**
 
 Run:
 
@@ -263,7 +263,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```powershell
 git add backend/app/services/profile_cv_draft_service.py backend/tests/test_profile_cv_draft_service.py
@@ -279,7 +279,7 @@ git commit -m "fix: preserve fact-required cv suggestions"
 - Create: `backend/app/services/profile_cv_job_improvement_service.py`
 - Test: `backend/tests/test_profile_cv_job_improvement_service.py`
 
-- [ ] **Step 1: Write failing service tests**
+- [x] **Step 1: Write failing service tests**
 
 Create `backend/tests/test_profile_cv_job_improvement_service.py`:
 
@@ -466,7 +466,7 @@ async def test_generate_suggestions_requires_active_cv(db_session):
         )
 ```
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 Run:
 
@@ -477,7 +477,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because `profile_cv_job_improvement_service.py` does not exist.
 
-- [ ] **Step 3: Implement the service**
+- [x] **Step 3: Implement the service**
 
 Create `backend/app/services/profile_cv_job_improvement_service.py`:
 
@@ -697,7 +697,7 @@ class ProfileCvJobImprovementService:
         )
 ```
 
-- [ ] **Step 4: Run service tests**
+- [x] **Step 4: Run service tests**
 
 Run:
 
@@ -708,7 +708,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```powershell
 git add backend/app/services/profile_cv_job_improvement_service.py backend/tests/test_profile_cv_job_improvement_service.py
@@ -728,7 +728,7 @@ git commit -m "feat: generate cv suggestions from scored jobs"
 - Test: `backend/tests/test_routes_jobs.py`
 - Test: `backend/tests/test_api_contract_export.py`
 
-- [ ] **Step 1: Write failing route test**
+- [x] **Step 1: Write failing route test**
 
 Append to `backend/tests/test_routes_jobs.py`:
 
@@ -815,7 +815,7 @@ async def test_generate_job_cv_improvements_returns_grounded_suggestions(client,
     assert any(item["edit_kind"] == "requires_user_fact" for item in body["suggestions"])
 ```
 
-- [ ] **Step 2: Run the route test and verify failure**
+- [x] **Step 2: Run the route test and verify failure**
 
 Run:
 
@@ -826,7 +826,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because the route does not exist.
 
-- [ ] **Step 3: Add schemas**
+- [x] **Step 3: Add schemas**
 
 In `backend/app/api/schemas.py`, add after `CvImprovementSuggestionListResponse`:
 
@@ -845,7 +845,7 @@ class GenerateJobCvImprovementsResponse(ApiSchema):
     suggestions: list[CvImprovementSuggestionResponse] = Field(default_factory=list)
 ```
 
-- [ ] **Step 4: Add route**
+- [x] **Step 4: Add route**
 
 In `backend/app/api/routes_jobs.py`, extend schema imports:
 
@@ -902,7 +902,7 @@ async def generate_job_cv_improvements(
     )
 ```
 
-- [ ] **Step 5: Update API contract exporter**
+- [x] **Step 5: Update API contract exporter**
 
 In `backend/scripts/export_api_contract.py`, import the new schemas:
 
@@ -938,7 +938,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: `shared/api-contract.json` updates.
 
-- [ ] **Step 6: Run route and contract tests**
+- [x] **Step 6: Run route and contract tests**
 
 Run:
 
@@ -949,7 +949,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 3**
+- [x] **Step 7: Commit Task 3**
 
 ```powershell
 git add backend/app/api/schemas.py backend/app/api/routes_jobs.py backend/scripts/export_api_contract.py shared/api-contract.json backend/tests/test_routes_jobs.py
@@ -968,7 +968,7 @@ git commit -m "feat: expose job cv improvement generation"
 - Test: `backend/tests/test_tool_registry.py`
 - Test: `backend/tests/test_routes_chat.py`
 
-- [ ] **Step 1: Write failing tool tests**
+- [x] **Step 1: Write failing tool tests**
 
 Append to `backend/tests/test_tool_registry.py`:
 
@@ -1020,7 +1020,7 @@ async def test_score_cv_against_job_tool_returns_safe_payload():
     }
 ```
 
-- [ ] **Step 2: Run tool tests and verify failure**
+- [x] **Step 2: Run tool tests and verify failure**
 
 Run:
 
@@ -1031,7 +1031,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: FAIL because the tool is not registered.
 
-- [ ] **Step 3: Register the tool and handler**
+- [x] **Step 3: Register the tool and handler**
 
 In `backend/app/services/tool_registry.py`, import:
 
@@ -1092,7 +1092,7 @@ def build_score_cv_against_job_handler(
     return handler
 ```
 
-- [ ] **Step 4: Wire chat registry and add narrow UUID intent**
+- [x] **Step 4: Wire chat registry and add narrow UUID intent**
 
 In `backend/app/api/routes_chat.py`, import:
 
@@ -1216,7 +1216,7 @@ Add a branch in `event_generator()` before `_is_profile_cv_read_intent(...)`:
                 )
 ```
 
-- [ ] **Step 5: Update chat prompt**
+- [x] **Step 5: Update chat prompt**
 
 In `backend/app/agents/chat_prompts.py`, replace the prompt body with:
 
@@ -1229,7 +1229,7 @@ Ask for confirmation before profile updates, CV draft creation, CV PDF export, a
 Keep answers concise and cite visible tool results when relevant."""
 ```
 
-- [ ] **Step 6: Run focused chat/tool tests**
+- [x] **Step 6: Run focused chat/tool tests**
 
 Run:
 
@@ -1240,7 +1240,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 4**
+- [x] **Step 7: Commit Task 4**
 
 ```powershell
 git add backend/app/services/tool_registry.py backend/app/api/routes_chat.py backend/app/agents/chat_prompts.py backend/tests/test_tool_registry.py backend/tests/test_routes_chat.py
@@ -1262,7 +1262,7 @@ git commit -m "feat: add visible job cv improvement tool"
 - Test: `frontend/job-agent-ui/src/test/JobCard.test.tsx`
 - Test: `frontend/job-agent-ui/src/test/ReviewPage.test.tsx`
 
-- [ ] **Step 1: Write failing API client test**
+- [x] **Step 1: Write failing API client test**
 
 Append to `frontend/job-agent-ui/src/test/apiClient.test.ts`:
 
@@ -1309,7 +1309,7 @@ it("generates CV improvements for a scored job", async () => {
 });
 ```
 
-- [ ] **Step 2: Add frontend types and API client**
+- [x] **Step 2: Add frontend types and API client**
 
 In `frontend/job-agent-ui/src/types/api.ts`, add:
 
@@ -1369,7 +1369,7 @@ export async function generateJobCvImprovements(
 }
 ```
 
-- [ ] **Step 3: Write failing JobCard UI test**
+- [x] **Step 3: Write failing JobCard UI test**
 
 Append to `frontend/job-agent-ui/src/test/JobCard.test.tsx`:
 
@@ -1438,7 +1438,7 @@ it("renders CV improvement suggestions and draft action", async () => {
 });
 ```
 
-- [ ] **Step 4: Add JobCard props and rendering**
+- [x] **Step 4: Add JobCard props and rendering**
 
 In `frontend/job-agent-ui/src/components/JobCard.tsx`, import type:
 
@@ -1508,7 +1508,7 @@ Render suggestions before the closing `</div>` of `.job-card`:
       ) : null}
 ```
 
-- [ ] **Step 5: Wire ReviewPage generation and draft creation**
+- [x] **Step 5: Wire ReviewPage generation and draft creation**
 
 In `frontend/job-agent-ui/src/pages/ReviewPage.tsx`, import:
 
@@ -1581,7 +1581,7 @@ Pass props into `JobCard`:
               isCvImprovementLoading={Boolean(actionLoading[`cv-${job.id}`])}
 ```
 
-- [ ] **Step 6: Add minimal CSS**
+- [x] **Step 6: Add minimal CSS**
 
 Append to `frontend/job-agent-ui/src/styles/app.css`:
 
@@ -1621,7 +1621,7 @@ Append to `frontend/job-agent-ui/src/styles/app.css`:
 }
 ```
 
-- [ ] **Step 7: Run frontend focused tests**
+- [x] **Step 7: Run frontend focused tests**
 
 Run:
 
@@ -1633,7 +1633,7 @@ npm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit Task 5**
+- [x] **Step 8: Commit Task 5**
 
 ```powershell
 git add frontend/job-agent-ui/src/types/api.ts frontend/job-agent-ui/src/api/client.ts frontend/job-agent-ui/src/components/JobCard.tsx frontend/job-agent-ui/src/pages/ReviewPage.tsx frontend/job-agent-ui/src/styles/app.css frontend/job-agent-ui/src/test/apiClient.test.ts frontend/job-agent-ui/src/test/JobCard.test.tsx frontend/job-agent-ui/src/test/ReviewPage.test.tsx frontend/job-agent-ui/src/test/apiContract.test.ts
@@ -1648,7 +1648,7 @@ git commit -m "feat: show scored job cv improvement workflow"
 
 - Test: `backend/tests/test_profile_cv_job_improvement_service.py`
 
-- [ ] **Step 1: Add workflow test from scored job to exported PDF**
+- [x] **Step 1: Add workflow test from scored job to exported PDF**
 
 Append to `backend/tests/test_profile_cv_job_improvement_service.py`:
 
@@ -1739,7 +1739,7 @@ async def test_scored_job_to_draft_to_exported_pdf_keeps_active_cv_unchanged(
     assert document.active_version_id == version.id
 ```
 
-- [ ] **Step 2: Run the workflow test**
+- [x] **Step 2: Run the workflow test**
 
 Run:
 
@@ -1750,7 +1750,7 @@ cd C:\Users\ACER\OtherProjects\Job_Agent\backend
 
 Expected: PASS.
 
-- [ ] **Step 3: Commit Task 6**
+- [x] **Step 3: Commit Task 6**
 
 ```powershell
 git add backend/tests/test_profile_cv_job_improvement_service.py
@@ -1765,7 +1765,7 @@ git commit -m "test: verify scored job cv export workflow"
 
 - Modify: `docs/superpowers/plans/2026-07-02-profile-cv-pdf-source-of-truth-phase-5.md`
 
-- [ ] **Step 1: Run backend verification**
+- [x] **Step 1: Run backend verification**
 
 Run:
 
@@ -1782,7 +1782,7 @@ Expected:
 - pytest exits 0
 - pip check reports no broken requirements
 
-- [ ] **Step 2: Run frontend verification**
+- [x] **Step 2: Run frontend verification**
 
 Run:
 
@@ -1802,7 +1802,7 @@ Expected:
 - build exits 0
 - existing lint warnings are acceptable only if unchanged from earlier phases
 
-- [ ] **Step 3: Run safety and stale-reference scans**
+- [x] **Step 3: Run safety and stale-reference scans**
 
 Run:
 

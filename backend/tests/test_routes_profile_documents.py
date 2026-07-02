@@ -9,6 +9,8 @@ from app.api.routes_role_profiles import get_session
 from app.core.config import settings
 from app.db.models import RoleProfile
 from app.main import app
+from app.services.profile_cv_export_service import ProfileCvExportService
+from app.services.profile_document_indexing_service import ProfileDocumentIndexingService
 from app.services.profile_document_service import ProfileDocumentService
 
 
@@ -53,6 +55,17 @@ async def client(db_session, monkeypatch, tmp_path):
             extractor=FakeExtractor(),
             embedder=FakeEmbedder(),
             vector_store=FakeVectorStore(),
+        ),
+    )
+    monkeypatch.setattr(
+        routes_profile_documents,
+        "profile_cv_export_service",
+        ProfileCvExportService(
+            extractor=FakeExtractor(),
+            indexing_service=ProfileDocumentIndexingService(
+                embedder=FakeEmbedder(),
+                vector_store=FakeVectorStore(),
+            ),
         ),
     )
     try:

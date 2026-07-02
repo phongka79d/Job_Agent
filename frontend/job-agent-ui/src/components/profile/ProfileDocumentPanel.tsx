@@ -280,46 +280,67 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
                   </div>
                   {(suggestionsByDocument[document.id] ?? []).length > 0 ? (
                     <div className="profile-document-subpanel">
-                      <div className="profile-document-subpanel-title">CV suggestions</div>
-                      {(suggestionsByDocument[document.id] ?? []).map((suggestion) => (
-                        <div key={suggestion.id} className="profile-document-suggestion">
-                          <strong>{suggestion.requirement}</strong>
-                          <span>{suggestion.proposed_edit}</span>
-                          <small>{suggestion.edit_kind} - {suggestion.risk_level}</small>
-                        </div>
-                      ))}
+                      <div id={`cv-suggestions-${document.id}`} className="profile-document-subpanel-title">CV suggestions</div>
+                      <div
+                        className="profile-document-suggestion-list"
+                        role="list"
+                        aria-labelledby={`cv-suggestions-${document.id}`}
+                      >
+                        {(suggestionsByDocument[document.id] ?? []).map((suggestion) => (
+                          <article
+                            key={suggestion.id}
+                            className="profile-document-suggestion"
+                            role="article"
+                            aria-label={`${suggestion.requirement} suggestion`}
+                          >
+                            <strong>{suggestion.requirement}</strong>
+                            <span>{suggestion.proposed_edit}</span>
+                            <small>{suggestion.edit_kind} - {suggestion.risk_level}</small>
+                          </article>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                   {(draftsByDocument[document.id] ?? []).length > 0 ? (
                     <div className="profile-document-subpanel">
-                      <div className="profile-document-subpanel-title">Draft preview</div>
-                      {(draftsByDocument[document.id] ?? []).map((draft) => (
-                        <div key={draft.id} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void previewCvDraft(activeProfileId!, document.id, draft.id).then(setDraftPreview);
-                            }}
-                          >
-                            {draft.title}
-                          </button>
-                          {draft.status === "draft" ? (
+                      <div id={`cv-drafts-${document.id}`} className="profile-document-subpanel-title">CV drafts</div>
+                      <div
+                        className="profile-document-draft-list"
+                        role="list"
+                        aria-labelledby={`cv-drafts-${document.id}`}
+                      >
+                        {(draftsByDocument[document.id] ?? []).map((draft) => (
+                          <div key={draft.id} className="profile-document-draft-row" role="listitem">
                             <button
                               type="button"
-                              onClick={() => void handleExportDraft(document, draft)}
-                              aria-label={`Export ${draft.title} PDF`}
+                              onClick={() => {
+                                void previewCvDraft(activeProfileId!, document.id, draft.id).then(setDraftPreview);
+                              }}
                             >
-                              <Upload size={14} /> Export PDF
+                              {draft.title}
                             </button>
-                          ) : null}
-                        </div>
-                      ))}
+                            {draft.status === "draft" ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleExportDraft(document, draft)}
+                                aria-label={`Export ${draft.title} PDF`}
+                              >
+                                <Upload size={14} /> Export PDF
+                              </button>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
                       {draftPreview?.draft_id && (
                         <div className="profile-document-preview">
+                          <div className="profile-document-subpanel-title">Draft preview</div>
                           <strong>{draftPreview.title}</strong>
                           {draftPreview.recommendation ? <p>{draftPreview.recommendation}</p> : null}
                           {draftPreview.edits.map((edit) => (
-                            <p key={`${draftPreview.draft_id}-${edit.requirement}`}>{edit.proposed_edit}</p>
+                            <article key={`${draftPreview.draft_id}-${edit.requirement}`}>
+                              <strong>{edit.requirement}</strong>
+                              <span>{edit.proposed_edit}</span>
+                            </article>
                           ))}
                         </div>
                       )}

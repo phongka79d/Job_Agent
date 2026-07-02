@@ -6,11 +6,12 @@ import json
 import logging
 import asyncio
 import re
+import unicodedata
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.agents.chat_graph import run_chat_turn
 from app.api.routes_role_profiles import SessionDep
@@ -24,7 +25,7 @@ from app.api.schemas import (
     ChatMessageListResponse,
 )
 
-from app.db.models import ChatConversation, ChatMessage, RoleProfile
+from app.db.models import ChatConversation, ChatMessage, JobPost, RoleProfile
 from app.services.agent_event_service import AgentEventService
 from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClient
 from app.services.chat_memory_service import ChatMemoryService
@@ -34,6 +35,7 @@ from app.services.profile_cv_job_improvement_service import ProfileCvJobImprovem
 from app.services.profile_cv_export_service import ProfileCvExportService
 from app.services.profile_document_retrieval_service import ProfileDocumentRetrievalService
 from app.services.profile_document_service import ProfileDocumentService
+from app.services.scoring_service import extract_text_match_tokens
 from app.services.tool_registry import (
     ToolRegistry,
     ToolRequest,
@@ -87,8 +89,13 @@ def build_tool_registry(session: SessionDep) -> ToolRegistry:
     )
 
 
+def _normalized_intent_text(content: str) -> str:
+    normalized = unicodedata.normalize("NFKD", content.casefold())
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
 def _is_search_jobs_intent(content: str) -> bool:
-    normalized = content.casefold()
+    normalized = _normalized_intent_text(content)
     search_terms = ("find", "search", "tìm", "tim", "kiếm", "kiem")
     job_terms = ("job", "jobs", "việc", "viec", "role", "position")
     return any(term in normalized for term in search_terms) and any(
@@ -110,6 +117,14 @@ PASTED_JOB_SIGNALS = (
     "job description",
     "about the role",
     "what you will do",
+    "tuyen dung",
+    "yeu cau",
+    "vi tri",
+    "lam viec",
+    "luong",
+    "thang",
+    "remote",
+    "duration",
 )
 EXPLICIT_JOB_PARSE_TERMS = (
     "parse this job",
@@ -122,6 +137,9 @@ EXPLICIT_JOB_PARSE_TERMS = (
     "extract job",
     "import this job",
     "add this job",
+    "compare my cv to this",
+    "compare my resume to this",
+    "so sanh cv",
 )
 EXPLICIT_JOB_STRUCTURE_SIGNALS = (
     "title",
@@ -135,6 +153,12 @@ EXPLICIT_JOB_STRUCTURE_SIGNALS = (
     "benefits",
     "job description",
     "about the role",
+    "tuyen dung",
+    "yeu cau",
+    "vi tri",
+    "luong",
+    "remote",
+    "duration",
 )
 
 
@@ -154,7 +178,7 @@ def _is_explicit_pasted_job_request(content: str, normalized: str) -> bool:
 
 
 def _is_pasted_job_text_intent(content: str) -> bool:
-    normalized = content.casefold()
+    normalized = _normalized_intent_text(content)
     if _is_explicit_pasted_job_request(content, normalized):
         return True
     if len(normalized) < PASTED_JOB_MIN_LENGTH:
@@ -164,7 +188,7 @@ def _is_pasted_job_text_intent(content: str) -> bool:
 
 
 def _is_profile_cv_read_intent(content: str) -> bool:
-    normalized = content.casefold()
+    normalized = _normalized_intent_text(content)
     cv_terms = ("cv", "resume", "profile", "portfolio", "transcript", "certificate")
     read_terms = (
         "read",
@@ -188,16 +212,105 @@ JOB_ID_PATTERN = re.compile(
 )
 
 
-def _job_cv_improvement_intent(content: str) -> str | None:
-    normalized = content.casefold()
+def _is_job_cv_improvement_intent(content: str) -> bool:
+    normalized = _normalized_intent_text(content)
     if "cv" not in normalized and "resume" not in normalized:
-        return None
-    if "job" not in normalized and "role" not in normalized:
-        return None
-    if not any(term in normalized for term in ("improve", "score", "match", "missing", "suggest")):
-        return None
+        return False
+    if not any(term in normalized for term in ("job", "role", "position", "vi tri", "vị trí")):
+        return False
+    action_terms = (
+        "improve",
+        "score",
+        "match",
+        "missing",
+        "suggest",
+        "compare",
+        "so sanh",
+        "so sánh",
+        "chinh sua",
+        "chỉnh sửa",
+        "cai thien",
+        "cải thiện",
+        "de xuat",
+        "đề xuất",
+    )
+    return any(term in normalized for term in action_terms)
+
+
+def _extract_job_id(content: str) -> str | None:
     match = JOB_ID_PATTERN.search(content)
     return match.group(0) if match else None
+
+
+async def _resolve_job_id_for_cv_improvement(
+    session: SessionDep,
+    *,
+    role_profile_id: str,
+    content: str,
+) -> str | None:
+    explicit_job_id = _extract_job_id(content)
+    if explicit_job_id:
+        return explicit_job_id
+
+    content_tokens = extract_text_match_tokens(
+        content,
+        stopwords={
+            "and",
+            "or",
+            "the",
+            "with",
+            "for",
+            "to",
+            "of",
+            "in",
+            "a",
+            "an",
+            "job",
+            "role",
+            "position",
+            "resume",
+            "cv",
+            "toi",
+            "cua",
+            "voi",
+            "tai",
+            "va",
+            "de",
+            "xuat",
+            "chinh",
+            "sua",
+            "sanh",
+            "compare",
+            "suggest",
+            "improve",
+            "score",
+            "match",
+        },
+    )
+    if not content_tokens:
+        return None
+
+    result = await session.execute(
+        select(JobPost)
+        .where(JobPost.role_profile_id == role_profile_id)
+        .where(JobPost.duplicate_of_job_id.is_(None))
+        .where(or_(JobPost.status.is_(None), JobPost.status != "ignored"))
+        .order_by(JobPost.final_score.desc(), JobPost.discovered_at.desc(), JobPost.created_at.desc())
+        .limit(50)
+    )
+    best_job: JobPost | None = None
+    best_score = 0
+    for job in result.scalars():
+        job_tokens = (
+            extract_text_match_tokens(job.title)
+            | extract_text_match_tokens(job.company)
+            | extract_text_match_tokens(job.location)
+        )
+        score = len(content_tokens & job_tokens)
+        if score > best_score:
+            best_job = job
+            best_score = score
+    return best_job.id if best_job is not None and best_score > 0 else None
 
 
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
@@ -412,7 +525,7 @@ async def stream_conversation_events(
             conversation_id=str(conversation_id),
             current_user_message=user_message.content,
         )
-        if _is_search_jobs_intent(user_message.content):
+        if _is_search_jobs_intent(user_message.content) and not _is_pasted_job_text_intent(user_message.content):
             tool_call = await agent_event_service.create_tool_call(
                 session,
                 conversation_id=str(conversation_id),
@@ -579,12 +692,21 @@ async def stream_conversation_events(
                         "safe_payload": tool_result.safe_payload,
                     },
                 )
-        elif job_id := _job_cv_improvement_intent(user_message.content):
+        elif _is_job_cv_improvement_intent(user_message.content):
+            job_id = await _resolve_job_id_for_cv_improvement(
+                session,
+                role_profile_id=conversation.role_profile_id,
+                content=user_message.content,
+            )
             tool_call = await agent_event_service.create_tool_call(
                 session,
                 conversation_id=str(conversation_id),
                 tool_name="score_cv_against_job",
-                input_summary=f"Generate CV improvements for job {job_id}",
+                input_summary=(
+                    f"Generate CV improvements for job {job_id}"
+                    if job_id
+                    else "Find the requested job and generate CV improvements"
+                ),
                 safe_payload={"job_id": job_id},
             )
             tool_call = await agent_event_service.mark_running(session, tool_call.id)
@@ -597,27 +719,19 @@ async def stream_conversation_events(
                     "input_summary": tool_call.input_summary,
                 },
             )
-            try:
-                tool_result = await build_tool_registry(session).execute(
-                    ToolRequest(
-                        name="score_cv_against_job",
-                        arguments={"job_id": job_id, "max_suggestions": 6},
-                        context={
-                            "role_profile_id": conversation.role_profile_id,
-                            "conversation_id": str(conversation_id),
-                        },
-                    )
+            if job_id is None:
+                error_message = (
+                    "No matching job found for this profile. Open Review Queue and use Improve CV, "
+                    "or include the job id in chat."
                 )
-            except Exception:
-                logger.exception("score_cv_against_job tool failed")
                 tool_call = await agent_event_service.mark_failed(
                     session,
                     tool_call.id,
-                    error_message="CV improvement generation failed. Check that the job belongs to this profile and an active CV is selected.",
+                    error_message=error_message,
                 )
                 assistant_content = (
-                    "Called 1 tool: Score CV against job, but it failed. "
-                    "Check that the job belongs to this profile and an active CV is selected."
+                    "Called 1 tool: Score CV against job, but it could not identify which job to compare. "
+                    "Open Review Queue and use Improve CV, or include the job id in chat."
                 )
                 agent_metadata_source = "chat_agent_tool_error"
                 yield _sse_event(
@@ -630,27 +744,60 @@ async def stream_conversation_events(
                     },
                 )
             else:
-                tool_call = await agent_event_service.mark_success(
-                    session,
-                    tool_call.id,
-                    result_summary=tool_result.result_summary,
-                    safe_payload=tool_result.safe_payload,
-                )
-                assistant_content = (
-                    "Called 1 tool: Score CV against job. "
-                    f"{tool_result.result_summary}. Open the Review Queue or Profile CV panel to inspect suggestions."
-                )
-                agent_metadata_source = "chat_agent_tool"
-                yield _sse_event(
-                    "tool_call_completed",
-                    {
-                        "tool_call_id": tool_call.id,
-                        "tool_name": tool_call.tool_name,
-                        "status": tool_call.status,
-                        "result_summary": tool_call.result_summary,
-                        "safe_payload": tool_result.safe_payload,
-                    },
-                )
+                try:
+                    tool_result = await build_tool_registry(session).execute(
+                        ToolRequest(
+                            name="score_cv_against_job",
+                            arguments={"job_id": job_id, "max_suggestions": 6},
+                            context={
+                                "role_profile_id": conversation.role_profile_id,
+                                "conversation_id": str(conversation_id),
+                            },
+                        )
+                    )
+                except Exception:
+                    logger.exception("score_cv_against_job tool failed")
+                    tool_call = await agent_event_service.mark_failed(
+                        session,
+                        tool_call.id,
+                        error_message="CV improvement generation failed. Check that the job belongs to this profile and an active CV is selected.",
+                    )
+                    assistant_content = (
+                        "Called 1 tool: Score CV against job, but it failed. "
+                        "Check that the job belongs to this profile and an active CV is selected."
+                    )
+                    agent_metadata_source = "chat_agent_tool_error"
+                    yield _sse_event(
+                        "tool_call_failed",
+                        {
+                            "tool_call_id": tool_call.id,
+                            "tool_name": tool_call.tool_name,
+                            "status": tool_call.status,
+                            "error_message": tool_call.error_message,
+                        },
+                    )
+                else:
+                    tool_call = await agent_event_service.mark_success(
+                        session,
+                        tool_call.id,
+                        result_summary=tool_result.result_summary,
+                        safe_payload=tool_result.safe_payload,
+                    )
+                    assistant_content = (
+                        "Called 1 tool: Score CV against job. "
+                        f"{tool_result.result_summary}. Open the Review Queue or Profile CV panel to inspect suggestions."
+                    )
+                    agent_metadata_source = "chat_agent_tool"
+                    yield _sse_event(
+                        "tool_call_completed",
+                        {
+                            "tool_call_id": tool_call.id,
+                            "tool_name": tool_call.tool_name,
+                            "status": tool_call.status,
+                            "result_summary": tool_call.result_summary,
+                            "safe_payload": tool_result.safe_payload,
+                        },
+                    )
         elif _is_profile_cv_read_intent(user_message.content):
             tool_call = await agent_event_service.create_tool_call(
                 session,

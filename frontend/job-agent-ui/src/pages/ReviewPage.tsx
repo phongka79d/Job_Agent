@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
-import { createCvDraft } from "../api/profileDocumentsClient";
+import { createCvDraft, previewCvDraft } from "../api/profileDocumentsClient";
 import { generateJobCvImprovements, getReviewJobs, approveJob, rejectJob } from "../api/client";
 import type { GenerateJobCvImprovementsResponse, Job } from "../types/api";
+import type { CvDraft, CvDraftPreview } from "../types/profileDocuments";
 import JobCard from "../components/JobCard";
 import PageState from "../components/PageState";
 
@@ -18,6 +19,8 @@ export default function ReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [cvImprovementByJob, setCvImprovementByJob] = useState<Record<string, GenerateJobCvImprovementsResponse>>({});
+  const [cvDraftByJob, setCvDraftByJob] = useState<Record<string, CvDraft>>({});
+  const [cvDraftPreviewByJob, setCvDraftPreviewByJob] = useState<Record<string, CvDraftPreview>>({});
 
   const fetchJobs = useCallback(async () => {
     if (!activeProfileId) {
@@ -57,26 +60,10 @@ export default function ReviewPage() {
     }
   };
 
-  const handleGenerateCvImprovements = async (jobId: string) => {
-    if (!activeProfileId) return;
-    setActionLoading((prev) => ({ ...prev, [`cv-${jobId}`]: true }));
-    setError(null);
-    try {
-      const result = await generateJobCvImprovements(jobId, {
-        role_profile_id: activeProfileId,
-        max_suggestions: 6,
-      });
-      setCvImprovementByJob((prev) => ({ ...prev, [jobId]: result }));
-    } catch (err: any) {
-      setError(err.message || "Failed to generate CV improvements.");
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [`cv-${jobId}`]: false }));
-    }
-  };
-
-  const handleCreateCvDraft = async (jobId: string) => {
-    const improvement = cvImprovementByJob[jobId];
-    if (!improvement) return;
+  const createAndPreviewCvDraft = async (
+    jobId: string,
+    improvement: GenerateJobCvImprovementsResponse
+  ) => {
     const wordingOnlySuggestionIds = improvement.suggestions
       .filter((suggestion) => suggestion.edit_kind === "wording_only")
       .map((suggestion) => suggestion.id);
@@ -87,15 +74,60 @@ export default function ReviewPage() {
     const confirmed = window.confirm("Create a CV draft from wording-only suggestions? The original PDF will not change.");
     if (!confirmed) return;
     setActionLoading((prev) => ({ ...prev, [`draft-${jobId}`]: true }));
-    setError(null);
     try {
-      await createCvDraft(improvement.role_profile_id, improvement.document_id, improvement.version_id, {
+      const draft = await createCvDraft(improvement.role_profile_id, improvement.document_id, improvement.version_id, {
         title: `CV draft for ${jobs.find((job) => job.id === jobId)?.title || "job"}`,
         suggestion_ids: wordingOnlySuggestionIds,
         confirmed: true,
       });
+      setCvDraftByJob((prev) => ({ ...prev, [jobId]: draft }));
+      const preview = await previewCvDraft(improvement.role_profile_id, improvement.document_id, draft.id);
+      setCvDraftPreviewByJob((prev) => ({ ...prev, [jobId]: preview }));
     } catch (err: any) {
       setError(err.message || "Failed to create CV draft.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [`draft-${jobId}`]: false }));
+    }
+  };
+
+  const handleGenerateCvImprovements = async (jobId: string) => {
+    if (!activeProfileId) return;
+    setActionLoading((prev) => ({ ...prev, [`cv-${jobId}`]: true }));
+    setError(null);
+    try {
+      const result = await generateJobCvImprovements(jobId, {
+        role_profile_id: activeProfileId,
+        max_suggestions: 6,
+      });
+      setCvImprovementByJob((prev) => ({ ...prev, [jobId]: result }));
+      if (result.suggestions.some((suggestion) => suggestion.edit_kind === "wording_only")) {
+        await createAndPreviewCvDraft(jobId, result);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to generate CV improvements.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [`cv-${jobId}`]: false }));
+    }
+  };
+
+  const handleCreateCvDraft = async (jobId: string) => {
+    const improvement = cvImprovementByJob[jobId];
+    if (!improvement) return;
+    setError(null);
+    await createAndPreviewCvDraft(jobId, improvement);
+  };
+
+  const handlePreviewCvDraft = async (jobId: string) => {
+    const improvement = cvImprovementByJob[jobId];
+    const draft = cvDraftByJob[jobId];
+    if (!improvement || !draft) return;
+    setActionLoading((prev) => ({ ...prev, [`draft-${jobId}`]: true }));
+    setError(null);
+    try {
+      const preview = await previewCvDraft(improvement.role_profile_id, improvement.document_id, draft.id);
+      setCvDraftPreviewByJob((prev) => ({ ...prev, [jobId]: preview }));
+    } catch (err: any) {
+      setError(err.message || "Failed to preview CV draft.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [`draft-${jobId}`]: false }));
     }
@@ -140,9 +172,13 @@ export default function ReviewPage() {
               onReject={handleReject}
               isActionLoading={actionLoading[job.id]}
               cvImprovementResult={cvImprovementByJob[job.id]}
+              cvDraft={cvDraftByJob[job.id]}
+              cvDraftPreview={cvDraftPreviewByJob[job.id]}
               onGenerateCvImprovements={handleGenerateCvImprovements}
               onCreateCvDraft={handleCreateCvDraft}
+              onPreviewCvDraft={handlePreviewCvDraft}
               isCvImprovementLoading={Boolean(actionLoading[`cv-${job.id}`])}
+              isCvDraftLoading={Boolean(actionLoading[`draft-${job.id}`])}
             />
           ))}
         </div>

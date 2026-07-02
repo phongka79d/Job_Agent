@@ -258,6 +258,9 @@ describe("ProfileDocumentPanel", () => {
     await waitFor(() => {
       expect(screen.getByText("FastAPI")).toBeInTheDocument();
     });
+    expect(screen.getByRole("article", { name: /FastAPI suggestion/i })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /CV suggestions/i })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /CV drafts/i })).toBeInTheDocument();
     expect(screen.getByText("wording_only - low")).toBeInTheDocument();
     expect(screen.getByText("Draft")).toBeInTheDocument();
   });

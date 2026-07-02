@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import JobPost, ProfileCvImprovementSuggestion, ProfileDocumentChunk, RoleProfile
 from app.services.profile_cv_draft_service import CreateCvSuggestionRequest, ProfileCvDraftService
+from app.services.scoring_service import extract_text_match_tokens
 
 
 @dataclass(frozen=True)
@@ -169,12 +170,7 @@ class ProfileCvJobImprovementService:
         return best_chunk.text[:600].strip()
 
     def _tokens(self, value: str) -> set[str]:
-        stopwords = {"and", "or", "the", "with", "for", "to", "of", "in", "a", "an"}
-        return {
-            token
-            for token in re.findall(r"[a-zA-Z][a-zA-Z0-9+#.-]{1,}", value.casefold())
-            if token not in stopwords
-        }
+        return extract_text_match_tokens(value)
 
     def _build_suggestion_request(
         self,

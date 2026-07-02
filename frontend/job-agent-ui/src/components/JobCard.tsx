@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp, Check, X, MapPin, Building, ExternalLink, Briefcase } from "lucide-react";
 import type { GenerateJobCvImprovementsResponse, Job } from "../types/api";
+import type { CvDraft, CvDraftPreview } from "../types/profileDocuments";
 import ScoreBreakdown, { formatPercentScore } from "./ScoreBreakdown";
 import StatusSelect from "./StatusSelect";
 
@@ -12,9 +13,13 @@ interface JobCardProps {
   onStatusChange?: () => void;
   isActionLoading?: boolean;
   cvImprovementResult?: GenerateJobCvImprovementsResponse;
+  cvDraft?: CvDraft;
+  cvDraftPreview?: CvDraftPreview;
   onGenerateCvImprovements?: (id: string) => void | Promise<void>;
   onCreateCvDraft?: (id: string) => void | Promise<void>;
+  onPreviewCvDraft?: (id: string) => void | Promise<void>;
   isCvImprovementLoading?: boolean;
+  isCvDraftLoading?: boolean;
 }
 
 function formatSource(src: string | null): string | null {
@@ -39,9 +44,13 @@ export default function JobCard({
   onStatusChange,
   isActionLoading = false,
   cvImprovementResult,
+  cvDraft,
+  cvDraftPreview,
   onGenerateCvImprovements,
   onCreateCvDraft,
+  onPreviewCvDraft,
   isCvImprovementLoading = false,
+  isCvDraftLoading = false,
 }: JobCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
@@ -174,9 +183,15 @@ export default function JobCard({
           <div className="job-cv-suggestions-header">
             <strong>CV improvement suggestions</strong>
             {cvImprovementResult.suggestions.some((suggestion) => suggestion.edit_kind === "wording_only") &&
-            onCreateCvDraft ? (
-              <button type="button" className="btn-secondary" onClick={() => onCreateCvDraft(job.id)}>
-                Create CV draft
+            onCreateCvDraft &&
+            !cvDraft ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => onCreateCvDraft(job.id)}
+                disabled={isCvDraftLoading}
+              >
+                {isCvDraftLoading ? "Creating draft..." : "Create CV draft"}
               </button>
             ) : null}
           </div>
@@ -191,6 +206,37 @@ export default function JobCard({
               </small>
             </article>
           ))}
+          {cvDraft ? (
+            <div className="job-cv-draft">
+              <div className="job-cv-draft-header">
+                <div>
+                  <strong>CV draft created</strong>
+                  <span>{cvDraft.title}</span>
+                </div>
+                {onPreviewCvDraft ? (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => onPreviewCvDraft(job.id)}
+                    disabled={isCvDraftLoading}
+                  >
+                    Preview draft
+                  </button>
+                ) : null}
+              </div>
+              {cvDraftPreview ? (
+                <div className="job-cv-draft-preview">
+                  {cvDraftPreview.recommendation ? <p>{cvDraftPreview.recommendation}</p> : null}
+                  {cvDraftPreview.edits.map((edit) => (
+                    <article key={`${cvDraftPreview.draft_id}-${edit.requirement}`}>
+                      <strong>{edit.requirement}</strong>
+                      <span>{edit.proposed_edit}</span>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

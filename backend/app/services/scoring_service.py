@@ -7,6 +7,7 @@ for embedding. It is free of database sessions, network calls, or external servi
 """
 
 import json
+import re
 from typing import Any, Iterable, Optional, Set, Tuple
 
 from app.core.constants import JD_STATUSES
@@ -56,6 +57,23 @@ def normalize_skill_set(skills: Iterable[str]) -> Set[str]:
     if not skills:
         return set()
     return {normalize_skill(s) for s in skills if s and str(s).strip()}
+
+
+def extract_text_match_tokens(
+    value: str | None,
+    *,
+    stopwords: set[str] | None = None,
+) -> set[str]:
+    """Extract deterministic tokens for lightweight text matching."""
+    if not value:
+        return set()
+    default_stopwords = {"and", "or", "the", "with", "for", "to", "of", "in", "a", "an"}
+    ignored = stopwords if stopwords is not None else default_stopwords
+    return {
+        token
+        for token in re.findall(r"[a-zA-Z][a-zA-Z0-9+#.-]{1,}", value.casefold())
+        if token not in ignored
+    }
 
 
 def calculate_skill_overlap_score(user_skills: Iterable[str], job_required_skills: Iterable[str]) -> float:

@@ -685,6 +685,93 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-surface-hover);
 }
 
+.profile-document-subpanel {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.profile-document-subpanel-title {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-document-suggestion-list,
+.profile-document-draft-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.profile-document-suggestion,
+.profile-document-preview,
+.profile-document-draft-row {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px;
+  min-width: 0;
+}
+
+.profile-document-suggestion,
+.profile-document-preview {
+  display: grid;
+  gap: 5px;
+}
+
+.profile-document-suggestion strong,
+.profile-document-suggestion span,
+.profile-document-suggestion small,
+.profile-document-preview strong,
+.profile-document-preview span,
+.profile-document-preview p {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.profile-document-suggestion strong,
+.profile-document-preview strong {
+  color: var(--text-primary);
+}
+
+.profile-document-suggestion span,
+.profile-document-preview span,
+.profile-document-preview p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.profile-document-suggestion small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.profile-document-draft-row {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-document-draft-row button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  overflow-wrap: anywhere;
+}
+
+.profile-document-preview article {
+  display: grid;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
 .conversation-toolbar {
   display: flex;
   gap: 8px;
@@ -1187,6 +1274,46 @@ h1, h2, h3, h4, h5, h6 {
 .job-cv-suggestion small {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.job-cv-draft {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: rgba(0, 229, 255, 0.04);
+}
+
+.job-cv-draft-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.job-cv-draft-header strong,
+.job-cv-draft-header span,
+.job-cv-draft-preview strong,
+.job-cv-draft-preview span {
+  display: block;
+}
+
+.job-cv-draft-header span,
+.job-cv-draft-preview span,
+.job-cv-draft-preview p {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.job-cv-draft-preview {
+  display: grid;
+  gap: 6px;
+}
+
+.job-cv-draft-preview article {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {
