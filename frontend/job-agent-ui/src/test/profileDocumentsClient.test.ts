@@ -10,16 +10,19 @@ import {
   getProfileDocumentFileUrl,
   getProfileDocumentVersionDownloadUrl,
   getProfileDocumentVersionFileUrl,
+  getProfileCvTemplate,
   listCvDrafts,
   listCvSuggestions,
   listProfileDocumentVersions,
   listProfileDocuments,
   previewCvDraft,
+  saveProfileCvTemplate,
   uploadProfileDocument,
 } from "../api/profileDocumentsClient";
 
 const getSpy = vi.spyOn(apiClient, "get");
 const postSpy = vi.spyOn(apiClient, "post");
+const putSpy = vi.spyOn(apiClient, "put");
 const deleteSpy = vi.spyOn(apiClient, "delete");
 
 describe("profileDocumentsClient", () => {
@@ -207,5 +210,30 @@ describe("profileDocumentsClient", () => {
     );
     expect(version.id).toBe("version-2");
     expect(version.source_type).toBe("exported_draft");
+  });
+
+  it("gets and saves the active profile CV LaTeX template", async () => {
+    getSpy.mockResolvedValueOnce({ data: { id: "template-1", name: "Harvard style" } });
+    putSpy.mockResolvedValueOnce({ data: { id: "template-2", name: "Updated style" } });
+
+    await expect(getProfileCvTemplate("profile-1")).resolves.toEqual({
+      id: "template-1",
+      name: "Harvard style",
+    });
+    await expect(
+      saveProfileCvTemplate("profile-1", {
+        name: "Updated style",
+        template_source: "\\documentclass{article}\\begin{document}\\end{document}",
+      })
+    ).resolves.toEqual({ id: "template-2", name: "Updated style" });
+
+    expect(getSpy).toHaveBeenCalledWith("/api/role-profiles/profile-1/cv-template");
+    expect(putSpy).toHaveBeenCalledWith(
+      "/api/role-profiles/profile-1/cv-template",
+      {
+        name: "Updated style",
+        template_source: "\\documentclass{article}\\begin{document}\\end{document}",
+      }
+    );
   });
 });

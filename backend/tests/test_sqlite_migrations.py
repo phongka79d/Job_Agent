@@ -126,3 +126,33 @@ async def test_sqlite_draft_migration_is_idempotent():
     assert "profile_cv_drafts" in tables
     assert "profile_cv_improvement_suggestions" in tables
     await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_sqlite_migration_adds_profile_cv_templates_table():
+    from app.db.sqlite_migrations import apply_sqlite_migrations
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.execute(text("CREATE TABLE role_profiles (id VARCHAR(36) PRIMARY KEY)"))
+        await conn.execute(text("CREATE TABLE profile_documents (id VARCHAR(36) PRIMARY KEY)"))
+        await conn.execute(text("CREATE TABLE profile_document_chunks (id VARCHAR(36) PRIMARY KEY)"))
+        await conn.execute(text("CREATE TABLE profile_document_versions (id VARCHAR(36) PRIMARY KEY)"))
+
+        await apply_sqlite_migrations(conn)
+
+        tables = await _table_names(conn)
+        columns = await _columns(conn, "profile_cv_templates")
+
+    assert "profile_cv_templates" in tables
+    assert {
+        "id",
+        "role_profile_id",
+        "name",
+        "template_format",
+        "template_source",
+        "is_active",
+        "created_at",
+        "updated_at",
+    } <= columns
+    await engine.dispose()

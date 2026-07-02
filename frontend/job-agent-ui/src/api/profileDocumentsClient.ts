@@ -6,8 +6,10 @@ import type {
   CvDraftPreview,
   CvImprovementSuggestion,
   ExportCvDraftPayload,
+  ProfileCvTemplate,
   ProfileDocument,
   ProfileDocumentVersion,
+  SaveProfileCvTemplatePayload,
 } from "../types/profileDocuments";
 
 export async function listProfileDocuments(roleProfileId: string): Promise<ProfileDocument[]> {
@@ -182,6 +184,34 @@ export async function exportCvDraftToPdf(
   try {
     const response = await apiClient.post<ProfileDocumentVersion>(
       `/api/role-profiles/${roleProfileId}/documents/${documentId}/drafts/${draftId}/export-pdf`,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getProfileCvTemplate(
+  roleProfileId: string
+): Promise<ProfileCvTemplate> {
+  try {
+    const response = await apiClient.get<ProfileCvTemplate>(
+      `/api/role-profiles/${roleProfileId}/cv-template`
+    );
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function saveProfileCvTemplate(
+  roleProfileId: string,
+  payload: SaveProfileCvTemplatePayload
+): Promise<ProfileCvTemplate> {
+  try {
+    const response = await apiClient.put<ProfileCvTemplate>(
+      `/api/role-profiles/${roleProfileId}/cv-template`,
       payload
     );
     return response.data;

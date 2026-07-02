@@ -130,6 +130,28 @@ class ProfileCvDraft(Base):
     updated_at: Mapped[updated_timestamp]
 
 
+class ProfileCvTemplate(Base):
+    """Active LaTeX CV export template scoped to a role profile."""
+    __tablename__ = "profile_cv_templates"
+
+    __table_args__ = (
+        Index("idx_profile_cv_templates_role_profile_active", "role_profile_id", "is_active"),
+    )
+
+    id: Mapped[uuid_pk]
+    role_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("role_profiles.id"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    template_format: Mapped[str] = mapped_column(Text, nullable=False, default="latex")
+    template_source: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[created_timestamp]
+    updated_at: Mapped[updated_timestamp]
+
+
 class ProfileCvImprovementSuggestion(Base):
     """Targeted CV improvement suggestion grounded in existing CV evidence."""
     __tablename__ = "profile_cv_improvement_suggestions"

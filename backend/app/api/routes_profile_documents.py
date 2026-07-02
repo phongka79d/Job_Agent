@@ -22,6 +22,8 @@ from app.api.schemas import (
     CvImprovementSuggestionCreateRequest,
     CvImprovementSuggestionListResponse,
     CvImprovementSuggestionResponse,
+    ProfileCvTemplateResponse,
+    ProfileCvTemplateSaveRequest,
     ProfileDocumentListResponse,
     ProfileDocumentResponse,
     ProfileDocumentVersionListResponse,
@@ -34,6 +36,7 @@ from app.services.profile_cv_draft_service import (
     ProfileCvDraftService,
 )
 from app.services.profile_cv_export_service import ExportCvDraftRequest, ProfileCvExportService
+from app.services.profile_cv_template_service import ProfileCvTemplateService
 from app.services.profile_document_service import ProfileDocumentFileInfo, ProfileDocumentService
 
 
@@ -44,6 +47,7 @@ router = APIRouter(
 profile_document_service = ProfileDocumentService()
 profile_cv_draft_service = ProfileCvDraftService()
 profile_cv_export_service = ProfileCvExportService()
+profile_cv_template_service = ProfileCvTemplateService()
 
 
 async def _require_profile(session: SessionDep, role_profile_id: str) -> RoleProfile:
@@ -429,12 +433,58 @@ async def export_cv_draft_pdf(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
 
 
 active_cv_router = APIRouter(
     prefix="/role-profiles/{role_profile_id}/active-cv",
     tags=["profile-documents"],
 )
+
+cv_template_router = APIRouter(
+    prefix="/role-profiles/{role_profile_id}/cv-template",
+    tags=["profile-documents"],
+)
+
+
+@cv_template_router.get("", response_model=ProfileCvTemplateResponse)
+async def get_profile_cv_template(
+    role_profile_id: UUID,
+    session: SessionDep,
+) -> ProfileCvTemplateResponse:
+    await _require_profile(session, str(role_profile_id))
+    template = await profile_cv_template_service.get_active_template(
+        session,
+        role_profile_id=str(role_profile_id),
+    )
+    if template is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="CV template not found")
+    return template
+
+
+@cv_template_router.put("", response_model=ProfileCvTemplateResponse)
+async def save_profile_cv_template(
+    role_profile_id: UUID,
+    request: ProfileCvTemplateSaveRequest,
+    session: SessionDep,
+) -> ProfileCvTemplateResponse:
+    await _require_profile(session, str(role_profile_id))
+    try:
+        return await profile_cv_template_service.save_active_template(
+            session,
+            role_profile_id=str(role_profile_id),
+            name=request.name,
+            template_source=request.template_source,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
 
 
 @active_cv_router.get("", response_model=ActiveCvResponse)

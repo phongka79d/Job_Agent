@@ -126,3 +126,19 @@ async def apply_sqlite_migrations(conn: AsyncConnection) -> None:
         )
         """,
     )
+    await _create_table_if_missing(
+        conn,
+        "profile_cv_templates",
+        """
+        CREATE TABLE profile_cv_templates (
+            id VARCHAR(36) PRIMARY KEY,
+            role_profile_id VARCHAR(36) NOT NULL,
+            name TEXT NOT NULL,
+            template_format TEXT NOT NULL DEFAULT 'latex',
+            template_source TEXT NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+        )
+        """,
+    )

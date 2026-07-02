@@ -332,6 +332,22 @@ class ActiveCvResponse(ApiSchema):
     version: ProfileDocumentVersionResponse | None = None
 
 
+class ProfileCvTemplateSaveRequest(ApiSchema):
+    name: str = Field(min_length=1, max_length=120)
+    template_source: str = Field(min_length=1, max_length=50000)
+
+
+class ProfileCvTemplateResponse(ApiSchema):
+    id: UUID
+    role_profile_id: UUID
+    name: str
+    template_format: str
+    template_source: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
 class ActivateCvVersionRequest(ApiSchema):
     confirmed: bool = False
 

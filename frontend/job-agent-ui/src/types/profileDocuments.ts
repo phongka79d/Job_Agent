@@ -103,3 +103,19 @@ export interface CreateCvDraftPayload {
 export interface ExportCvDraftPayload {
   confirmed: boolean;
 }
+
+export interface ProfileCvTemplate {
+  id: string;
+  role_profile_id: string;
+  name: string;
+  template_format: "latex";
+  template_source: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SaveProfileCvTemplatePayload {
+  name: string;
+  template_source: string;
+}

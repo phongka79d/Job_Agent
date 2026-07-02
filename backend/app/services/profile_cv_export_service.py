@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import ProfileCvDraft, ProfileDocument, ProfileDocumentVersion
 from app.services.cv_pdf_export_service import CvPdfExportService
 from app.services.cv_structure_extraction_service import CvStructureExtractionService
+from app.services.latex_cv_render_service import LatexCvRenderService
+from app.services.profile_cv_template_service import ProfileCvTemplateService
 from app.services.pdf_text_extraction_service import PdfTextExtractionService
 from app.services.profile_document_indexing_service import ProfileDocumentIndexingService
 from app.services.profile_document_storage_service import ProfileDocumentStorageService
@@ -38,12 +40,16 @@ class ProfileCvExportService:
         extractor: PdfTextExtractionService | None = None,
         structure_extractor: CvStructureExtractionService | None = None,
         indexing_service: ProfileDocumentIndexingService | None = None,
+        template_service: ProfileCvTemplateService | None = None,
+        latex_renderer: LatexCvRenderService | None = None,
     ) -> None:
         self.pdf_exporter = pdf_exporter or CvPdfExportService()
         self.storage = storage or ProfileDocumentStorageService()
         self.extractor = extractor or PdfTextExtractionService()
         self.structure_extractor = structure_extractor or CvStructureExtractionService()
         self.indexing_service = indexing_service or ProfileDocumentIndexingService()
+        self.template_service = template_service or ProfileCvTemplateService()
+        self.latex_renderer = latex_renderer or LatexCvRenderService()
 
     async def export_draft_to_pdf(
         self,
@@ -82,7 +88,18 @@ class ProfileCvExportService:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             rendered_path = Path(tmp_dir) / f"{version_id}.pdf"
-            self.pdf_exporter.write_pdf(rendered_path, preview)
+            template = await self.template_service.get_active_template(
+                session,
+                role_profile_id=request.role_profile_id,
+            )
+            if template is None:
+                self.pdf_exporter.write_pdf(rendered_path, preview)
+            else:
+                self.latex_renderer.write_pdf(
+                    rendered_path,
+                    template_source=template.template_source,
+                    preview=preview,
+                )
             stored_path = self.storage.copy_pdf(
                 rendered_path,
                 role_profile_id=request.role_profile_id,

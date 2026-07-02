@@ -57,6 +57,7 @@ async def init_db() -> None:
         "memory_summaries",
         "profile_cv_drafts",
         "profile_cv_improvement_suggestions",
+        "profile_cv_templates",
         "profile_document_chunks",
         "profile_document_versions",
         "profile_documents",

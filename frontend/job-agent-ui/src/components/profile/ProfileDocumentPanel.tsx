@@ -16,6 +16,7 @@ import {
   uploadProfileDocument,
 } from "../../api/profileDocumentsClient";
 import type { CvDraft, CvDraftPreview, CvImprovementSuggestion, ProfileDocument, ProfileDocumentVersion } from "../../types/profileDocuments";
+import ProfileCvTemplateEditor from "./ProfileCvTemplateEditor";
 import ProfileDocumentUpload from "./ProfileDocumentUpload";
 
 interface ProfileDocumentPanelProps {
@@ -188,6 +189,10 @@ export default function ProfileDocumentPanel({ activeProfileId }: ProfileDocumen
           <AlertCircle size={14} /> {error}
         </div>
       )}
+
+      {activeProfileId ? (
+        <ProfileCvTemplateEditor activeProfileId={activeProfileId} onError={setError} />
+      ) : null}
 
       {!activeProfileId ? (
         <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>

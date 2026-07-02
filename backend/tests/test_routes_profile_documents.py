@@ -170,6 +170,34 @@ async def test_export_cv_draft_returns_exported_version(client, role_profile):
 
 
 @pytest.mark.asyncio
+async def test_export_cv_draft_reports_latex_compiler_failure(
+    client,
+    role_profile,
+    monkeypatch,
+):
+    class FailingExportService:
+        async def export_draft_to_pdf(self, session, request):
+            raise RuntimeError("LaTeX compiler is not installed")
+
+    monkeypatch.setattr(
+        routes_profile_documents,
+        "profile_cv_export_service",
+        FailingExportService(),
+    )
+
+    response = await client.post(
+        (
+            f"/api/role-profiles/{role_profile.id}/documents/{uuid4()}"
+            f"/drafts/{uuid4()}/export-pdf"
+        ),
+        json={"confirmed": True},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "LaTeX compiler is not installed"
+
+
+@pytest.mark.asyncio
 async def test_upload_profile_document_rejects_non_pdf(client, role_profile):
     response = await client.post(
         f"/api/role-profiles/{role_profile.id}/documents",
@@ -335,3 +363,40 @@ async def test_cv_draft_preview_requires_matching_document(client, role_profile,
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_save_and_get_active_cv_latex_template(client, role_profile):
+    template_source = "\\documentclass{article}\\begin{document}{{AI_TARGETED_EDITS}}\\end{document}"
+
+    save_response = await client.put(
+        f"/api/role-profiles/{role_profile.id}/cv-template",
+        json={"name": "Harvard style", "template_source": template_source},
+    )
+
+    assert save_response.status_code == 200
+    saved = save_response.json()
+    assert saved["role_profile_id"] == role_profile.id
+    assert saved["name"] == "Harvard style"
+    assert saved["template_format"] == "latex"
+    assert saved["template_source"] == template_source
+    assert saved["is_active"] is True
+
+    get_response = await client.get(f"/api/role-profiles/{role_profile.id}/cv-template")
+
+    assert get_response.status_code == 200
+    assert get_response.json()["id"] == saved["id"]
+
+
+@pytest.mark.asyncio
+async def test_save_cv_latex_template_rejects_unsafe_commands(client, role_profile):
+    response = await client.put(
+        f"/api/role-profiles/{role_profile.id}/cv-template",
+        json={
+            "name": "Unsafe",
+            "template_source": "\\documentclass{article}\\begin{document}\\write18{rm -rf /}\\end{document}",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "unsafe LaTeX command" in response.json()["detail"]

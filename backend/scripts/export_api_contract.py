@@ -32,6 +32,8 @@ from app.api.schemas import (
     JobResponse,
     ParseJobTextRequest,
     ParseJobUrlRequest,
+    ProfileCvTemplateResponse,
+    ProfileCvTemplateSaveRequest,
     ProfileDocumentListResponse,
     ProfileDocumentResponse,
     RoleProfileCreateRequest,
@@ -162,6 +164,17 @@ ENDPOINTS = {
         "path": "/api/role-profiles/{role_profile_id}/documents",
         "response_schema": "ProfileDocumentListResponse",
     },
+    "getProfileCvTemplate": {
+        "method": "GET",
+        "path": "/api/role-profiles/{role_profile_id}/cv-template",
+        "response_schema": "ProfileCvTemplateResponse",
+    },
+    "saveProfileCvTemplate": {
+        "method": "PUT",
+        "path": "/api/role-profiles/{role_profile_id}/cv-template",
+        "request_schema": "ProfileCvTemplateSaveRequest",
+        "response_schema": "ProfileCvTemplateResponse",
+    },
 }
 
 SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
@@ -188,6 +201,8 @@ SCHEMA_MODELS: tuple[Type[BaseModel], ...] = (
     AgentToolCallListResponse,
     ProfileDocumentResponse,
     ProfileDocumentListResponse,
+    ProfileCvTemplateSaveRequest,
+    ProfileCvTemplateResponse,
     GenerateJobCvImprovementsRequest,
     GenerateJobCvImprovementsResponse,
 )

@@ -69,6 +69,11 @@
       "path": "/api/jobs",
       "response_schema": "JobListResponse"
     },
+    "getProfileCvTemplate": {
+      "method": "GET",
+      "path": "/api/role-profiles/{role_profile_id}/cv-template",
+      "response_schema": "ProfileCvTemplateResponse"
+    },
     "getReviewJobs": {
       "method": "GET",
       "path": "/api/jobs/review",
@@ -115,6 +120,12 @@
       "method": "POST",
       "path": "/api/jobs/{id}/reject",
       "response_schema": "StatusMutationResponse"
+    },
+    "saveProfileCvTemplate": {
+      "method": "PUT",
+      "path": "/api/role-profiles/{role_profile_id}/cv-template",
+      "request_schema": "ProfileCvTemplateSaveRequest",
+      "response_schema": "ProfileCvTemplateResponse"
     },
     "searchJobs": {
       "method": "POST",
@@ -2428,6 +2439,80 @@
         "source_url"
       ],
       "title": "ParseJobUrlRequest",
+      "type": "object"
+    },
+    "ProfileCvTemplateResponse": {
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "is_active": {
+          "title": "Is Active",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "role_profile_id": {
+          "format": "uuid",
+          "title": "Role Profile Id",
+          "type": "string"
+        },
+        "template_format": {
+          "title": "Template Format",
+          "type": "string"
+        },
+        "template_source": {
+          "title": "Template Source",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role_profile_id",
+        "name",
+        "template_format",
+        "template_source",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ProfileCvTemplateResponse",
+      "type": "object"
+    },
+    "ProfileCvTemplateSaveRequest": {
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "template_source": {
+          "maxLength": 50000,
+          "minLength": 1,
+          "title": "Template Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "template_source"
+      ],
+      "title": "ProfileCvTemplateSaveRequest",
       "type": "object"
     },
     "ProfileDocumentListResponse": {

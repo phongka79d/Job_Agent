@@ -1,13 +1,16 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiClientError } from "../api/client";
 import {
   activateProfileDocumentVersion,
   exportCvDraftToPdf,
+  getProfileCvTemplate,
   listCvDrafts,
   listCvSuggestions,
   listProfileDocumentVersions,
   listProfileDocuments,
   previewCvDraft,
+  saveProfileCvTemplate,
   uploadProfileDocument,
 } from "../api/profileDocumentsClient";
 import ProfileDocumentPanel from "../components/profile/ProfileDocumentPanel";
@@ -36,6 +39,8 @@ vi.mock("../api/profileDocumentsClient", () => ({
   listProfileDocumentVersions: vi.fn(),
   listProfileDocuments: vi.fn(),
   previewCvDraft: vi.fn(),
+  getProfileCvTemplate: vi.fn(),
+  saveProfileCvTemplate: vi.fn(),
   uploadProfileDocument: vi.fn(),
 }));
 
@@ -103,6 +108,9 @@ const draft: CvDraft = {
 describe("ProfileDocumentPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getProfileCvTemplate).mockRejectedValue(
+      new ApiClientError("CV template not found", 404)
+    );
   });
 
   it("loads documents for the active profile", async () => {
@@ -293,5 +301,51 @@ describe("ProfileDocumentPanel", () => {
     fireEvent.click(await screen.findByRole("button", { name: /export .* PDF/i }));
 
     expect(exportCvDraftToPdf).toHaveBeenCalledWith("profile-1", readyDocument.id, draft.id, { confirmed: true });
+  });
+
+  it("loads and saves a profile CV LaTeX template", async () => {
+    vi.mocked(listProfileDocuments).mockResolvedValue([]);
+    vi.mocked(listCvSuggestions).mockResolvedValue([]);
+    vi.mocked(listCvDrafts).mockResolvedValue([]);
+    vi.mocked(listProfileDocumentVersions).mockResolvedValue([]);
+    vi.mocked(getProfileCvTemplate).mockResolvedValue({
+      id: "template-1",
+      role_profile_id: "profile-1",
+      name: "Harvard style",
+      template_format: "latex",
+      template_source: "\\documentclass{article}\\begin{document}\\end{document}",
+      is_active: true,
+      created_at: "2026-07-01T00:00:00Z",
+      updated_at: "2026-07-01T00:00:00Z",
+    });
+    vi.mocked(saveProfileCvTemplate).mockResolvedValue({
+      id: "template-2",
+      role_profile_id: "profile-1",
+      name: "Updated style",
+      template_format: "latex",
+      template_source: "\\documentclass{article}\\begin{document}{{AI_TARGETED_EDITS}}\\end{document}",
+      is_active: true,
+      created_at: "2026-07-01T00:00:00Z",
+      updated_at: "2026-07-01T00:00:00Z",
+    });
+
+    render(<ProfileDocumentPanel activeProfileId="profile-1" />);
+
+    fireEvent.change(await screen.findByLabelText(/template name/i), {
+      target: { value: "Updated style" },
+    });
+    fireEvent.change(screen.getByLabelText(/latex template source/i), {
+      target: {
+        value: "\\documentclass{article}\\begin{document}{{AI_TARGETED_EDITS}}\\end{document}",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save template/i }));
+
+    await waitFor(() => {
+      expect(saveProfileCvTemplate).toHaveBeenCalledWith("profile-1", {
+        name: "Updated style",
+        template_source: "\\documentclass{article}\\begin{document}{{AI_TARGETED_EDITS}}\\end{document}",
+      });
+    });
   });
 });

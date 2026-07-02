@@ -82,12 +82,14 @@ describe("API Contract Drift Tests", () => {
       getBatchSummary: { method: "GET", path: "/api/batches/{batch_id}/summary" },
       getJobDetail: { method: "GET", path: "/api/jobs/{id}" },
       getJobs: { method: "GET", path: "/api/jobs" },
+      getProfileCvTemplate: { method: "GET", path: "/api/role-profiles/{role_profile_id}/cv-template" },
       getReviewJobs: { method: "GET", path: "/api/jobs/review" },
       listRoleProfiles: { method: "GET", path: "/api/role-profiles" },
       parseJobText: { method: "POST", path: "/api/jobs/parse-text" },
       parseJobUrl: { method: "POST", path: "/api/jobs/parse-url" },
       rejectJob: { method: "POST", path: "/api/jobs/{id}/reject" },
       searchJobs: { method: "POST", path: "/api/jobs/search" },
+      saveProfileCvTemplate: { method: "PUT", path: "/api/role-profiles/{role_profile_id}/cv-template" },
       updateJobStatus: { method: "PATCH", path: "/api/jobs/{id}/status" }
     };
 
@@ -121,7 +123,9 @@ describe("API Contract Drift Tests", () => {
       "StatusUpdateRequest",
       "StatusMutationResponse",
       "GenerateJobCvImprovementsRequest",
-      "GenerateJobCvImprovementsResponse"
+      "GenerateJobCvImprovementsResponse",
+      "ProfileCvTemplateSaveRequest",
+      "ProfileCvTemplateResponse"
     ];
 
     for (const schemaName of expectedSchemas) {

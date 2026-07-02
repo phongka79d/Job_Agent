@@ -685,6 +685,78 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-surface-hover);
 }
 
+.profile-cv-template-editor {
+  margin-bottom: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.profile-cv-template-editor summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.profile-cv-template-fields {
+  display: grid;
+  gap: 8px;
+  padding: 0 8px 8px;
+}
+
+.profile-cv-template-fields label {
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.profile-cv-template-fields input,
+.profile-cv-template-fields textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.profile-cv-template-fields input {
+  min-height: 32px;
+  padding: 6px 8px;
+}
+
+.profile-cv-template-fields textarea {
+  min-height: 180px;
+  padding: 8px;
+  resize: vertical;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.4;
+}
+
+.profile-cv-template-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-muted);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.profile-cv-template-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .profile-document-subpanel {
   margin-top: 12px;
   display: grid;
