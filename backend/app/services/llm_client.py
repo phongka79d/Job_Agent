@@ -7,7 +7,7 @@ from pydantic import SecretStr, ValidationError
 from langchain_core.exceptions import OutputParserException
 from langchain_openai import ChatOpenAI
 
-from app.agents.prompts import build_extraction_prompt, build_repair_prompt
+from app.prompts.job_extraction import build_extraction_prompt, build_repair_prompt
 from app.agents.schemas import JobPostExtract
 from app.core.config import settings
 from app.services.cost_service import TokenPricing, normalize_usage, track_extraction_time
