@@ -9,7 +9,7 @@ interface ToolCallCardProps {
 function statusIcon(status: AgentToolCall["status"]) {
   switch (status) {
     case "running":
-      return <Loader2 size={14} className="animate-spin" />;
+      return <Loader2 size={14} className="spin" />;
     case "success":
       return <CheckCircle size={14} />;
     case "failed":
@@ -43,10 +43,7 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
   return (
     <article className={`tool-call-card tool-call-${toolCall.status}`}>
       <details className="tool-call-details">
-        <summary
-          className="tool-call-summary"
-          aria-label={`${label}. ${statusLabel}. Show details`}
-        >
+        <summary className="tool-call-summary" tabIndex={0}>
           <span className="tool-call-primary">
             <span className="tool-call-status-icon" aria-hidden="true">
               {statusIcon(toolCall.status)}

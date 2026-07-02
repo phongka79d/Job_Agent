@@ -395,9 +395,9 @@ describe("ChatWorkspacePage", () => {
       });
     });
 
-    const liveSummary = screen.getByLabelText(
-      "Importing job description. In progress. Show details",
-    );
+    const liveSummary = screen
+      .getByText("Importing job description")
+      .closest("summary") as HTMLElement;
     expect(within(liveSummary).getByText("Importing job description")).toBeInTheDocument();
     expect(within(liveSummary).getByText("In progress")).toBeInTheDocument();
     expect(screen.getByText("Pasted job text, 65 characters")).toBeInTheDocument();
@@ -416,9 +416,7 @@ describe("ChatWorkspacePage", () => {
       });
     });
 
-    expect(screen.getByLabelText(
-      "Job description imported. Completed. Show details",
-    )).toBe(liveSummary);
+    expect(screen.getByText("Job description imported").closest("summary")).toBe(liveSummary);
     expect(within(liveSummary).getByText("Job description imported")).toBeInTheDocument();
     expect(within(liveSummary).getByText("Completed")).toBeInTheDocument();
     expect(screen.getByText("Added 1 job to Review Queue.")).toBeInTheDocument();

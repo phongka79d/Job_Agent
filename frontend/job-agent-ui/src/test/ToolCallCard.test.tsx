@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import ToolCallCard from "../components/chat/ToolCallCard";
 import type { AgentToolCall } from "../types/chat";
@@ -28,6 +29,8 @@ describe("ToolCallCard", () => {
     const details = summary.closest("details") as HTMLDetailsElement;
 
     expect(details).not.toHaveAttribute("open");
+    expect(summary).not.toHaveAttribute("aria-label");
+    expect(summary).toHaveAccessibleName(/CV reading completed.*Completed/);
     expect(within(summary).getByText("Completed")).toBeInTheDocument();
     expect(within(summary).queryByText("retrieve_profile_cv_chunks")).not.toBeInTheDocument();
 
@@ -42,6 +45,37 @@ describe("ToolCallCard", () => {
     expect(screen.getByText("Technical name")).toBeInTheDocument();
     expect(screen.getByText("retrieve_profile_cv_chunks")).toBeInTheDocument();
     expect(screen.queryByText('{"private":"not rendered"}')).not.toBeInTheDocument();
+  });
+
+  it("animates the running status icon with the app spin class", () => {
+    const { container } = render(
+      <ToolCallCard
+        toolCall={{
+          ...completedToolCall,
+          status: "running",
+          result_summary: null,
+          completed_at: null,
+        }}
+      />,
+    );
+
+    expect(container.querySelector(".tool-call-status-icon svg")).toHaveClass("spin");
+  });
+
+  it("focuses the native summary by keyboard and opens and closes details", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ToolCallCard toolCall={completedToolCall} />);
+    const summary = container.querySelector("summary") as HTMLElement;
+    const details = container.querySelector("details") as HTMLDetailsElement;
+
+    await user.tab();
+    expect(summary).toHaveFocus();
+
+    await user.click(summary);
+    expect(details).toHaveAttribute("open");
+
+    await user.click(summary);
+    expect(details).not.toHaveAttribute("open");
   });
 
   it("shows a readable failed state and the safe error after expansion", () => {
