@@ -106,7 +106,8 @@ export function getToolCallPresentation(
     return { label: labels[lifecycle], statusLabel };
   }
 
-  const readableName = toolName.replaceAll("_", " ");
+  const readableName =
+    toolName.split("_").filter(Boolean).join(" ") || "Tool";
   const sentenceCaseName =
     readableName.charAt(0).toUpperCase() + readableName.slice(1);
   const suffix =

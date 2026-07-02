@@ -137,4 +137,18 @@ describe("getToolCallPresentation", () => {
       expect(presentation.label).not.toContain("_");
     },
   );
+
+  it.each([
+    ["", "running", "Tool in progress", "In progress"],
+    ["_", "success", "Tool completed", "Completed"],
+    ["__generate__report", "failed", "Generate report failed", "Needs attention"],
+  ] as const)(
+    "normalizes boundary identifier %j",
+    (toolName, status, label, statusLabel) => {
+      expect(getToolCallPresentation(toolName, status)).toEqual({
+        label,
+        statusLabel,
+      });
+    },
+  );
 });
