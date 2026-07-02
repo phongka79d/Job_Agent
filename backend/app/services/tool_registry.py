@@ -11,6 +11,7 @@ from app.services.job_search_workflow import ingest_search_jobs
 from app.services.job_text_ingestion_workflow import ingest_raw_job_text
 from app.services.profile_cv_draft_service import CreateCvDraftRequest, CreateCvSuggestionRequest
 from app.services.profile_cv_export_service import ExportCvDraftRequest
+from app.services.profile_cv_job_improvement_service import GenerateCvImprovementsRequest
 
 
 @dataclass(frozen=True)
@@ -131,6 +132,12 @@ class ToolRegistry:
                 name="export_cv_draft_to_pdf",
                 description="Export an approved CV edit draft into a real PDF version without activating it.",
                 requires_confirmation=True,
+                handler=_not_wired,
+            ),
+            "score_cv_against_job": ToolDefinition(
+                name="score_cv_against_job",
+                description="Generate grounded CV improvement suggestions for one scored job using the active CV.",
+                requires_confirmation=False,
                 handler=_not_wired,
             ),
             "set_active_cv_version": ToolDefinition(
@@ -520,6 +527,45 @@ def build_extract_job_from_text_handler(
                 "review_queue_path": "/review",
                 "job_ids": job_ids,
                 "batch_id": str(getattr(result, "batch_id", "")),
+            },
+        )
+
+    return handler
+
+
+def build_score_cv_against_job_handler(
+    improvement_service: object,
+    session: object,
+) -> ToolHandler:
+    async def handler(request: ToolRequest) -> ToolResult:
+        job_id = str(request.arguments["job_id"])
+        result = await improvement_service.generate_suggestions(
+            session,
+            GenerateCvImprovementsRequest(
+                role_profile_id=str(request.context["role_profile_id"]),
+                job_id=job_id,
+                max_suggestions=int(request.arguments.get("max_suggestions", 6)),
+            ),
+        )
+        wording_only_count = sum(1 for suggestion in result.suggestions if suggestion.edit_kind == "wording_only")
+        requires_user_fact_count = sum(
+            1 for suggestion in result.suggestions if suggestion.edit_kind == "requires_user_fact"
+        )
+        suggestion_word = "suggestion" if len(result.suggestions) == 1 else "suggestions"
+        return ToolResult(
+            content=(
+                f"Generated {len(result.suggestions)} grounded CV improvement {suggestion_word}. "
+                "Wording-only suggestions may be drafted after confirmation. "
+                "Fact-required suggestions need user-provided facts."
+            ),
+            result_summary=f"Generated {len(result.suggestions)} CV improvement {suggestion_word}",
+            safe_payload={
+                "job_id": result.job_id,
+                "document_id": result.document_id,
+                "version_id": result.version_id,
+                "suggestion_count": len(result.suggestions),
+                "wording_only_count": wording_only_count,
+                "requires_user_fact_count": requires_user_fact_count,
             },
         )
 

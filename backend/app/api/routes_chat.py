@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
+import re
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -22,12 +23,14 @@ from app.api.schemas import (
     ChatMessageCreateResponse,
     ChatMessageListResponse,
 )
+
 from app.db.models import ChatConversation, ChatMessage, RoleProfile
 from app.services.agent_event_service import AgentEventService
 from app.services.chat_llm_client import ChatLLMProviderError, OpenAIChatLLMClient
 from app.services.chat_memory_service import ChatMemoryService
 from app.services.chat_service import ChatService
 from app.services.profile_cv_draft_service import ProfileCvDraftService
+from app.services.profile_cv_job_improvement_service import ProfileCvJobImprovementService
 from app.services.profile_cv_export_service import ProfileCvExportService
 from app.services.profile_document_retrieval_service import ProfileDocumentRetrievalService
 from app.services.profile_document_service import ProfileDocumentService
@@ -42,6 +45,7 @@ from app.services.tool_registry import (
     build_list_profile_cvs_handler,
     build_preview_cv_edit_draft_handler,
     build_retrieve_profile_cv_chunks_handler,
+    build_score_cv_against_job_handler,
     build_search_jobs_handler,
     build_set_active_cv_version_handler,
     build_suggest_cv_improvements_handler,
@@ -59,6 +63,7 @@ profile_cv_retrieval_service = ProfileDocumentRetrievalService()
 profile_cv_draft_service = ProfileCvDraftService()
 profile_cv_export_service = ProfileCvExportService()
 profile_document_service = ProfileDocumentService()
+profile_cv_job_improvement_service = ProfileCvJobImprovementService()
 
 
 def build_tool_registry(session: SessionDep) -> ToolRegistry:
@@ -76,6 +81,7 @@ def build_tool_registry(session: SessionDep) -> ToolRegistry:
             "create_cv_edit_draft": build_create_cv_edit_draft_handler(profile_cv_draft_service, session),
             "preview_cv_edit_draft": build_preview_cv_edit_draft_handler(profile_cv_draft_service, session),
             "export_cv_draft_to_pdf": build_export_cv_draft_to_pdf_handler(profile_cv_export_service, session),
+            "score_cv_against_job": build_score_cv_against_job_handler(profile_cv_job_improvement_service, session),
             "set_active_cv_version": build_set_active_cv_version_handler(profile_document_service, session),
         }
     )
@@ -175,6 +181,23 @@ def _is_profile_cv_read_intent(content: str) -> bool:
     return any(term in normalized for term in cv_terms) and any(
         term in normalized for term in read_terms
     )
+
+
+JOB_ID_PATTERN = re.compile(
+    r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b"
+)
+
+
+def _job_cv_improvement_intent(content: str) -> str | None:
+    normalized = content.casefold()
+    if "cv" not in normalized and "resume" not in normalized:
+        return None
+    if "job" not in normalized and "role" not in normalized:
+        return None
+    if not any(term in normalized for term in ("improve", "score", "match", "missing", "suggest")):
+        return None
+    match = JOB_ID_PATTERN.search(content)
+    return match.group(0) if match else None
 
 
 def _sse_event(event_type: str, payload: dict[str, object]) -> str:
@@ -544,6 +567,78 @@ async def stream_conversation_events(
                 assistant_content = (
                     "Called 1 tool: Extract job from text. "
                     f"{tool_result.result_summary} Open Review Queue to inspect and approve it."
+                )
+                agent_metadata_source = "chat_agent_tool"
+                yield _sse_event(
+                    "tool_call_completed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "result_summary": tool_call.result_summary,
+                        "safe_payload": tool_result.safe_payload,
+                    },
+                )
+        elif job_id := _job_cv_improvement_intent(user_message.content):
+            tool_call = await agent_event_service.create_tool_call(
+                session,
+                conversation_id=str(conversation_id),
+                tool_name="score_cv_against_job",
+                input_summary=f"Generate CV improvements for job {job_id}",
+                safe_payload={"job_id": job_id},
+            )
+            tool_call = await agent_event_service.mark_running(session, tool_call.id)
+            yield _sse_event(
+                "tool_call_started",
+                {
+                    "tool_call_id": tool_call.id,
+                    "tool_name": tool_call.tool_name,
+                    "status": tool_call.status,
+                    "input_summary": tool_call.input_summary,
+                },
+            )
+            try:
+                tool_result = await build_tool_registry(session).execute(
+                    ToolRequest(
+                        name="score_cv_against_job",
+                        arguments={"job_id": job_id, "max_suggestions": 6},
+                        context={
+                            "role_profile_id": conversation.role_profile_id,
+                            "conversation_id": str(conversation_id),
+                        },
+                    )
+                )
+            except Exception:
+                logger.exception("score_cv_against_job tool failed")
+                tool_call = await agent_event_service.mark_failed(
+                    session,
+                    tool_call.id,
+                    error_message="CV improvement generation failed. Check that the job belongs to this profile and an active CV is selected.",
+                )
+                assistant_content = (
+                    "Called 1 tool: Score CV against job, but it failed. "
+                    "Check that the job belongs to this profile and an active CV is selected."
+                )
+                agent_metadata_source = "chat_agent_tool_error"
+                yield _sse_event(
+                    "tool_call_failed",
+                    {
+                        "tool_call_id": tool_call.id,
+                        "tool_name": tool_call.tool_name,
+                        "status": tool_call.status,
+                        "error_message": tool_call.error_message,
+                    },
+                )
+            else:
+                tool_call = await agent_event_service.mark_success(
+                    session,
+                    tool_call.id,
+                    result_summary=tool_result.result_summary,
+                    safe_payload=tool_result.safe_payload,
+                )
+                assistant_content = (
+                    "Called 1 tool: Score CV against job. "
+                    f"{tool_result.result_summary}. Open the Review Queue or Profile CV panel to inspect suggestions."
                 )
                 agent_metadata_source = "chat_agent_tool"
                 yield _sse_event(

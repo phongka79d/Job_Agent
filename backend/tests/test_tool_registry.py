@@ -456,3 +456,50 @@ async def test_set_active_cv_version_tool_returns_safe_payload():
     assert result.result_summary == "Set CV version 2 active"
     assert result.safe_payload["version_id"] == "version-2"
     assert "FastAPI" not in str(result.safe_payload)
+
+
+def test_score_cv_against_job_tool_is_registered_without_confirmation():
+    tools = ToolRegistry().list_tools()
+
+    assert "score_cv_against_job" in tools
+    assert tools["score_cv_against_job"].requires_confirmation is False
+
+
+@pytest.mark.asyncio
+async def test_score_cv_against_job_tool_returns_safe_payload():
+    from app.services.tool_registry import ToolRequest, build_score_cv_against_job_handler
+
+    class ImprovementService:
+        async def generate_suggestions(self, session, request):
+            class Suggestion:
+                id = "suggestion-1"
+                edit_kind = "wording_only"
+                risk_level = "low"
+                status = "suggested"
+
+            class Result:
+                job_id = request.job_id
+                role_profile_id = request.role_profile_id
+                document_id = "doc-1"
+                version_id = "version-1"
+                suggestions = [Suggestion()]
+
+            return Result()
+
+    result = await build_score_cv_against_job_handler(ImprovementService(), object())(
+        ToolRequest(
+            name="score_cv_against_job",
+            arguments={"job_id": "job-1", "max_suggestions": 4},
+            context={"role_profile_id": "profile-1"},
+        )
+    )
+
+    assert result.result_summary == "Generated 1 CV improvement suggestion"
+    assert result.safe_payload == {
+        "job_id": "job-1",
+        "document_id": "doc-1",
+        "version_id": "version-1",
+        "suggestion_count": 1,
+        "wording_only_count": 1,
+        "requires_user_fact_count": 0,
+    }
